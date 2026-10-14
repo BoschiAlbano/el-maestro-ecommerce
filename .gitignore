@@ -1,0 +1,25 @@
+# Dependencias y builds
+node_modules/
+.next/
+out/
+dist/
+coverage/
+
+# Variables de entorno (nunca subir secretos)
+.env
+.env.local
+.env.*.local
+
+# Vercel / Supabase local
+.vercel/
+supabase/.branches/
+supabase/.temp/
+
+# Logs y sistema
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Archivos locales de herramientas de IA
+.claude/settings.local.json
