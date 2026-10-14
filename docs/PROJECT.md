@@ -151,7 +151,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 
 | Spec | Módulo | Depende de | Estado |
 |---|---|---|---|
-| 001 | Base del proyecto | — | Borrador |
+| 001 | Base del proyecto | — | En desarrollo |
 | 002 | Usuarios, roles y permisos | 001 | Borrador |
 | 003 | Configuración y auditoría | 001, 002 | Borrador |
 | 004 | Catálogo de productos | 002, 003 | Borrador |

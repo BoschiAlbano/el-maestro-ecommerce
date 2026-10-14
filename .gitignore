@@ -4,6 +4,9 @@ node_modules/
 out/
 dist/
 coverage/
+playwright-report/
+test-results/
+blob-report/
 
 # Variables de entorno (nunca subir secretos)
 .env
@@ -23,3 +26,14 @@ Thumbs.db
 
 # Archivos locales de herramientas de IA
 .claude/settings.local.json
+.claude/skills/
+.windsurf/
+.agents/
+skills-lock.json
+
+# Next.js / TypeScript (generados)
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+
+/src/generated/prisma

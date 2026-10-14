@@ -1,0 +1,23 @@
+// Prisma schema del proyecto. Fuente de verdad del esquema de datos
+// (ver decisión en specs/001-base-del-proyecto/plan.md, sección 1).
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
+/// Nombre, rol y permisos se agregan en la spec 002 (usuarios, roles y permisos).
+model User {
+  id         String   @id @default(uuid())
+  authUserId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("users")
+}
