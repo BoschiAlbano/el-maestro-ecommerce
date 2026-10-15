@@ -32,5 +32,6 @@
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md`. — Las 9 cajas de la sección 8 están marcadas, cada una contra algo verificado de verdad (test automático o prueba manual descripta en `tasks.md`), no por descarte.
-- [x] Linter, tipos y pruebas pasan. — `pnpm lint`, `pnpm build` (incluye chequeo de tipos), `pnpm test` y `pnpm test:e2e` limpios, estos últimos contra un build de producción real y el Supabase Auth real.
+- [x] Linter, tipos y pruebas unitarias pasan. — `pnpm lint`, `pnpm build` (incluye chequeo de tipos) y `pnpm test` limpios.
+- [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`, contra un build de producción real y el Supabase Auth real), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] `docs/PROJECT.md` actualizado (estado de la spec). — Spec 001 pasada a "Verificada" en la hoja de ruta (sección 11).

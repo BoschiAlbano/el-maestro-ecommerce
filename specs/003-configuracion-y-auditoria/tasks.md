@@ -20,6 +20,7 @@
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md`.
-- [x] Linter, tipos y pruebas pasan (`pnpm lint`, `pnpm build`, `pnpm test`, `pnpm test:e2e`).
+- [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test`).
+- [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] Los criterios de aceptación de la **spec 002** siguen cumpliéndose después de los cambios de T-003. — Los 2 tests E2E originales de la spec 002 (`login.spec.ts`, `usuarios-roles.spec.ts`) siguen pasando.
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).

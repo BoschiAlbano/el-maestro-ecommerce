@@ -18,6 +18,14 @@ Este proyecto se desarrolla con **SDD (Spec-Driven Development)**: la especifica
 
 Si durante la implementación se descubre que la spec o el plan estaban mal, se **corrige el documento primero** y después el código.
 
+## Pruebas (decisión 2026-10-15)
+
+Para no frenar el avance spec por spec, las pruebas E2E (Playwright) se difieren a una **pasada de endurecimiento** antes de cerrar el MVP, para todas las specs sin excepción (incluidos los flujos que `specs/constitution.md` regla 19 marca como críticos). Mientras tanto:
+
+- **Pruebas unitarias**: se escriben spec por spec, como hasta ahora (lógica de negocio: cálculos, validaciones, permisos, parseo). Son rápidas y agarran bugs de lógica que una revisión manual no ve.
+- **Pruebas E2E**: no se escriben al cerrar cada spec. El `tasks.md` de cada spec deja una casilla en "Verificación final" marcando si la cobertura E2E está pendiente o ya se hizo.
+- **Verificación manual**: el cliente revisa cada spec a mano (clickeando la interfaz) antes de darla por cerrada, en lugar de depender del E2E.
+
 ## Reglas para agentes
 
 - No agregues funciones fuera de alcance (ver "Fuera de alcance" en `docs/PROJECT.md`) sin un pedido explícito del usuario.

@@ -34,9 +34,9 @@ Reglas no negociables. Toda spec, plan y línea de código debe respetarlas. Si 
 ## 5. Calidad
 
 18. **TypeScript en modo estricto.** Sin `any` sin justificar.
-19. **Los flujos críticos tienen pruebas automáticas**: venta, caja (apertura, cierre, diferencia), pedidos con seña y entrega parcial, y permisos.
-20. **Antes de cerrar una tarea** pasan el linter, el chequeo de tipos y las pruebas.
-21. **Cada spec se cierra verificando sus criterios de aceptación uno por uno.**
+19. **Los flujos críticos tienen pruebas automáticas**: venta, caja (apertura, cierre, diferencia), pedidos con seña y entrega parcial, y permisos. La lógica de esos flujos lleva pruebas unitarias desde que se construye; la cobertura de punta a punta (Playwright) se corre en la pasada de endurecimiento previa al cierre del MVP (regla 20), igual que en el resto de las specs.
+20. **Antes de cerrar una tarea** pasan el linter, el chequeo de tipos y las pruebas unitarias. Las pruebas E2E se escriben y corren recién en una pasada de endurecimiento antes de cerrar el MVP, no spec por spec — decisión tomada para no frenar el avance (ver `docs/PROJECT.md`). Cada spec deja registrado en su `tasks.md` si su cobertura E2E sigue pendiente.
+21. **Cada spec se cierra verificando sus criterios de aceptación uno por uno** (con prueba unitaria o revisión manual documentada — el E2E puede quedar pendiente, ver regla 20).
 
 ## 6. Interfaz
 

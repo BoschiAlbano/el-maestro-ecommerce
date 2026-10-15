@@ -23,5 +23,6 @@
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md`. — Verificados en local contra el Supabase real (Auth + Postgres), no mockeado: tests unitarios de permisos, E2E de login/logout/rol limitado, y el flujo completo de alta de usuario + rol a mano.
-- [x] Linter, tipos y pruebas pasan (`pnpm lint`, `pnpm build`, `pnpm test`, `pnpm test:e2e`).
+- [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test`).
+- [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).
