@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobada |
+| **Estado** | Verificada |
 | **Depende de** | 001 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
