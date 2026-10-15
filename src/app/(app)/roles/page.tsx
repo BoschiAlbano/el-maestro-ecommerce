@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCurrentUser, isOwner } from "@/lib/permissions";
+import { isOwner } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

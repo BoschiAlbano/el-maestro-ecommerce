@@ -3,22 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { visibleNavItems } from "./nav-items";
+import type { UserLike } from "@/lib/permissions";
 
 type SideNavProps = {
-  /** specs/002, sección 6: "Usuarios" solo lo ve el rol Dueño. */
-  isOwner: boolean;
+  /** Datos serializables; el filtrado (con íconos) se hace acá, en cliente —
+   * los íconos no se pueden pasar como prop desde un Server Component. */
+  user: UserLike;
 };
 
 /** Barra lateral de navegación, para PC (la de caja y escritorio en general). */
-export function SideNav({ isOwner }: SideNavProps) {
+export function SideNav({ user }: SideNavProps) {
   const pathname = usePathname();
+  const items = visibleNavItems(user);
 
   return (
     <nav className="hidden w-56 shrink-0 flex-col gap-1 border-r p-3 sm:flex">
-      {navItems
-        .filter((item) => !item.ownerOnly || isOwner)
-        .map((item) => {
+      {items.map((item) => {
         const active = pathname === item.href;
         const Icon = item.icon;
 

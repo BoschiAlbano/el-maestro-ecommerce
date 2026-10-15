@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentUser, requireOwner } from "@/lib/permissions";
+import { requireOwner } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/current-user";
+import { logAudit } from "@/lib/audit";
 
 export type ActionState = { error?: string };
 
@@ -45,16 +47,27 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
       error: error?.code === "email_exists" ? "Ya existe un usuario con ese email." : "No se pudo crear el usuario.",
     };
   }
+  const authUserId = data.user.id;
 
   try {
-    await prisma.user.create({ data: { authUserId: data.user.id, name, email, roleId } });
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { authUserId, name, email, roleId } });
+      await logAudit(tx, {
+        userId: currentUser.id,
+        action: "USER_CREATED",
+        targetType: "User",
+        targetId: user.id,
+        detail: { name, email, rol: role.name },
+      });
+    });
   } catch {
     // No dejar un usuario de Supabase Auth huérfano si falla el guardado en Prisma.
-    await admin.auth.admin.deleteUser(data.user.id);
+    await admin.auth.admin.deleteUser(authUserId);
     return { error: "No se pudo guardar el usuario (¿email duplicado?)." };
   }
 
   revalidatePath("/usuarios");
+  revalidatePath("/configuracion/auditoria");
   redirect("/usuarios");
 }
 
@@ -98,8 +111,26 @@ export async function updateUser(
     }
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { name, roleId } });
+  const newRole = cambiaRol ? await prisma.role.findUnique({ where: { id: roleId } }) : target.role;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { name, roleId } });
+    await logAudit(tx, {
+      userId: currentUser.id,
+      action: "USER_UPDATED",
+      targetType: "User",
+      targetId: userId,
+      detail: {
+        nombreViejo: target.name,
+        nombreNuevo: name,
+        rolViejo: target.role.name,
+        rolNuevo: newRole?.name ?? target.role.name,
+      },
+    });
+  });
+
   revalidatePath("/usuarios");
+  revalidatePath("/configuracion/auditoria");
   redirect("/usuarios");
 }
 
@@ -123,7 +154,18 @@ export async function setUserActive(userId: string, active: boolean): Promise<Ac
     }
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { active } });
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({ where: { id: userId }, data: { active } });
+    await logAudit(tx, {
+      userId: currentUser.id,
+      action: active ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+      targetType: "User",
+      targetId: userId,
+      detail: { name: user.name, email: user.email },
+    });
+  });
+
   revalidatePath("/usuarios");
+  revalidatePath("/configuracion/auditoria");
   return {};
 }

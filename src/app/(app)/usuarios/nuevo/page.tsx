@@ -1,4 +1,5 @@
-import { getCurrentUser, isOwner } from "@/lib/permissions";
+import { isOwner } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { NewUserForm } from "./new-user-form";
 

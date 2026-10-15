@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getCurrentUser, isOwner } from "@/lib/permissions";
+import { isOwner } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { EditUserForm } from "./edit-user-form";

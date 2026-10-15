@@ -37,6 +37,7 @@ model User {
   active     Boolean  @default(true)
   roleId     String
   role       Role     @relation(fields: [roleId], references: [id])
+  auditLogs  AuditLog[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -82,4 +83,56 @@ model RolePermission {
 
   @@unique([roleId, module])
   @@map("role_permissions")
+}
+
+/// Datos del negocio y parámetros generales. Fila única (id fijo), no un
+/// key-value genérico — son 3 campos conocidos (specs/003, plan.md sección 1).
+model Setting {
+  id                   String  @id @default("singleton")
+  razonSocial          String  @default("")
+  textoTicketAdicional String?
+  stockMinimoDefault   Int     @default(5)
+  updatedAt            DateTime @updatedAt
+
+  @@map("settings")
+}
+
+/// Acciones que generan una entrada de auditoría. Las specs 005-009 agregan
+/// las suyas (anular venta, ajustar stock, reimprimir ticket, cambiar precio)
+/// cuando se construyan — ver specs/003, sección 2.
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_ACTIVATED
+  USER_DEACTIVATED
+  ROLE_CREATED
+  ROLE_UPDATED
+  ROLE_DELETED
+}
+
+/// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
+/// no hay ninguna Server Action que edite o borre una fila de esta tabla.
+model AuditLog {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  action AuditAction
+
+  /// Referencia a lo afectado (p. ej. "User"/id de usuario). A propósito NO
+  /// es una foreign key: si se borra un rol, su auditoría tiene que seguir
+  /// existiendo y legible (ver riesgo en plan.md, sección 7).
+  targetType String
+  targetId   String
+
+  /// Lo que corresponda a cada acción (nombre, rol viejo/nuevo, etc.).
+  detail Json?
+  /// El "motivo" de la constitución, regla 13. Sin uso en esta spec; lo usan
+  /// las acciones de negocio (anular venta, ajuste de stock...).
+  reason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("audit_logs")
 }

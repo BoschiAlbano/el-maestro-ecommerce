@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, requireOwner, type PermisoEspecial } from "@/lib/permissions";
+import { requireOwner, type PermisoEspecial } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/current-user";
 import { ModuloNegocio } from "@/generated/prisma/client";
+import { logAudit } from "@/lib/audit";
 
 export type ActionState = { error?: string };
 
@@ -49,14 +51,24 @@ export async function createRole(_prev: ActionState, formData: FormData): Promis
   const { matrix, special } = parseMatrixAndSpecial(formData);
 
   try {
-    await prisma.role.create({
-      data: { name: parsedName.data, ...special, permissions: { create: matrix } },
+    await prisma.$transaction(async (tx) => {
+      const role = await tx.role.create({
+        data: { name: parsedName.data, ...special, permissions: { create: matrix } },
+      });
+      await logAudit(tx, {
+        userId: currentUser.id,
+        action: "ROLE_CREATED",
+        targetType: "Role",
+        targetId: role.id,
+        detail: { name: role.name },
+      });
     });
   } catch {
     return { error: "Ya existe un rol con ese nombre." };
   }
 
   revalidatePath("/roles");
+  revalidatePath("/configuracion/auditoria");
   redirect("/roles");
 }
 
@@ -80,21 +92,29 @@ export async function updateRole(
   const { matrix, special } = parseMatrixAndSpecial(formData);
 
   try {
-    await prisma.$transaction([
-      prisma.role.update({ where: { id: roleId }, data: { name: parsedName.data, ...special } }),
-      ...matrix.map((m) =>
-        prisma.rolePermission.upsert({
+    await prisma.$transaction(async (tx) => {
+      await tx.role.update({ where: { id: roleId }, data: { name: parsedName.data, ...special } });
+      for (const m of matrix) {
+        await tx.rolePermission.upsert({
           where: { roleId_module: { roleId, module: m.module } },
           update: m,
           create: { roleId, ...m },
-        }),
-      ),
-    ]);
+        });
+      }
+      await logAudit(tx, {
+        userId: currentUser.id,
+        action: "ROLE_UPDATED",
+        targetType: "Role",
+        targetId: roleId,
+        detail: { nombreViejo: role.name, nombreNuevo: parsedName.data },
+      });
+    });
   } catch {
     return { error: "Ya existe un rol con ese nombre." };
   }
 
   revalidatePath("/roles");
+  revalidatePath("/configuracion/auditoria");
   redirect("/roles");
 }
 
@@ -112,7 +132,18 @@ export async function deleteRole(roleId: string): Promise<ActionState> {
     return { error: "No se puede borrar un rol con usuarios asignados. Reasignalos primero." };
   }
 
-  await prisma.role.delete({ where: { id: roleId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.role.delete({ where: { id: roleId } });
+    await logAudit(tx, {
+      userId: currentUser.id,
+      action: "ROLE_DELETED",
+      targetType: "Role",
+      targetId: roleId,
+      detail: { name: role.name },
+    });
+  });
+
   revalidatePath("/roles");
+  revalidatePath("/configuracion/auditoria");
   return {};
 }

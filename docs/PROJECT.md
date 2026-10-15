@@ -153,7 +153,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 |---|---|---|---|
 | 001 | Base del proyecto | — | Verificada |
 | 002 | Usuarios, roles y permisos | 001 | Verificada |
-| 003 | Configuración y auditoría | 001, 002 | Borrador |
+| 003 | Configuración y auditoría | 001, 002 | Verificada |
 | 004 | Catálogo de productos | 002, 003 | Borrador |
 | 005 | Inventario | 004 | Borrador |
 | 006 | Ingreso de mercadería | 004, 005 | Borrador |

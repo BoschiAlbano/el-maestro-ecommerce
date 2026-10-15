@@ -3,22 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { visibleNavItems } from "./nav-items";
+import type { UserLike } from "@/lib/permissions";
 
 type BottomNavProps = {
-  /** specs/002, sección 6: "Usuarios" solo lo ve el rol Dueño. */
-  isOwner: boolean;
+  /** Datos serializables; el filtrado (con íconos) se hace acá, en cliente —
+   * los íconos no se pueden pasar como prop desde un Server Component. */
+  user: UserLike;
 };
 
 /** Barra de navegación inferior, para celular (regla 22: mobile-first). */
-export function BottomNav({ isOwner }: BottomNavProps) {
+export function BottomNav({ user }: BottomNavProps) {
   const pathname = usePathname();
+  const items = visibleNavItems(user);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background sm:hidden">
-      {navItems
-        .filter((item) => !item.ownerOnly || isOwner)
-        .map((item) => {
+      {items.map((item) => {
         const active = pathname === item.href;
         const Icon = item.icon;
 

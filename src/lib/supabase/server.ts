@@ -1,3 +1,4 @@
+import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -5,7 +6,9 @@ import { cookies } from "next/headers";
  * Cliente de Supabase para Server Components, Server Actions y Route Handlers.
  * Lee y escribe la sesión en las cookies de la request. El `setAll` puede
  * fallar si se llama desde un Server Component puro (no puede escribir
- * cookies); el middleware (T-008) es quien de verdad refresca la sesión.
+ * cookies) — no hay middleware que la refresque (ver riesgo en
+ * specs/001-base-del-proyecto/plan.md, sección 7); cada Server Component
+ * que necesita sesión la lee acá directamente.
  */
 export async function createClient() {
   const cookieStore = await cookies();

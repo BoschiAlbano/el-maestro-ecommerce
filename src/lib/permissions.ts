@@ -1,12 +1,16 @@
-import { ModuloNegocio } from "@/generated/prisma/client";
+// Lógica pura, sin I/O — se puede importar desde componentes cliente (como
+// la navegación, para decidir qué ítems mostrar) sin arrastrar nada de
+// Prisma/Supabase. Por eso el enum se importa como tipo y desde "enums"
+// (ver nota equivalente en components/permission-matrix.tsx).
+//
+// `getCurrentUser()` (la única parte que toca sesión + base) vive aparte,
+// en src/lib/current-user.ts — importarlo acá rompería esa separación.
+import type { ModuloNegocio } from "@/generated/prisma/enums";
 
 /**
- * Verificación de permisos (specs/002). Lógica pura acá, testeable sin base
- * ni sesión — `getCurrentUser()`, al final del archivo, es la única parte
- * que toca I/O (Supabase + Prisma) y arma el objeto que estas funciones esperan.
- *
- * Constitución, regla 14: esto se llama siempre del lado del servidor, al
- * principio de cada Server Action/Route Handler. La interfaz solo oculta.
+ * Verificación de permisos (specs/002). Constitución, regla 14: esto se
+ * llama siempre del lado del servidor, al principio de cada Server
+ * Action/Route Handler. La interfaz solo oculta.
  */
 
 export type Accion = "ver" | "crear" | "editar" | "anular" | "exportar";
@@ -76,23 +80,4 @@ export function requireSpecialPermission(
   if (!user || !hasSpecialPermission(user, permiso)) {
     throw new PermissionError("No tenés el permiso necesario para esta acción.");
   }
-}
-
-// --- I/O: arma el UserLike de arriba a partir de la sesión real ---
-
-import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/lib/prisma";
-
-/** Usuario actual (con su rol y matriz de permisos) o `null` si no hay sesión. */
-export async function getCurrentUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  return prisma.user.findUnique({
-    where: { authUserId: user.id },
-    include: { role: { include: { permissions: true } } },
-  });
 }
