@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "users" ALTER COLUMN "email" SET NOT NULL,
+ALTER COLUMN "name" SET NOT NULL,
+ALTER COLUMN "roleId" SET NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "users" ADD CONSTRAINT "users_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -20,12 +20,13 @@ test("login con credenciales inválidas muestra un error, no rompe", async ({ pa
   await expect(page.getByText("Email o contraseña incorrectos.")).toBeVisible();
 });
 
-test("login con el usuario de la semilla entra, muestra su email y puede salir", async ({
+test("login con el usuario de la semilla entra, muestra su nombre, ve 'Usuarios' (es Dueño) y puede salir", async ({
   page,
 }) => {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
-  test.skip(!email || !password, "Correr `npm run db:seed` primero (faltan SEED_ADMIN_* en .env).");
+  const name = process.env.SEED_ADMIN_NAME ?? "Dueño de prueba";
+  test.skip(!email || !password, "Correr `pnpm db:seed` primero (faltan SEED_ADMIN_* en .env).");
 
   await page.goto("/login");
   await page.getByLabel("Email").fill(email!);
@@ -33,7 +34,9 @@ test("login con el usuario de la semilla entra, muestra su email y puede salir",
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByText(email!)).toBeVisible();
+  await expect(page.getByText(name)).toBeVisible();
+  // El usuario de la semilla tiene el rol Dueño: ve la entrada "Usuarios".
+  await expect(page.getByRole("link", { name: "Usuarios" })).toBeVisible();
 
   // Ir directo a /login con sesión activa redirige de nuevo a /.
   await page.goto("/login");

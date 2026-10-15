@@ -11,13 +11,75 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Módulos de negocio que entran en la matriz de permisos por rol.
+/// Se agregan a medida que cada módulo tiene su propia spec (ver specs/002, sección 6).
+enum ModuloNegocio {
+  CATALOGO
+  INVENTARIO
+  INGRESO_MERCADERIA
+  CAJA
+  VENTAS
+  PEDIDOS
+  EMPLEADOS
+  ANALITICAS
+  CONFIGURACION
+}
+
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
-/// Nombre, rol y permisos se agregan en la spec 002 (usuarios, roles y permisos).
 model User {
   id         String   @id @default(uuid())
   authUserId String   @unique
+  name       String
+  email      String   @unique
+  /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
+  /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
+  /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
+  active     Boolean  @default(true)
+  roleId     String
+  role       Role     @relation(fields: [roleId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@map("users")
+}
+
+/// Rol creado por el dueño, con una matriz de permisos por módulo
+/// (RolePermission) y un puñado de permisos especiales (columnas acá,
+/// no tabla aparte — son un conjunto fijo y chico, ver plan.md sección 1).
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  /// true solo en la fila "Dueño". No se borra, no se edita, siempre tiene
+  /// todos los permisos (constitución y specs/002, sección 5).
+  isOwnerRole Boolean @default(false)
+
+  verCostosMargenes Boolean @default(false)
+  anularVentas      Boolean @default(false)
+  ajustarStock      Boolean @default(false)
+  reimprimirTickets Boolean @default(false)
+  cerrarCaja        Boolean @default(false)
+  cambiarPrecios    Boolean @default(false)
+
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("roles")
+}
+
+/// Una fila por combinación rol + módulo: qué puede hacer ese rol en ese módulo.
+model RolePermission {
+  id       String        @id @default(uuid())
+  roleId   String
+  role     Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module   ModuloNegocio
+  ver      Boolean       @default(false)
+  crear    Boolean       @default(false)
+  editar   Boolean       @default(false)
+  anular   Boolean       @default(false)
+  exportar Boolean       @default(false)
+
+  @@unique([roleId, module])
+  @@map("role_permissions")
 }

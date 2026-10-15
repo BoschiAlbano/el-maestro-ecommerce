@@ -21,13 +21,20 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: "Email o contraseña incorrectos." };
   }
 
-  // Primer login de este usuario de Supabase Auth: crea su fila en nuestra
-  // tabla `users` si todavía no existe (spec 002 le agrega nombre/rol/permisos).
-  await prisma.user.upsert({
-    where: { authUserId: data.user.id },
-    update: {},
-    create: { authUserId: data.user.id },
-  });
+  // La fila en `users` la crea el dueño al dar de alta al usuario (spec 002,
+  // Server Action `createUser`) — acá solo verificamos que exista y esté
+  // activa. Si no, es una cuenta de Supabase Auth huérfana o desactivada:
+  // no la dejamos pasar aunque la contraseña sea correcta.
+  const user = await prisma.user.findUnique({ where: { authUserId: data.user.id } });
+
+  if (!user || !user.active) {
+    await supabase.auth.signOut();
+    return {
+      error: user
+        ? "Tu usuario está desactivado. Hablá con el dueño."
+        : "Tu cuenta no está configurada todavía. Hablá con el dueño.",
+    };
+  }
 
   redirect("/");
 }

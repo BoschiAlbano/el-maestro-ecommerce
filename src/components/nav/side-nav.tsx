@@ -5,13 +5,20 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
 
+type SideNavProps = {
+  /** specs/002, sección 6: "Usuarios" solo lo ve el rol Dueño. */
+  isOwner: boolean;
+};
+
 /** Barra lateral de navegación, para PC (la de caja y escritorio en general). */
-export function SideNav() {
+export function SideNav({ isOwner }: SideNavProps) {
   const pathname = usePathname();
 
   return (
     <nav className="hidden w-56 shrink-0 flex-col gap-1 border-r p-3 sm:flex">
-      {navItems.map((item) => {
+      {navItems
+        .filter((item) => !item.ownerOnly || isOwner)
+        .map((item) => {
         const active = pathname === item.href;
         const Icon = item.icon;
 
