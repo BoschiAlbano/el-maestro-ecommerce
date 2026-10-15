@@ -7,6 +7,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "tsx prisma/seed.ts",
   },
   // Migrate/introspect usan la conexión directa (sin pooler). La app en tiempo
   // de ejecución usa DATABASE_URL (pooler) a través del driver adapter en

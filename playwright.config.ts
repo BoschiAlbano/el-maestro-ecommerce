@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -11,7 +12,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run build && npm run start -- -p 3101",
+    command: "pnpm exec next build && pnpm exec next start -p 3101",
     url: "http://localhost:3101",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

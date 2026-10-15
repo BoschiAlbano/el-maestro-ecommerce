@@ -1,9 +1,8 @@
+import "dotenv/config";
 import { test, expect } from "@playwright/test";
 
-// Smoke test que no necesita un usuario real: solo prueba que sin sesión
-// el middleware redirige a /login y que el formulario se ve.
-// El camino "con sesión" (T-008) se prueba a mano hasta que exista un
-// usuario de prueba en el proyecto de Supabase.
+// La protección de sesión vive en los Server Components, no en middleware
+// (ver specs/001-base-del-proyecto/plan.md, sección 7).
 
 test("sin sesión, / redirige a /login y se ve el formulario", async ({ page }) => {
   await page.goto("/");
@@ -19,4 +18,27 @@ test("login con credenciales inválidas muestra un error, no rompe", async ({ pa
   await page.getByLabel("Contraseña").fill("lo-que-sea-123");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Email o contraseña incorrectos.")).toBeVisible();
+});
+
+test("login con el usuario de la semilla entra, muestra su email y puede salir", async ({
+  page,
+}) => {
+  const email = process.env.SEED_ADMIN_EMAIL;
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  test.skip(!email || !password, "Correr `npm run db:seed` primero (faltan SEED_ADMIN_* en .env).");
+
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email!);
+  await page.getByLabel("Contraseña").fill(password!);
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText(email!)).toBeVisible();
+
+  // Ir directo a /login con sesión activa redirige de nuevo a /.
+  await page.goto("/login");
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.getByRole("button", { name: "Salir" }).click();
+  await expect(page).toHaveURL(/\/login$/);
 });

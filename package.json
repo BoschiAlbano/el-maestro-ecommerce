@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.11.2",
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate",
@@ -11,7 +12,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -41,17 +43,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/ui": "^5.0.4",
+    "dotenv": "^18.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.4"
-  },
-  "allowScripts": {
-    "@prisma/engines@7.10.0": true,
-    "prisma@7.10.0": true,
-    "unrs-resolver@1.12.2": true,
-    "@swc/core@1.16.13": true
   }
 }

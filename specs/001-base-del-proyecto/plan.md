@@ -38,7 +38,8 @@ No aplica todavía (no hay roles ni acciones sensibles en esta spec). Lo único:
 
 - Unitarias: Vitest — `src/lib/money.test.ts` (regla 6 de la constitución, redondeo al peso).
 - E2E: Playwright Test (`tests/e2e/`), corre contra un build de producción real. MCP de Playwright aparte, para uso interactivo.
-- Criterio mínimo: `npm run lint`, `npm run build`, `npm run test` y `npm run test:e2e` pasan sin errores.
+- `prisma/seed.ts` crea un usuario Dueño de prueba en Supabase Auth (vía API admin, con `SUPABASE_SERVICE_ROLE_KEY`) y su fila en `users`, para no depender del dashboard. Corre con `pnpm db:seed`, nunca automático. El test de login exitoso (`tests/e2e/login.spec.ts`) usa esas credenciales desde `.env` (`SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`), nunca hardcodeadas en el repo.
+- Criterio mínimo: `pnpm lint`, `pnpm build`, `pnpm test` y `pnpm test:e2e` pasan sin errores.
 
 ## 7. Riesgos y decisiones
 
@@ -57,3 +58,5 @@ No aplica todavía (no hay roles ni acciones sensibles en esta spec). Lo único:
 - **Validación de datos.** `zod` para validar inputs de formularios y Server Actions.
 - **`npm audit`: 9 "high" aceptadas por ahora.** Todas transitivas de herramientas de desarrollo (`eslint-config-next` → `fast-glob`/`micromatch`/`braces`; `prisma` CLI → `@prisma/config` → `deepmerge-ts`/`mysql2`), no viajan al build de producción. Arreglarlas con `npm audit fix --force` bajaría `eslint-config-next` a v14 (incompatible con Next 16) y `prisma` a v6 (pisa la fijación a 7.10.0 de arriba). Se revisa de nuevo cuando esas librerías publiquen una versión que no arrastre la dependencia vulnerable.
 - **Vercel: protección SSO bloqueaba el dominio público.** Por defecto, Vercel protege con "Vercel Authentication" cualquier dominio que no sea un dominio propio — incluido `importadora-app.vercel.app`. El dueño y los empleados van a entrar sin cuenta de Vercel, así que hay que desactivarla a mano (Dashboard → proyecto → Settings → Deployment Protection). No se automatizó: es un cambio que debilita una barrera de seguridad, así que lo decide el cliente, no el agente.
+- **Proyecto de Vercel: `importadora-app` → `el-maestro-ecommerce`.** El cliente borró el proyecto de Vercel que habíamos creado y conectó uno nuevo directo desde GitHub (auto-deploy en cada push), con el nombre `el-maestro-ecommerce` — igual en GitHub y, a futuro, en Supabase. El nombre no coincide con lo que hace el proyecto (es la importadora, no un ecommerce), pero es la convención de nombres que usa el cliente para sus repos/proyectos, no un error de alcance.
+- **npm → pnpm.** A pedido del cliente, se migró el gestor de paquetes. `packageManager` fijo en `package.json` (`pnpm@12.11.2`) para que Vercel y cualquier otra máquina usen la misma versión. pnpm bloquea por defecto los scripts de instalación de dependencias (igual que npm 11); las aprobaciones quedan en `pnpm-workspace.yaml` (`allowBuilds`), versionado. `package-lock.json` se reemplazó por `pnpm-lock.yaml`.
