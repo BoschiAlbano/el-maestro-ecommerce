@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 
 export type ActionState = { error?: string };
+export type QuickCreateRubroState = { error?: string; rubro?: { id: string; name: string } };
 
 const nameSchema = z.string().trim().min(1, "El nombre es obligatorio.");
 
@@ -51,6 +52,23 @@ export async function createRubro(_prev: ActionState, formData: FormData): Promi
 
   revalidatePath("/rubros");
   return {};
+}
+
+/** Para crear un rubro de primer nivel sin salir del alta de un producto (specs/004). */
+export async function quickCreateRubro(name: string): Promise<QuickCreateRubroState> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.CATALOGO, "editar");
+
+  const parsed = nameSchema.safeParse(name);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Nombre inválido." };
+
+  if (await existsSiblingWithName(parsed.data, null)) {
+    return { error: "Ya existe un rubro con ese nombre." };
+  }
+
+  const rubro = await prisma.rubro.create({ data: { name: parsed.data, parentId: null } });
+  revalidatePath("/rubros");
+  return { rubro: { id: rubro.id, name: rubro.name } };
 }
 
 export async function updateRubro(rubroId: string, name: string): Promise<ActionState> {

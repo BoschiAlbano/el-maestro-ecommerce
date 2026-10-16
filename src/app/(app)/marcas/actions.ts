@@ -8,8 +8,26 @@ import { requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 
 export type ActionState = { error?: string };
+export type QuickCreateBrandState = { error?: string; brand?: { id: string; name: string } };
 
 const nameSchema = z.string().trim().min(1, "El nombre es obligatorio.");
+
+/** Para crear una marca sin salir del alta de un producto (specs/004). */
+export async function quickCreateBrand(name: string): Promise<QuickCreateBrandState> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.CATALOGO, "editar");
+
+  const parsed = nameSchema.safeParse(name);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Nombre inválido." };
+
+  try {
+    const brand = await prisma.brand.create({ data: { name: parsed.data } });
+    revalidatePath("/marcas");
+    return { brand: { id: brand.id, name: brand.name } };
+  } catch {
+    return { error: "Ya existe una marca con ese nombre." };
+  }
+}
 
 export async function createBrand(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const currentUser = await getCurrentUser();

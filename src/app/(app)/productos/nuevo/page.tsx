@@ -29,11 +29,12 @@ export default async function NuevoProductoPage() {
   ]);
 
   const rubros = buildRubroOptions(topLevelRubros);
+  const canAdjustStock = hasSpecialPermission(currentUser, "ajustarStock");
 
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold">Nuevo producto</h1>
-      <ProductForm brands={brands} rubros={rubros} canChangePrice />
+      <ProductForm brands={brands} rubros={rubros} canChangePrice canAdjustStock={canAdjustStock} />
     </div>
   );
 }

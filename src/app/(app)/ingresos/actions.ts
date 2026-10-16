@@ -14,7 +14,11 @@ export type CreateStockEntryState = { error?: string };
 const itemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive("La cantidad tiene que ser mayor a cero."),
-  purchasePrice: z.number().min(0, "El precio no puede ser negativo."),
+  purchasePrice: z.number().min(0, "El precio de compra no puede ser negativo."),
+  // Opcional: si se carga, también actualiza el precio de venta del
+  // producto (specs/006, decisión del 2026-10-16) — igual criterio que el
+  // de compra, solo que acá nunca es obligatorio.
+  salePrice: z.number().min(0, "El precio de venta no puede ser negativo.").optional(),
 });
 
 const createSchema = z.object({
@@ -23,7 +27,7 @@ const createSchema = z.object({
 });
 
 export async function createStockEntry(
-  items: { productId: string; quantity: number; purchasePrice: number }[],
+  items: { productId: string; quantity: number; purchasePrice: number; salePrice?: number }[],
   supplierName?: string,
 ): Promise<CreateStockEntryState> {
   const currentUser = await getCurrentUser();
@@ -38,7 +42,7 @@ export async function createStockEntry(
   if (products.length !== productIds.length) {
     return { error: "Uno de los productos elegidos no existe." };
   }
-  const salePriceById = new Map(products.map((p) => [p.id, p.salePrice]));
+  const salePriceById = new Map(products.map((p) => [p.id, p.salePrice.toNumber()]));
   const purchasePriceById = new Map(products.map((p) => [p.id, p.purchasePrice.toNumber()]));
 
   const entry = await prisma.$transaction(async (tx) => {
@@ -53,6 +57,7 @@ export async function createStockEntry(
           productId: item.productId,
           quantity: item.quantity,
           purchasePrice: item.purchasePrice,
+          salePrice: item.salePrice,
         },
       });
 
@@ -67,22 +72,29 @@ export async function createStockEntry(
       // vuelve a leer de la base entre ítems): si el mismo producto aparece
       // dos veces en el mismo ingreso, el último ítem es el que termina
       // valiendo (spec.md, sección 7), y cada uno genera su propia fila de
-      // historial si cambió respecto al anterior.
+      // historial si cambió respecto al anterior. El precio de venta es
+      // opcional: si no se cargó en el ítem, se mantiene el vigente.
       const currentPurchasePrice = purchasePriceById.get(item.productId)!;
-      if (currentPurchasePrice !== item.purchasePrice) {
+      const currentSalePrice = salePriceById.get(item.productId)!;
+      const finalSalePrice = item.salePrice ?? currentSalePrice;
+      const purchaseChanged = currentPurchasePrice !== item.purchasePrice;
+      const saleChanged = item.salePrice !== undefined && item.salePrice !== currentSalePrice;
+
+      if (purchaseChanged || saleChanged) {
         await tx.product.update({
           where: { id: item.productId },
-          data: { purchasePrice: item.purchasePrice },
+          data: { purchasePrice: item.purchasePrice, salePrice: finalSalePrice },
         });
         await tx.productPriceHistory.create({
           data: {
             productId: item.productId,
             purchasePrice: item.purchasePrice,
-            salePrice: salePriceById.get(item.productId)!,
+            salePrice: finalSalePrice,
             changedByUserId: currentUser.id,
           },
         });
         purchasePriceById.set(item.productId, item.purchasePrice);
+        salePriceById.set(item.productId, finalSalePrice);
       }
     }
 

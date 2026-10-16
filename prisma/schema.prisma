@@ -298,7 +298,10 @@ model StockEntryItem {
   product   Product @relation(fields: [productId], references: [id])
 
   quantity      Int
-  purchasePrice Decimal @db.Decimal(12, 2)
+  purchasePrice Decimal  @db.Decimal(12, 2)
+  /// Opcional: si se cargó, también actualizó `Product.salePrice` al confirmar
+  /// el ingreso (specs/006, decisión del 2026-10-16).
+  salePrice     Decimal? @db.Decimal(12, 2)
 
   @@index([stockEntryId])
   @@map("stock_entry_items")

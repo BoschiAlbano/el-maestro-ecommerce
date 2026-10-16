@@ -24,7 +24,13 @@ import {
 
 type Product = { id: string; name: string };
 
-type Row = { key: number; productId: string; quantity: string; purchasePrice: string };
+type Row = {
+  key: number;
+  productId: string;
+  quantity: string;
+  purchasePrice: string;
+  salePrice: string;
+};
 
 // Sentinela fijo para "sin elegir": el `Select` tiene que ser controlado
 // desde el primer render (un `value` que empieza en `undefined` y después
@@ -34,7 +40,7 @@ const UNSELECTED = "__unselected__";
 
 let nextKey = 0;
 function emptyRow(): Row {
-  return { key: nextKey++, productId: UNSELECTED, quantity: "", purchasePrice: "" };
+  return { key: nextKey++, productId: UNSELECTED, quantity: "", purchasePrice: "", salePrice: "" };
 }
 
 export function StockEntryForm({ products }: { products: Product[] }) {
@@ -57,6 +63,7 @@ export function StockEntryForm({ products }: { products: Product[] }) {
         productId: row.productId,
         quantity: Number(row.quantity),
         purchasePrice: Number(row.purchasePrice),
+        salePrice: row.salePrice.trim() ? Number(row.salePrice) : undefined,
       }));
 
     if (items.length === 0) {
@@ -87,6 +94,7 @@ export function StockEntryForm({ products }: { products: Product[] }) {
             <TableHead>Producto</TableHead>
             <TableHead>Cantidad</TableHead>
             <TableHead>Precio de compra</TableHead>
+            <TableHead>Precio de venta (opcional)</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -133,6 +141,16 @@ export function StockEntryForm({ products }: { products: Product[] }) {
                   className="w-28"
                   value={row.purchasePrice}
                   onChange={(e) => updateRow(row.key, { purchasePrice: e.target.value })}
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className="w-28"
+                  value={row.salePrice}
+                  onChange={(e) => updateRow(row.key, { salePrice: e.target.value })}
                 />
               </TableCell>
               <TableCell>

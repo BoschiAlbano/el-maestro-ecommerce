@@ -18,8 +18,9 @@ Saber cuánto stock real tiene cada producto en todo momento, para poder vender 
 - Movimientos de stock de cuatro tipos: ingreso, venta, ajuste y merma
 - Ajuste manual puntual de un producto, con motivo obligatorio
 - Conteo físico: se cuenta lo que hay, el sistema muestra la diferencia contra lo registrado y genera los ajustes al confirmar. La primera vez que se usa, con todos los productos en cero, es la carga inicial del stock.
-- Pantalla de inventario con el stock actual de cada producto y aviso de cuáles están en o por debajo de su stock mínimo
+- Pantalla de inventario con el stock actual de cada producto y aviso de cuáles están en o por debajo de su stock mínimo, con búsqueda por nombre/código y filtro por rubro y por estado (bajo stock / negativo)
 - Historial de movimientos de stock por producto
+- Campo opcional de stock inicial al crear un producto (spec 004): atajo para no tener que hacer un conteo físico aparte cuando se conoce la cantidad de entrada — genera un movimiento de tipo "ajuste" con motivo fijo "Carga inicial al crear el producto"
 
 **No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md`. No incluye el ingreso de mercadería como operación con proveedor y precio de compra (spec 006) ni la venta como operación (spec 008) — esta spec construye el mecanismo genérico para registrar un movimiento de stock, que esas dos specs van a usar para generar movimientos de tipo "ingreso" y "venta" respectivamente. Tampoco incluye la valorización del stock en dinero (spec 011) ni la reserva de stock para pedidos (fuera de alcance del proyecto).
 
@@ -40,6 +41,7 @@ Saber cuánto stock real tiene cada producto en todo momento, para poder vender 
 - **RF-5.** Cada producto tiene un historial de sus movimientos de stock (tipo, cantidad, motivo, quién y cuándo), visible desde su ficha.
 - **RF-6.** El sistema expone una función interna para registrar un movimiento de stock, que las specs 006 (ingreso de mercadería) y 008 (ventas) van a usar para sus propios movimientos — ningún módulo futuro inventa su propia forma de cambiar el stock.
 - **RF-7.** Un movimiento que deja el stock de un producto en negativo no se bloquea; se guarda igual y la pantalla de inventario lo señala como una situación a revisar.
+- **RF-8.** El alta de un producto (spec 004) permite opcionalmente indicar su stock inicial; si no tiene el permiso especial "ajustar stock", ese campo no está disponible.
 
 ## 5. Reglas de negocio
 
@@ -71,10 +73,11 @@ Saber cuánto stock real tiene cada producto en todo momento, para poder vender 
 
 ## 8. Criterios de aceptación
 
-- [ ] Un producto recién creado tiene stock cero hasta que se le registra algún movimiento.
+- [x] Un producto recién creado tiene stock cero hasta que se le registra algún movimiento (incluido el stock inicial opcional del alta, que también es un movimiento).
 - [ ] Se puede hacer un conteo físico sobre todo el catálogo: se ven las diferencias antes de confirmar, y al confirmar se generan los ajustes correctos (y solo esos).
-- [ ] Se puede ajustar el stock de un producto puntual con un motivo, y el historial del producto lo refleja.
-- [ ] La pantalla de inventario señala los productos en o por debajo de su stock mínimo.
+- [x] Se puede ajustar el stock de un producto puntual con un motivo, y el historial del producto lo refleja.
+- [x] La pantalla de inventario señala los productos en o por debajo de su stock mínimo, y se puede filtrar por nombre/código, rubro y estado.
+- [x] Se puede cargar el stock inicial de un producto al crearlo, sin tener que hacer un conteo físico aparte.
 - [ ] Un movimiento que deja el stock en negativo se guarda y se señala, no se bloquea.
 - [ ] Un usuario sin el permiso especial "ajustar stock" no puede ajustar stock ni confirmar un conteo físico, probado con un rol real.
 - [ ] Un producto desactivado conserva su stock y su historial de movimientos sin cambios.
@@ -88,3 +91,5 @@ A confirmar en el plan: `StockMovement` (productId, tipo, cantidad, motivo, usua
 - **Carga inicial = primer conteo físico.** No hay una pantalla separada para cargar el stock inicial: es el mismo mecanismo de conteo físico, usado la primera vez sobre productos que están todos en cero.
 - **Entrada de cantidades: lista editable en pantalla**, no una planilla de Excel/CSV — una tabla en la pantalla de inventario con un casillero de cantidad contada por producto.
 - **Stock negativo: permitido, con aviso.** Ningún movimiento se bloquea por dejar el stock en negativo; es una señal para revisar, no un error.
+- **Stock inicial opcional al crear un producto (2026-10-16).** Ajusta la decisión de "carga inicial = primer conteo físico": además de esa vía, el alta de un producto (spec 004) puede traer un campo de stock inicial, para no tener que ir después a un conteo físico solo para un producto nuevo. Sigue existiendo el conteo físico para cargar varios productos a la vez o para recontar periódicamente.
+- **Ajuste y Merma se mantienen separados, con la pantalla aclarando la diferencia (2026-10-16).** Dudó el cliente si eran lo mismo (los dos piden motivo y cantidad; Merma siempre resta, Ajuste con "Restar" también). Se mantiene la distinción pensando en reportes futuros (spec 011: separar pérdidas de correcciones), pero se agregó un texto explicando cada uno en el formulario de ajuste.

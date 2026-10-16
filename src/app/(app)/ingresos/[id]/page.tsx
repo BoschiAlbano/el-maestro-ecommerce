@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -26,6 +26,8 @@ export default async function DetalleIngresoPage({ params }: { params: Promise<{
   });
   if (!entry) notFound();
 
+  const verCostos = hasSpecialPermission(currentUser, "verCostosMargenes");
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -44,7 +46,8 @@ export default async function DetalleIngresoPage({ params }: { params: Promise<{
           <TableRow>
             <TableHead>Producto</TableHead>
             <TableHead>Cantidad</TableHead>
-            <TableHead>Precio de compra</TableHead>
+            {verCostos && <TableHead>Precio de compra</TableHead>}
+            <TableHead>Precio de venta</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -52,7 +55,8 @@ export default async function DetalleIngresoPage({ params }: { params: Promise<{
             <TableRow key={item.id}>
               <TableCell>{item.product.name}</TableCell>
               <TableCell>{item.quantity}</TableCell>
-              <TableCell>${item.purchasePrice.toFixed(0)}</TableCell>
+              {verCostos && <TableCell>${item.purchasePrice.toFixed(0)}</TableCell>}
+              <TableCell>{item.salePrice ? `$${item.salePrice.toFixed(0)}` : "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>

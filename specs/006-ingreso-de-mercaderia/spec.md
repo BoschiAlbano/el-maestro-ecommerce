@@ -14,8 +14,8 @@ Registrar cada compra de mercadería (lo que llega, de qué proveedor y a qué p
 
 **Incluye:**
 
-- Un ingreso de mercadería con proveedor (texto libre, opcional) y fecha, con una lista de ítems: producto, cantidad y precio de compra unitario
-- Al confirmar un ingreso: por cada ítem, un movimiento de stock de tipo "ingreso" (spec 005) y la actualización del precio de compra del producto al precio pagado en ese ítem
+- Un ingreso de mercadería con proveedor (texto libre, opcional) y fecha, con una lista de ítems: producto, cantidad, precio de compra unitario y precio de venta unitario (opcional)
+- Al confirmar un ingreso: por cada ítem, un movimiento de stock de tipo "ingreso" (spec 005) y la actualización del precio de compra del producto al precio pagado en ese ítem; si se cargó precio de venta en el ítem, también se actualiza
 - Historial de ingresos, con el detalle de cada uno
 
 **No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md` (no hay cuentas corrientes ni seguimiento de pago al proveedor — un ingreso refleja mercadería y costo, no plata adeudada). No incluye un listado administrable de proveedores (campo de texto libre, no una entidad con su propia pantalla). No incluye anular o editar un ingreso ya confirmado — si algo se cargó mal, se corrige con un ajuste de stock (spec 005) y, si corresponde, editando el precio del producto (spec 004); un ingreso confirmado queda como un registro fijo, igual que el historial de precios o los movimientos de stock.
@@ -30,10 +30,10 @@ Registrar cada compra de mercadería (lo que llega, de qué proveedor y a qué p
 
 ## 4. Requisitos funcionales
 
-- **RF-1.** El sistema permite crear un ingreso de mercadería con proveedor opcional (texto libre), fecha, y uno o más ítems (producto, cantidad, precio de compra unitario).
+- **RF-1.** El sistema permite crear un ingreso de mercadería con proveedor opcional (texto libre), fecha, y uno o más ítems (producto, cantidad, precio de compra unitario, precio de venta unitario opcional).
 - **RF-2.** Al confirmar un ingreso, se guarda todo en una sola operación (constitución, regla de integridad de datos): si algo falla, no se guarda nada del ingreso.
-- **RF-3.** Por cada ítem de un ingreso confirmado, el sistema registra un movimiento de stock de tipo "ingreso" por la cantidad del ítem (usando el mecanismo de la spec 005) y actualiza el precio de compra del producto al precio de ese ítem (el último precio pagado, no un promedio).
-- **RF-4.** El sistema permite ver el historial de ingresos (fecha, proveedor, cantidad de ítems) y el detalle de cada uno (qué productos, cuántas unidades, a qué precio).
+- **RF-3.** Por cada ítem de un ingreso confirmado, el sistema registra un movimiento de stock de tipo "ingreso" por la cantidad del ítem (usando el mecanismo de la spec 005) y actualiza el precio de compra del producto al precio de ese ítem (el último precio pagado, no un promedio). Si el ítem trae precio de venta, también actualiza el precio de venta del producto; si no lo trae, el precio de venta no cambia.
+- **RF-4.** El sistema permite ver el historial de ingresos (fecha, proveedor, cantidad de ítems) y el detalle de cada uno (qué productos, cuántas unidades, a qué precio de compra y de venta). El precio de compra solo se muestra a quien tiene el permiso especial "ver costos y márgenes" (constitución, regla 17) — el de venta se ve siempre.
 - **RF-5.** Un ingreso confirmado no se puede editar ni anular desde esta pantalla.
 
 ## 5. Reglas de negocio
@@ -59,19 +59,21 @@ Registrar cada compra de mercadería (lo que llega, de qué proveedor y a qué p
 
 ## 8. Criterios de aceptación
 
-- [ ] Se puede registrar un ingreso con varios productos a la vez, cada uno con su cantidad y precio.
-- [ ] Al confirmar, el stock de cada producto del ingreso aumenta según la cantidad cargada.
-- [ ] Al confirmar, el precio de compra de cada producto del ingreso queda en el precio cargado en ese ingreso.
-- [ ] Se puede ver el historial de ingresos y el detalle de uno en particular.
+- [x] Se puede registrar un ingreso con varios productos a la vez, cada uno con su cantidad y precio.
+- [x] Al confirmar, el stock de cada producto del ingreso aumenta según la cantidad cargada.
+- [x] Al confirmar, el precio de compra de cada producto del ingreso queda en el precio cargado en ese ingreso.
+- [x] Si un ítem trae precio de venta, el precio de venta del producto queda en ese valor; si no lo trae, no cambia.
+- [x] Se puede ver el historial de ingresos y el detalle de uno en particular.
 - [ ] Un usuario sin el permiso especial "cambiar precios" no puede registrar un ingreso, probado con un rol real.
 - [ ] Si un ítem del ingreso tiene un dato inválido, no se guarda nada del ingreso hasta corregirlo.
 
 ## 9. Entidades previstas
 
-A confirmar en el plan: `StockEntry` (cabecera: proveedor, fecha, usuario) y `StockEntryItem` (ingreso, producto, cantidad, precio de compra unitario).
+A confirmar en el plan: `StockEntry` (cabecera: proveedor, fecha, usuario) y `StockEntryItem` (ingreso, producto, cantidad, precio de compra unitario, precio de venta unitario opcional).
 
 ## 10. Decisiones (ya confirmadas con el cliente)
 
 - **Costeo: último precio de compra, no promedio ponderado.** Más simple de explicar y de construir; el margen de una venta usa el precio de compra vigente al momento de venderse (ya decidido en `docs/PROJECT.md`, sección 5), no un cálculo retroactivo.
 - **Proveedor: campo de texto libre**, no una entidad administrable. No hay una spec de proveedores en la hoja de ruta; si en el futuro hace falta más (contacto, historial de compras por proveedor), se agrega como un cambio de alcance aparte.
 - **Un ingreso tiene varios ítems**, como una factura de compra — no uno por producto. Refleja cómo llega la mercadería de un viaje real.
+- **Precio de venta opcional por ítem (2026-10-16, pedido del cliente tras probar la pantalla).** Al cargar un ingreso se puede fijar de una vez el precio de venta de cada producto, además del de compra — si se deja vacío, el precio de venta no cambia. No contradice la regla de "el dueño define el precio a mano" (`docs/PROJECT.md`, sección 5): sigue siendo una carga manual, solo que en la misma pantalla en vez de tener que ir después a editar el producto.

@@ -16,6 +16,8 @@
   - Hecho cuando: se cargan las cantidades contadas, se previsualizan las diferencias contra lo registrado antes de confirmar, y al confirmar solo se generan movimientos para los productos que realmente difieren. Sirve igual para la primera carga (con todo en cero) que para un conteo periódico. — `confirmCount` recalcula el delta contra el stock actual dentro de la transacción en vez de confiar en el delta de la previsualización (si cambió algo entre previsualizar y confirmar, lo que importa es a qué cantidad contada se quiere llegar, no un delta viejo); si ya coincide, no genera movimiento.
 - [x] **T-007** Navegación: agregar "Stock" a la navegación, visible según permiso en Inventario (reemplaza la entrada deshabilitada que ya existe).
   - Hecho cuando: un usuario con permiso "ver" en Inventario ve la entrada; uno sin permiso, no.
+- [x] **T-008** Ajustes pedidos por el cliente tras revisar las specs 005/006 a mano (2026-10-16): filtros en `/inventario`, campo de stock inicial al crear un producto, y texto aclarando Ajuste vs. Merma.
+  - Hecho cuando: `/inventario` tiene búsqueda por nombre/código, filtro por rubro y por estado (bajo stock / negativo); el alta de producto tiene un campo opcional de stock inicial que genera un ajuste con motivo fijo; el formulario de ajuste explica la diferencia entre Ajuste y Merma. — Probado a mano en el navegador: creado un producto con stock inicial 42, confirmado el movimiento "Ajuste +42 — Carga inicial al crear el producto" en su historial, y los filtros de `/inventario` funcionando. "Bajo stock" compara `currentStock` contra `minStock` en JS (no se puede expresar en un `where` de Prisma comparando dos columnas de la misma fila).
 
 ## Verificación final
 

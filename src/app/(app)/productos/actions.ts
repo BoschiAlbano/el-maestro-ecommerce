@@ -9,6 +9,7 @@ import { requirePermission, requireSpecialPermission, hasSpecialPermission } fro
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { generateUniqueBarcode } from "@/lib/barcode";
 import { uploadProductPhoto } from "@/lib/upload-photo";
+import { registerStockMovement } from "@/lib/stock";
 
 export type ActionState = { error?: string; warning?: string };
 
@@ -27,6 +28,9 @@ const productSchema = z.object({
   purchasePrice: z.coerce.number().min(0, "El precio de compra no puede ser negativo.").optional(),
   salePrice: z.coerce.number().min(0, "El precio de venta no puede ser negativo.").optional(),
   minStock: z.coerce.number().int().min(0, "No puede ser negativo.").optional(),
+  // Solo en el alta (specs/005): atajo para no tener que hacer un conteo
+  // físico aparte apenas se crea un producto con stock ya conocido.
+  initialStock: z.coerce.number().int().min(0, "No puede ser negativo.").optional(),
 });
 
 /** `undefined` si no se eligió archivo (el input queda con un `File` vacío). */
@@ -40,14 +44,22 @@ function parseProductForm(formData: FormData) {
   const brandIdRaw = formData.get("brandId");
   const brandId = brandIdRaw && brandIdRaw !== "__none__" ? brandIdRaw : undefined;
 
+  // Sentinelas del formulario (nunca un id real, que siempre es un uuid):
+  // "sin elegir todavía" o "crear nuevo" no traducidos a un id real no
+  // tienen que llegar a Prisma como si lo fueran.
+  const rubroIdRaw = formData.get("rubroId");
+  const rubroId =
+    typeof rubroIdRaw === "string" && rubroIdRaw.startsWith("__") ? "" : rubroIdRaw;
+
   return productSchema.safeParse({
     name: formData.get("name"),
     brandId,
-    rubroId: formData.get("rubroId"),
+    rubroId,
     barcode: formData.get("barcode") || undefined,
     purchasePrice: formData.get("purchasePrice") ?? undefined,
     salePrice: formData.get("salePrice") ?? undefined,
     minStock: formData.get("minStock") || undefined,
+    initialStock: formData.get("initialStock") || undefined,
   });
 }
 
@@ -59,11 +71,17 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
 
   const parsed = parseProductForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  const { name, brandId, rubroId, barcode, purchasePrice, salePrice, minStock } = parsed.data;
+  const { name, brandId, rubroId, barcode, purchasePrice, salePrice, minStock, initialStock } =
+    parsed.data;
   // El permiso ya exigido garantiza que el formulario de creación no deshabilitó
   // estos campos; si de todas formas faltan, es un dato inválido de verdad.
   if (purchasePrice === undefined || salePrice === undefined) {
     return { error: "Faltan los precios." };
+  }
+  // El campo de stock inicial se deshabilita en el formulario sin el permiso
+  // especial "ajustar stock" (specs/005) — mismo criterio que los precios.
+  if (initialStock !== undefined && !hasSpecialPermission(currentUser, "ajustarStock")) {
+    return { error: "No tenés permiso para cargar stock." };
   }
 
   let finalBarcode = barcode;
@@ -107,6 +125,15 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
     await tx.productPriceHistory.create({
       data: { productId: created.id, purchasePrice, salePrice, changedByUserId: currentUser.id },
     });
+    if (initialStock) {
+      await registerStockMovement(tx, {
+        productId: created.id,
+        type: "AJUSTE",
+        quantity: initialStock,
+        reason: "Carga inicial al crear el producto",
+        userId: currentUser.id,
+      });
+    }
     return created;
   });
 

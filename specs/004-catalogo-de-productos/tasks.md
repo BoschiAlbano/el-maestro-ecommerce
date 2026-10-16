@@ -34,3 +34,5 @@
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).
 
 **Nota post-cierre (2026-10-15, durante la spec 006):** se encontró y corrigió un bug real en los `<Select>` de marca/rubro de esta spec (`/productos/nuevo`, `/productos/[id]`, los filtros de `/productos`, y el "Subrubro de" de `/rubros`) — mostraban el id crudo en vez del nombre porque les faltaba el prop `items` de Base UI. Ver el detalle completo en `specs/006-ingreso-de-mercaderia/plan.md`, sección 7.
+
+**Nota post-cierre (2026-10-16, pedido del cliente tras revisar las specs 005/006):** el alta de producto (`/productos/nuevo`) ahora permite crear una marca o un rubro nuevo sin salir del formulario ("+ Crear nueva marca"/"+ Crear nuevo rubro" dentro del mismo `<Select>`, con un `quickCreateBrand`/`quickCreateRubro` que crea y selecciona de una) y tiene un campo opcional de stock inicial (ver `specs/005-inventario/spec.md`, sección 10, para el detalle de stock). El rubro nuevo queda siempre de primer nivel; para un subrubro hay que seguir usando `/rubros`.
