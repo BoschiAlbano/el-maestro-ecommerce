@@ -41,7 +41,13 @@ export const navItems: NavItem[] = [
     requiresPermission: { module: ModuloNegocio.INGRESO_MERCADERIA, action: "ver" },
   },
   { href: "/pedidos", label: "Pedidos", icon: ClipboardList, enabled: false },
-  { href: "/caja", label: "Caja", icon: Wallet, enabled: false },
+  {
+    href: "/caja",
+    label: "Caja",
+    icon: Wallet,
+    enabled: true,
+    requiresPermission: { module: ModuloNegocio.CAJA, action: "ver" },
+  },
   { href: "/usuarios", label: "Usuarios", icon: Users, enabled: true, ownerOnly: true },
   {
     href: "/configuracion",

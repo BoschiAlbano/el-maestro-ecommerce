@@ -157,7 +157,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 004 | Catálogo de productos | 002, 003 | Verificada |
 | 005 | Inventario | 004 | En desarrollo |
 | 006 | Ingreso de mercadería | 004, 005 | En desarrollo |
-| 007 | Caja por turnos | 002, 003 | Borrador |
+| 007 | Caja por turnos | 002, 003 | En desarrollo |
 | 008 | Ventas de mostrador y ticket | 005, 007 | Borrador |
 | 009 | Pedidos por encargo | 005, 007, 008 | Borrador |
 | 010 | Empleados | 002 | Borrador |
