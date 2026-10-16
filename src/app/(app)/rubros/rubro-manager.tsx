@@ -74,7 +74,14 @@ export function RubroManager({ rubros }: { rubros: RubroNode[] }) {
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="parentId">Subrubro de (opcional)</Label>
-          <Select name="parentId" defaultValue="__none__">
+          <Select
+            name="parentId"
+            defaultValue="__none__"
+            items={{
+              __none__: "Ninguno (rubro de primer nivel)",
+              ...Object.fromEntries(rubros.map((r) => [r.id, r.name])),
+            }}
+          >
             <SelectTrigger id="parentId" className="w-full">
               <SelectValue placeholder="Ninguno (rubro de primer nivel)" />
             </SelectTrigger>

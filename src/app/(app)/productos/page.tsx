@@ -95,7 +95,11 @@ export default async function ProductosPage({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="brandId">Marca</Label>
-          <Select name="brandId" defaultValue={brandId ?? "__all__"}>
+          <Select
+            name="brandId"
+            defaultValue={brandId ?? "__all__"}
+            items={{ __all__: "Todas", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
+          >
             <SelectTrigger id="brandId" className="w-48">
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
@@ -111,7 +115,11 @@ export default async function ProductosPage({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="rubroId">Rubro</Label>
-          <Select name="rubroId" defaultValue={rubroId ?? "__all__"}>
+          <Select
+            name="rubroId"
+            defaultValue={rubroId ?? "__all__"}
+            items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
+          >
             <SelectTrigger id="rubroId" className="w-56">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>

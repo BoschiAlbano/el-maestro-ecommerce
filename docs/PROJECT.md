@@ -65,7 +65,7 @@ Cada módulo tiene su spec en `specs/`.
 
 - **Moneda.** Todo en pesos argentinos. El sistema no trabaja con dólares ni con tipo de cambio. Cada producto tiene un precio de compra y un precio de venta, cargados por usuarios con permiso.
 - **Precios.** El dueño define el precio final a mano. No hay margen automático ni recálculo masivo. Los montos calculados se redondean al peso entero, hacia arriba desde 0,5.
-- **Costo y margen.** Cada ingreso de mercadería actualiza el precio de compra del producto, y cada venta guarda el costo vigente en ese momento. Así el margen de una venta no cambia después. *(A confirmar: último precio de compra o costo promedio.)*
+- **Costo y margen.** Cada ingreso de mercadería actualiza el precio de compra del producto al último precio pagado (no un costo promedio ponderado — decidido en la spec 006), y cada venta guarda el costo vigente en ese momento. Así el margen de una venta no cambia después.
 - **Cobros.** Solo efectivo y transferencia. Una sola lista de precios y sin descuentos.
 - **Pedidos.** Un pedido es una lista de productos de un cliente, con o sin stock. **No reserva stock**: la mercadería que llega queda disponible para una venta nueva o para entregar un pedido. Cada producto muestra, solo como dato informativo, cuántas unidades están comprometidas en pedidos pendientes.
 - **Entrega.** El usuario elige los ítems que entrega y los convierte en venta, con ticket y descuento de stock. Los ítems entregados salen de la lista de pendientes y quedan en el historial. El pedido se cierra cuando no queda nada pendiente.
@@ -155,8 +155,8 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 002 | Usuarios, roles y permisos | 001 | Verificada |
 | 003 | Configuración y auditoría | 001, 002 | Verificada |
 | 004 | Catálogo de productos | 002, 003 | Verificada |
-| 005 | Inventario | 004 | Borrador |
-| 006 | Ingreso de mercadería | 004, 005 | Borrador |
+| 005 | Inventario | 004 | En desarrollo |
+| 006 | Ingreso de mercadería | 004, 005 | En desarrollo |
 | 007 | Caja por turnos | 002, 003 | Borrador |
 | 008 | Ventas de mostrador y ticket | 005, 007 | Borrador |
 | 009 | Pedidos por encargo | 005, 007, 008 | Borrador |
@@ -185,7 +185,6 @@ Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 
 - Si el ticket de entrega de un pedido debe mostrar la seña aplicada y el saldo, y si se entrega un comprobante al cobrar la seña. *(Spec 008 y 009)*
 - Si se incluye el fichaje de entrada y salida de los empleados. *(Spec 010)*
-- Si el margen se calcula con el último precio de compra o con un costo promedio. *(Spec 005 y 011)*
 
 ## 13. Glosario
 

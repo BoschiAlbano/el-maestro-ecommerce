@@ -90,7 +90,11 @@ export default async function AuditoriaPage({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="userId">Usuario</Label>
-          <Select name="userId" defaultValue={userId ?? "__all__"}>
+          <Select
+            name="userId"
+            defaultValue={userId ?? "__all__"}
+            items={{ __all__: "Todos", ...Object.fromEntries(users.map((u) => [u.id, u.name])) }}
+          >
             <SelectTrigger id="userId" className="w-48">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
@@ -106,7 +110,11 @@ export default async function AuditoriaPage({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="action">Acción</Label>
-          <Select name="action" defaultValue={action ?? "__all__"}>
+          <Select
+            name="action"
+            defaultValue={action ?? "__all__"}
+            items={{ __all__: "Todas", ...Object.fromEntries(ACCIONES.map((a) => [a.value, a.label])) }}
+          >
             <SelectTrigger id="action" className="w-56">
               <SelectValue placeholder="Todas" />
             </SelectTrigger>

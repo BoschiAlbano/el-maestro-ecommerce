@@ -24,3 +24,5 @@
 - [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] Los criterios de aceptación de la **spec 002** siguen cumpliéndose después de los cambios de T-003. — Los 2 tests E2E originales de la spec 002 (`login.spec.ts`, `usuarios-roles.spec.ts`) siguen pasando.
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).
+
+**Nota post-cierre (2026-10-15, durante la spec 006):** se encontró y corrigió un bug real en los `<Select>` de usuario/acción de `/configuracion/auditoria` — mostraban el id/nombre técnico crudo en vez de la etiqueta porque les faltaba el prop `items` de Base UI. Ver el detalle completo en `specs/006-ingreso-de-mercaderia/plan.md`, sección 7.

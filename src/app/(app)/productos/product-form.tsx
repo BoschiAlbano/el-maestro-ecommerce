@@ -48,7 +48,11 @@ export function ProductForm({ brands, rubros, canChangePrice, product }: Product
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="brandId">Marca (opcional)</Label>
-        <Select name="brandId" defaultValue={product?.brandId ?? "__none__"}>
+        <Select
+          name="brandId"
+          defaultValue={product?.brandId ?? "__none__"}
+          items={{ __none__: "Sin marca", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
+        >
           <SelectTrigger id="brandId" className="w-full">
             <SelectValue placeholder="Sin marca" />
           </SelectTrigger>
@@ -65,7 +69,12 @@ export function ProductForm({ brands, rubros, canChangePrice, product }: Product
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="rubroId">Rubro</Label>
-        <Select name="rubroId" defaultValue={product?.rubroId} required>
+        <Select
+          name="rubroId"
+          defaultValue={product?.rubroId}
+          required
+          items={Object.fromEntries(rubros.map((r) => [r.id, r.label]))}
+        >
           <SelectTrigger id="rubroId" className="w-full">
             <SelectValue placeholder="Elegí un rubro" />
           </SelectTrigger>

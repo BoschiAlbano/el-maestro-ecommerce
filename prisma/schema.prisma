@@ -27,20 +27,22 @@ enum ModuloNegocio {
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
 model User {
-  id         String   @id @default(uuid())
-  authUserId String   @unique
-  name       String
-  email      String   @unique
+  id             String                @id @default(uuid())
+  authUserId     String                @unique
+  name           String
+  email          String                @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
-  active     Boolean  @default(true)
-  roleId     String
-  role       Role     @relation(fields: [roleId], references: [id])
-  auditLogs  AuditLog[]
-  priceChanges ProductPriceHistory[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  active         Boolean               @default(true)
+  roleId         String
+  role           Role                  @relation(fields: [roleId], references: [id])
+  auditLogs      AuditLog[]
+  priceChanges   ProductPriceHistory[]
+  stockMovements StockMovement[]
+  stockEntries   StockEntry[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
   @@map("users")
 }
@@ -49,8 +51,8 @@ model User {
 /// (RolePermission) y un puñado de permisos especiales (columnas acá,
 /// no tabla aparte — son un conjunto fijo y chico, ver plan.md sección 1).
 model Role {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
   /// true solo en la fila "Dueño". No se borra, no se edita, siempre tiene
   /// todos los permisos (constitución y specs/002, sección 5).
   isOwnerRole Boolean @default(false)
@@ -64,8 +66,8 @@ model Role {
 
   users       User[]
   permissions RolePermission[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@map("roles")
 }
@@ -89,18 +91,21 @@ model RolePermission {
 /// Datos del negocio y parámetros generales. Fila única (id fijo), no un
 /// key-value genérico — son 3 campos conocidos (specs/003, plan.md sección 1).
 model Setting {
-  id                   String  @id @default("singleton")
-  razonSocial          String  @default("")
+  id                   String   @id @default("singleton")
+  razonSocial          String   @default("")
   textoTicketAdicional String?
-  stockMinimoDefault   Int     @default(5)
+  stockMinimoDefault   Int      @default(5)
   updatedAt            DateTime @updatedAt
 
   @@map("settings")
 }
 
-/// Acciones que generan una entrada de auditoría. Las specs 005-009 agregan
-/// las suyas (anular venta, ajustar stock, reimprimir ticket, cambiar precio)
-/// cuando se construyan — ver specs/003, sección 2.
+/// Acciones que generan una entrada de auditoría. Las specs 006-009 agregan
+/// las suyas (anular venta, reimprimir ticket) cuando se construyan — ver
+/// specs/003, sección 2. Cambiar precio (spec 004) y ajustar stock
+/// (spec 005) NO generan una entrada aparte acá: `ProductPriceHistory` y
+/// `StockMovement` ya son en sí mismos el registro de quién/cuándo/por qué,
+/// con más detalle del que daría una fila genérica de auditoría.
 enum AuditAction {
   USER_CREATED
   USER_UPDATED
@@ -114,9 +119,9 @@ enum AuditAction {
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
 /// no hay ninguna Server Action que edite o borre una fila de esta tabla.
 model AuditLog {
-  id     String @id @default(uuid())
+  id     String      @id @default(uuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User        @relation(fields: [userId], references: [id])
   action AuditAction
 
   /// Referencia a lo afectado (p. ej. "User"/id de usuario). A propósito NO
@@ -155,11 +160,11 @@ model Brand {
 /// niveles se controla en la Server Action, no acá (specs/004, plan.md
 /// sección 1).
 model Rubro {
-  id       String  @id @default(uuid())
+  id       String    @id @default(uuid())
   name     String
   parentId String?
-  parent   Rubro?  @relation("RubroSubrubros", fields: [parentId], references: [id], onDelete: Restrict)
-  children Rubro[] @relation("RubroSubrubros")
+  parent   Rubro?    @relation("RubroSubrubros", fields: [parentId], references: [id], onDelete: Restrict)
+  children Rubro[]   @relation("RubroSubrubros")
   products Product[]
 
   createdAt DateTime @default(now())
@@ -180,7 +185,7 @@ model Product {
   rubro   Rubro   @relation(fields: [rubroId], references: [id])
 
   /// Siempre tiene valor: de origen o generado (ver `barcodeIsGenerated`).
-  barcode           String  @unique
+  barcode            String  @unique
   barcodeIsGenerated Boolean @default(false)
 
   photoUrl String?
@@ -192,7 +197,15 @@ model Product {
   minStock Int     @default(5)
   active   Boolean @default(true)
 
-  priceHistory ProductPriceHistory[]
+  /// Cacheado: la suma de los `StockMovement` del producto, actualizado
+  /// siempre dentro de la misma transacción que crea el movimiento
+  /// (`registerStockMovement`, specs/005). Puede quedar en negativo a
+  /// propósito (specs/005, sección 5) — sin `@default` que lo impida.
+  currentStock Int @default(0)
+
+  priceHistory    ProductPriceHistory[]
+  stockMovements  StockMovement[]
+  stockEntryItems StockEntryItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -219,4 +232,74 @@ model ProductPriceHistory {
 
   @@index([productId])
   @@map("product_price_history")
+}
+
+/// INGRESO y VENTA los generan las specs 006 y 008 (todavía no existen);
+/// AJUSTE y MERMA los genera esta spec (specs/005). Separados pensando en
+/// la spec 011, que va a querer reportar mermas aparte de ajustes comunes.
+enum StockMovementType {
+  INGRESO
+  VENTA
+  AJUSTE
+  MERMA
+}
+
+/// Único camino para cambiar `Product.currentStock` — siempre a través de
+/// `registerStockMovement` (specs/005), nunca editando la cantidad directo.
+/// Es en sí mismo el registro de auditoría del cambio: no hay una entrada
+/// aparte en `AuditLog` para esto (ver el enum `AuditAction`).
+model StockMovement {
+  id        String            @id @default(uuid())
+  productId String
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      StockMovementType
+
+  /// Con signo: positivo suma, negativo resta. No una cantidad siempre
+  /// positiva con un campo de dirección aparte.
+  quantity Int
+
+  /// Obligatorio en la Server Action para AJUSTE/MERMA; no para
+  /// INGRESO/VENTA, que van a traer su propio contexto (specs 006/008).
+  reason String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("stock_movements")
+}
+
+/// Cabecera de una compra de mercadería (specs/006). Sin un campo de fecha
+/// de negocio aparte: `createdAt` es "la fecha" del ingreso, igual criterio
+/// que `AuditLog`/`ProductPriceHistory`.
+model StockEntry {
+  id           String  @id @default(uuid())
+  supplierName String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  items StockEntryItem[]
+
+  createdAt DateTime @default(now())
+
+  @@map("stock_entries")
+}
+
+/// Un producto, cantidad y precio pagado dentro de un `StockEntry`.
+model StockEntryItem {
+  id           String     @id @default(uuid())
+  stockEntryId String
+  stockEntry   StockEntry @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity      Int
+  purchasePrice Decimal @db.Decimal(12, 2)
+
+  @@index([stockEntryId])
+  @@map("stock_entry_items")
 }

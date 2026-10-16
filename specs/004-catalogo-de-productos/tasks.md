@@ -31,4 +31,6 @@
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test`).
 - [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`, 17 tests), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] Los criterios de aceptación de las specs 001-003 siguen cumpliéndose (la suite completa incluye los tests de esas specs; los 17 tests E2E y los 33 unitarios pasan).
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec).
+- [x] `docs/PROJECT.md` actualizado (estado de la spec).
+
+**Nota post-cierre (2026-10-15, durante la spec 006):** se encontró y corrigió un bug real en los `<Select>` de marca/rubro de esta spec (`/productos/nuevo`, `/productos/[id]`, los filtros de `/productos`, y el "Subrubro de" de `/rubros`) — mostraban el id crudo en vez del nombre porque les faltaba el prop `items` de Base UI. Ver el detalle completo en `specs/006-ingreso-de-mercaderia/plan.md`, sección 7.

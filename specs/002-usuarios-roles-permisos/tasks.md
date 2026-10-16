@@ -26,3 +26,5 @@
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test`).
 - [x] Pruebas E2E. — Hechas en su momento (`pnpm test:e2e`), antes de la decisión de diferir el E2E a una pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).
+
+**Nota post-cierre (2026-10-15, durante la spec 006):** se encontró y corrigió un bug real en el `<Select>` de rol de `/usuarios/nuevo` y `/usuarios/[id]` — mostraba el id crudo del rol en vez de su nombre porque le faltaba el prop `items` de Base UI. Ver el detalle completo en `specs/006-ingreso-de-mercaderia/plan.md`, sección 7.
