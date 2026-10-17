@@ -12,6 +12,7 @@
   - Hecho cuando: entregar genera la venta/ticket, descuenta stock, aplica la seña disponible y solo cobra el resto; el pedido se cierra solo sin nada pendiente. Cancelar devuelve la seña si queda algo (exige caja abierta solo en ese caso) y siempre pide motivo. — Se extendió `registerCashMovement` (specs 007) con un `orderId` opcional, mismo criterio que el `saleId` de la spec 008.
 - [x] **T-005** Pantallas `/pedidos` (historial) y `/pedidos/nuevo` (alta).
   - Hecho cuando: se ve la lista de pedidos y se puede crear uno con cliente y productos, con o sin stock.
+  - Nota post-cierre: a pedido del cliente, se agregó un filtro de estado en `/pedidos` (Pendientes por defecto, con opción a ver cerrados/cancelados/todos) — mezclar todos los estados de entrada dificultaba ver qué pedidos faltaba comprar o entregar (RF-9, spec.md).
 - [x] **T-006** Pantalla `/pedidos/[id]`: ítems, seña, entregar, cancelar.
   - Hecho cuando: se pueden agregar/quitar ítems, cobrar la seña, entregar parte o todo (con el cobro del resto si corresponde), y cancelar con motivo — todo gateado por sus permisos.
 - [x] **T-007** Ticket con seña aplicada/saldo (spec 008) y columna "Comprometido" en `/inventario` (spec 005).

@@ -46,7 +46,7 @@ Llevar el registro de lo que un cliente encargó (con o sin stock), cobrar una s
 - **RF-6.** Los ítems entregados salen de la lista de pendientes; el pedido se cierra solo cuando no queda nada pendiente.
 - **RF-7.** El sistema permite cancelar un pedido pendiente: si tiene seña sin aplicar, la devuelve como egreso de caja (con motivo); si el pedido nunca tuvo seña (o ya se aplicó toda), se cancela directo sin generar ningún movimiento de caja. El pedido pasa a cancelado en los dos casos.
 - **RF-8.** El sistema muestra, por producto, cuántas unidades están comprometidas en pedidos pendientes — dato informativo, no bloquea ninguna operación.
-- **RF-9.** El sistema permite ver el historial de pedidos (cliente, estado, fecha) y el detalle de uno en particular (ítems, entregas, seña), y exportar la lista.
+- **RF-9.** El sistema permite ver el historial de pedidos (cliente, estado, fecha) y el detalle de uno en particular (ítems, entregas, seña), y exportar la lista. La lista muestra solo los pedidos pendientes por defecto — mezclarlos con los cerrados y cancelados dificulta ver qué hay que comprar o entregar — con un filtro arriba para ver cerrados, cancelados o todos.
 
 ## 5. Reglas de negocio
 
