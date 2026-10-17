@@ -161,7 +161,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 008 | Ventas de mostrador y ticket | 005, 007 | Verificada |
 | 009 | Pedidos por encargo | 005, 007, 008 | Verificada |
 | 010 | Empleados | 002 | Verificada |
-| 011 | Analíticas y exportación | 008, 009 | Borrador |
+| 011 | Analíticas y exportación | 008, 009 | Verificada |
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Borrador |
 | 013 | Notificaciones | 005, 007, 009 | Borrador |
 
@@ -184,6 +184,7 @@ Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 **Mejoras de UX/UI pendientes (a futuro, no bloquean el MVP):**
 
 - Pantalla de detalle de pedido (`/pedidos/[id]`, spec 009): el cliente la probó y funciona, pero le resultó complicada de entender — hay que simplificarla (por ejemplo, separar mejor los pasos de cobrar seña / entregar / cancelar, o guiarlos como un asistente) en una pasada de UX posterior.
+- Pantalla de analíticas (`/analiticas`, spec 011): funciona y está verificada, pero quedó con muchos filtros y tablas en una sola pantalla larga — el cliente ya avisó que se va a revisar el diseño UX/UI más adelante (por ejemplo, separar en pestañas o tarjetas, gráficos en vez de tablas para la evolución diaria).
 
 ## 13. Glosario
 
