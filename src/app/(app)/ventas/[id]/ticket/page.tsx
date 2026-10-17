@@ -16,7 +16,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const sale = await prisma.sale.findUnique({
     where: { id },
-    include: { user: true, items: { include: { product: true } } },
+    include: { user: true, items: { include: { product: true } }, order: true },
   });
   if (!sale) notFound();
 
@@ -61,6 +61,19 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           <span>TOTAL</span>
           <span>${sale.total.toFixed(0)}</span>
         </div>
+        {sale.order && sale.depositApplied && sale.depositApplied.toNumber() > 0 && (
+          <>
+            <hr className="my-1 border-dashed border-black" />
+            <div className="flex justify-between">
+              <span>Seña aplicada</span>
+              <span>${sale.depositApplied.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Saldo a favor del pedido</span>
+              <span>${sale.order.depositAmount.minus(sale.order.depositApplied).toFixed(2)}</span>
+            </div>
+          </>
+        )}
         {settings.textoTicketAdicional && (
           <p className="mt-1 text-center">{settings.textoTicketAdicional}</p>
         )}

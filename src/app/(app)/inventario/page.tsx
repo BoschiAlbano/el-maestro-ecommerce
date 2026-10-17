@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
+import { computeCommittedQuantities } from "@/lib/order";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,7 @@ export default async function InventarioPage({
   if (rubroId && rubroId !== "__all__") where.rubroId = rubroId;
   if (estado === "negativo") where.currentStock = { lt: 0 };
 
-  const [allMatching, topLevelRubros] = await Promise.all([
+  const [allMatching, topLevelRubros, pendingOrderItems] = await Promise.all([
     prisma.product.findMany({
       where,
       select: { id: true, name: true, currentStock: true, minStock: true },
@@ -65,7 +66,12 @@ export default async function InventarioPage({
       include: { children: { orderBy: { name: "asc" } } },
       orderBy: { name: "asc" },
     }),
+    prisma.orderItem.findMany({
+      where: { order: { status: "PENDIENTE" } },
+      select: { productId: true, quantityOrdered: true, quantityDelivered: true },
+    }),
   ]);
+  const committedByProduct = computeCommittedQuantities(pendingOrderItems);
 
   // "Bajo stock" compara dos columnas de la misma fila (currentStock vs.
   // minStock) — no se puede expresar en un `where` de Prisma, así que se
@@ -138,6 +144,7 @@ export default async function InventarioPage({
             <TableHead>Producto</TableHead>
             <TableHead>Stock actual</TableHead>
             <TableHead>Mínimo</TableHead>
+            <TableHead>Comprometido</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Historial</TableHead>
           </TableRow>
@@ -151,6 +158,7 @@ export default async function InventarioPage({
                 <TableCell>{product.name}</TableCell>
                 <TableCell>{product.currentStock}</TableCell>
                 <TableCell>{product.minStock}</TableCell>
+                <TableCell>{committedByProduct.get(product.id) ?? 0}</TableCell>
                 <TableCell>
                   {negativo ? (
                     <Badge variant="destructive">Stock negativo — revisar</Badge>
@@ -173,7 +181,7 @@ export default async function InventarioPage({
           })}
           {products.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                 No hay productos para estos filtros.
               </TableCell>
             </TableRow>

@@ -27,28 +27,30 @@ enum ModuloNegocio {
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
 model User {
-  id             String                @id @default(uuid())
-  authUserId     String                @unique
-  name           String
-  email          String                @unique
+  id              String                @id @default(uuid())
+  authUserId      String                @unique
+  name            String
+  email           String                @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
-  active         Boolean               @default(true)
-  roleId         String
-  role           Role                  @relation(fields: [roleId], references: [id])
-  auditLogs      AuditLog[]
-  priceChanges   ProductPriceHistory[]
-  stockMovements StockMovement[]
-  stockEntries   StockEntry[]
-  shiftsOpened   CashShift[]           @relation("ShiftsOpened")
-  shiftsClosed   CashShift[]           @relation("ShiftsClosed")
-  cashMovements  CashMovement[]
-  sales          Sale[]
-  salesVoided    Sale[]                @relation("SalesVoided")
-  ticketReprints TicketReprint[]
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  active          Boolean               @default(true)
+  roleId          String
+  role            Role                  @relation(fields: [roleId], references: [id])
+  auditLogs       AuditLog[]
+  priceChanges    ProductPriceHistory[]
+  stockMovements  StockMovement[]
+  stockEntries    StockEntry[]
+  shiftsOpened    CashShift[]           @relation("ShiftsOpened")
+  shiftsClosed    CashShift[]           @relation("ShiftsClosed")
+  cashMovements   CashMovement[]
+  sales           Sale[]
+  salesVoided     Sale[]                @relation("SalesVoided")
+  ticketReprints  TicketReprint[]
+  orders          Order[]
+  ordersCancelled Order[]               @relation("OrdersCancelled")
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   @@map("users")
 }
@@ -213,6 +215,7 @@ model Product {
   stockMovements  StockMovement[]
   stockEntryItems StockEntryItem[]
   saleItems       SaleItem[]
+  orderItems      OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -383,10 +386,16 @@ model CashMovement {
   saleId String?
   sale   Sale?   @relation(fields: [saleId], references: [id])
 
+  /// Solo cuando el origen es la seña de un pedido (specs/009): el
+  /// ingreso al cobrarla, o el egreso que la devuelve si se cancela.
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id])
+
   createdAt DateTime @default(now())
 
   @@index([shiftId])
   @@index([saleId])
+  @@index([orderId])
   @@map("cash_movements")
 }
 
@@ -409,6 +418,13 @@ model Sale {
   voidedByUser   User?     @relation("SalesVoided", fields: [voidedByUserId], references: [id])
   voidReason     String?
 
+  /// Si esta venta es la entrega de un pedido (specs/009): el pedido de
+  /// origen y cuánto de su seña se descontó en esta entrega puntual —
+  /// para que el ticket lo muestre sin necesitar una tabla aparte.
+  orderId        String?
+  order          Order?   @relation(fields: [orderId], references: [id])
+  depositApplied Decimal? @db.Decimal(12, 2)
+
   createdAt DateTime @default(now())
 
   items          SaleItem[]
@@ -417,6 +433,7 @@ model Sale {
   cashMovements  CashMovement[]
 
   @@index([shiftId])
+  @@index([orderId])
   @@map("sales")
 }
 
@@ -452,4 +469,60 @@ model TicketReprint {
 
   @@index([saleId])
   @@map("ticket_reprints")
+}
+
+enum OrderStatus {
+  PENDIENTE
+  CERRADO
+  CANCELADO
+}
+
+/// Un pedido por encargo (specs/009). La seña es como mucho una por
+/// pedido, en un solo pago — vive como campos directos, no una tabla
+/// aparte. `depositApplied` es cuánto de esa seña ya se usó en entregas.
+model Order {
+  id            String      @id @default(uuid())
+  customerName  String
+  customerPhone String?
+  channel       String?
+  status        OrderStatus @default(PENDIENTE)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+
+  depositAmount            Decimal        @default(0) @db.Decimal(12, 2)
+  depositPaymentMethod     PaymentMethod?
+  depositTransferReference String?
+  depositPaidAt            DateTime?
+  depositApplied           Decimal        @default(0) @db.Decimal(12, 2)
+
+  closedAt          DateTime?
+  cancelledAt       DateTime?
+  cancelledByUserId String?
+  cancelledByUser   User?     @relation("OrdersCancelled", fields: [cancelledByUserId], references: [id])
+  cancelReason      String?
+
+  createdAt DateTime @default(now())
+
+  items         OrderItem[]
+  sales         Sale[]
+  cashMovements CashMovement[]
+
+  @@map("orders")
+}
+
+/// Un producto y cantidad de un pedido. Pendiente de esta línea =
+/// `quantityOrdered - quantityDelivered`.
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantityOrdered   Int
+  quantityDelivered Int @default(0)
+
+  @@index([orderId])
+  @@map("order_items")
 }

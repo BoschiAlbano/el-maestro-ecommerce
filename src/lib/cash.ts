@@ -15,6 +15,7 @@ type CashTx = {
         transferReference?: string;
         userId: string;
         saleId?: string;
+        orderId?: string;
       };
     }) => Promise<{ id: string }>;
   };
@@ -33,6 +34,8 @@ type RegisterCashMovementInput = {
   userId: string;
   /** Solo cuando el origen es una venta (specs/008). */
   saleId?: string;
+  /** Solo cuando el origen es la seña de un pedido (specs/009). */
+  orderId?: string;
 };
 
 /**
@@ -53,6 +56,7 @@ export async function registerCashMovement(tx: CashTx, input: RegisterCashMoveme
       transferReference: input.transferReference,
       userId: input.userId,
       saleId: input.saleId,
+      orderId: input.orderId,
     },
   });
 }

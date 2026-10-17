@@ -159,7 +159,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 006 | Ingreso de mercadería | 004, 005 | En desarrollo |
 | 007 | Caja por turnos | 002, 003 | En desarrollo |
 | 008 | Ventas de mostrador y ticket | 005, 007 | Verificada |
-| 009 | Pedidos por encargo | 005, 007, 008 | Borrador |
+| 009 | Pedidos por encargo | 005, 007, 008 | Verificada |
 | 010 | Empleados | 002 | Borrador |
 | 011 | Analíticas y exportación | 008, 009 | Borrador |
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Borrador |
@@ -183,8 +183,11 @@ Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 
 **Detalles funcionales por confirmar:**
 
-- Si el ticket de entrega de un pedido debe mostrar la seña aplicada y el saldo, y si se entrega un comprobante al cobrar la seña. *(Spec 008 y 009)*
 - Si se incluye el fichaje de entrada y salida de los empleados. *(Spec 010)*
+
+**Mejoras de UX/UI pendientes (a futuro, no bloquean el MVP):**
+
+- Pantalla de detalle de pedido (`/pedidos/[id]`, spec 009): el cliente la probó y funciona, pero le resultó complicada de entender — hay que simplificarla (por ejemplo, separar mejor los pasos de cobrar seña / entregar / cancelar, o guiarlos como un asistente) en una pasada de UX posterior.
 
 ## 13. Glosario
 
