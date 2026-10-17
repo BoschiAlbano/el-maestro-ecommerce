@@ -25,7 +25,13 @@ export const navItems: NavItem[] = [
     enabled: true,
     requiresPermission: { module: ModuloNegocio.CATALOGO, action: "ver" },
   },
-  { href: "/ventas", label: "Ventas", icon: ShoppingCart, enabled: false },
+  {
+    href: "/ventas",
+    label: "Ventas",
+    icon: ShoppingCart,
+    enabled: true,
+    requiresPermission: { module: ModuloNegocio.VENTAS, action: "crear" },
+  },
   {
     href: "/inventario",
     label: "Stock",

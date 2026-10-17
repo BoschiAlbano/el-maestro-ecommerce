@@ -14,6 +14,7 @@ type CashTx = {
         paymentMethod: PaymentMethod;
         transferReference?: string;
         userId: string;
+        saleId?: string;
       };
     }) => Promise<{ id: string }>;
   };
@@ -30,6 +31,8 @@ type RegisterCashMovementInput = {
    * llama, no esta función (mecánica pura, sin reglas de negocio). */
   transferReference?: string;
   userId: string;
+  /** Solo cuando el origen es una venta (specs/008). */
+  saleId?: string;
 };
 
 /**
@@ -49,6 +52,7 @@ export async function registerCashMovement(tx: CashTx, input: RegisterCashMoveme
       paymentMethod: input.paymentMethod,
       transferReference: input.transferReference,
       userId: input.userId,
+      saleId: input.saleId,
     },
   });
 }

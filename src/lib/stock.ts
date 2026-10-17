@@ -14,6 +14,7 @@ type StockTx = {
         quantity: number;
         reason?: string;
         userId: string;
+        saleId?: string;
       };
     }) => Promise<{ id: string }>;
   };
@@ -33,6 +34,8 @@ type RegisterStockMovementInput = {
   /** Obligatorio para AJUSTE/MERMA; INGRESO/VENTA traen su propio contexto. */
   reason?: string;
   userId: string;
+  /** Solo cuando el origen es una venta (specs/008). */
+  saleId?: string;
 };
 
 /**
@@ -53,6 +56,7 @@ export async function registerStockMovement(tx: StockTx, input: RegisterStockMov
       quantity: input.quantity,
       reason: input.reason,
       userId: input.userId,
+      saleId: input.saleId,
     },
   });
 

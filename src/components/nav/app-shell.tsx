@@ -15,15 +15,19 @@ type AppShellProps = {
 export function AppShell({ children, headerEnd, user }: AppShellProps) {
   return (
     <div className="flex min-h-full flex-col sm:flex-row">
-      <SideNav user={user} />
+      <div className="print:hidden">
+        <SideNav user={user} />
+      </div>
       <div className="flex min-h-full flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b px-4 print:hidden">
           <span className="font-semibold">Importadora</span>
           {headerEnd}
         </header>
-        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4 print:p-0">{children}</main>
       </div>
-      <BottomNav user={user} />
+      <div className="print:hidden">
+        <BottomNav user={user} />
+      </div>
     </div>
   );
 }
