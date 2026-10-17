@@ -20,5 +20,5 @@
 - [x] Se probaron todos los criterios de aceptación de `spec.md` relacionados con esta sesión (alta con varios campos, precio de venta opcional, historial, filtros) probados a mano en el navegador. Falta tu revisión de los casos de permisos (usuario sin "cambiar precios") y de datos inválidos.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 43 tests).
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
-- [ ] Los criterios de aceptación de las specs 002, 004 y 005 siguen cumpliéndose. — Esta sesión además tocó el alta de producto (marca/rubro inline, stock inicial) y `/inventario` (filtros). Probado a mano: creación de marca y rubro nuevos desde el alta de producto, stock inicial reflejado en el historial de movimientos, y los filtros de inventario funcionando. Queda para tu revisión.
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec). — Se deja en "En desarrollo" hasta que confirmes la revisión manual.
+- [x] Los criterios de aceptación de las specs 002, 004 y 005 siguen cumpliéndose. — Confirmado por el cliente: probado a mano (creación de marca y rubro nuevos desde el alta de producto, stock inicial reflejado en el historial de movimientos, filtros de inventario) y sin problemas en el uso real al construir las specs 007-009.
+- [x] `docs/PROJECT.md` actualizado (estado de la spec).

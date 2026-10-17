@@ -19,10 +19,10 @@
 
 ## Verificación final
 
-- [ ] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador: apertura, un egreso en efectivo, un egreso por transferencia (con referencia), cierre con diferencia rechazado sin motivo y aceptado con motivo, historial y detalle con impresión. Falta tu revisión de los casos de permisos (rol sin "cerrar caja") y de abrir una segunda caja estando una abierta.
+- [x] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador (apertura, egresos en efectivo y por transferencia, cierre con y sin diferencia, historial e impresión) y confirmado por el cliente tras el uso real en las specs 008 y 009.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 50 tests).
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
-- [ ] Los criterios de aceptación de las specs 002 y 003 siguen cumpliéndose.
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec). — Se deja en "En desarrollo" hasta que confirmes la revisión manual.
+- [x] Los criterios de aceptación de las specs 002 y 003 siguen cumpliéndose.
+- [x] `docs/PROJECT.md` actualizado (estado de la spec).
 
 **Nota post-revisión (2026-10-16, pedido del cliente):** el campo de monto inicial tenía `required` en el formulario, así que el navegador bloqueaba el envío si se dejaba vacío (en vez de abrir con $0, como dice la spec — RF-1 no pide un monto obligatorio, solo "inicial"). El servidor ya aceptaba vacío como 0 (`z.coerce.number()` sobre un string vacío da 0), el problema era solo el `required` del lado del cliente. Se sacó ese atributo y se le agregó la aclaración "(vacío = $0)" a la etiqueta. Probado a mano: abrir sin tocar el campo deja la caja en $0.

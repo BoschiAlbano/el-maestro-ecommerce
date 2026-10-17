@@ -49,6 +49,7 @@ model User {
   ticketReprints  TicketReprint[]
   orders          Order[]
   ordersCancelled Order[]               @relation("OrdersCancelled")
+  employee        Employee?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
@@ -525,4 +526,28 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
+}
+
+enum Turno {
+  MANANA
+  TARDE
+}
+
+/// Ficha de un empleado (specs/010) — datos propios de RR.HH. encima del
+/// `User` (spec 002), 1 a 1. No todo usuario tiene ficha (el Dueño, por
+/// ejemplo, no la necesita), pero toda ficha tiene un usuario.
+model Employee {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  dni          String    @unique
+  phone        String?
+  hireDate     DateTime
+  shift        Turno
+  terminatedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("employees")
 }

@@ -56,7 +56,7 @@ Cada módulo tiene su spec en `specs/`.
 | 007 | Caja por turnos | Apertura con monto inicial, ingresos y egresos manuales con concepto, cierre con efectivo esperado contra contado y diferencia, y resumen imprimible. |
 | 008 | Ventas de mostrador y ticket | Búsqueda por nombre o código, lector de código de barras USB, carrito, cobro en efectivo, transferencia o ambos, ticket de 58 mm, reimpresión con registro y anulación con motivo y permiso. Sin descuentos. |
 | 009 | Pedidos por encargo | Lista de productos de un cliente (nombre, teléfono y canal), con o sin stock. Seña, entrega parcial, cancelación con devolución de seña y exportación de la lista. |
-| 010 | Empleados | Ficha del empleado con usuario asociado y turno. |
+| 010 | Empleados | Ficha del empleado (nombre, teléfono, DNI, fecha de ingreso, turno) con usuario asociado obligatorio y baja con desactivación de usuario. Sin fichaje de entrada/salida. |
 | 011 | Analíticas y exportación | Ventas por mes, día, empleado, producto, marca, rubro y canal. Ticket promedio, productos más vendidos y sin movimiento, margen, valorización del stock y diferencias de caja. Exportación a Excel y PDF. |
 | 012 | Inicio del dueño y lista de viaje | Pantalla de inicio con ventas del día y del mes, más vendidos, pedidos pendientes y alertas de stock. La lista de viaje reúne los productos bajo el mínimo y los faltantes de pedidos pendientes, con cantidad sugerida, y se exporta o comparte. |
 | 013 | Notificaciones | Avisos en pantalla de stock bajo, pedido nuevo y diferencia de caja. |
@@ -155,12 +155,12 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 002 | Usuarios, roles y permisos | 001 | Verificada |
 | 003 | Configuración y auditoría | 001, 002 | Verificada |
 | 004 | Catálogo de productos | 002, 003 | Verificada |
-| 005 | Inventario | 004 | En desarrollo |
-| 006 | Ingreso de mercadería | 004, 005 | En desarrollo |
-| 007 | Caja por turnos | 002, 003 | En desarrollo |
+| 005 | Inventario | 004 | Verificada |
+| 006 | Ingreso de mercadería | 004, 005 | Verificada |
+| 007 | Caja por turnos | 002, 003 | Verificada |
 | 008 | Ventas de mostrador y ticket | 005, 007 | Verificada |
 | 009 | Pedidos por encargo | 005, 007, 008 | Verificada |
-| 010 | Empleados | 002 | Borrador |
+| 010 | Empleados | 002 | Verificada |
 | 011 | Analíticas y exportación | 008, 009 | Borrador |
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Borrador |
 | 013 | Notificaciones | 005, 007, 009 | Borrador |
@@ -180,10 +180,6 @@ Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 - Cambios de alcance: cómo se cotiza y se aprueba lo que se pida después de firmado.
 - Hardware: marca y modelo de la impresora y si se incluye lector de código de barras USB.
 - Aclaración fiscal: confirmación del contador del cliente sobre la factura electrónica.
-
-**Detalles funcionales por confirmar:**
-
-- Si se incluye el fichaje de entrada y salida de los empleados. *(Spec 010)*
 
 **Mejoras de UX/UI pendientes (a futuro, no bloquean el MVP):**
 

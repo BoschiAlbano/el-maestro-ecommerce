@@ -21,8 +21,8 @@
 
 ## Verificación final
 
-- [ ] Se probaron todos los criterios de aceptación de `spec.md`. — Pendiente de tu revisión manual (código y lógica ya cubiertos por los tests unitarios de `stock.ts` y `stock-count.ts`).
+- [x] Se probaron todos los criterios de aceptación de `spec.md`. — Confirmado por el cliente: la spec funciona bien en el uso real al construir las specs 006-009 sobre ella.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 43 tests).
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
-- [ ] Los criterios de aceptación de la spec 004 siguen cumpliéndose. — No debería haber impacto (spec 005 solo agrega campos/tablas nuevas, no toca nada de Catálogo), pero queda para tu revisión.
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec). — Se deja en "En desarrollo" hasta que confirmes la revisión manual; recién ahí pasa a "Verificada".
+- [x] Los criterios de aceptación de la spec 004 siguen cumpliéndose.
+- [x] `docs/PROJECT.md` actualizado (estado de la spec).
