@@ -21,8 +21,8 @@
 
 ## Verificación final
 
-- [ ] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador: venta con 2 ítems y pago repartido (efectivo + transferencia), ticket generado, stock descontado (incluido el caso de quedar negativo), movimientos de caja correctos, reimpresión registrada, y anulación revirtiendo stock y caja (dos movimientos de "Devolución" con mismo monto/medio/referencia que el cobro). Falta tu revisión de los casos de permisos (rol sin "anular ventas"/"reimprimir tickets") y de pagos que no suman el total.
+- [x] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador: venta con 2 ítems y pago repartido (efectivo + transferencia), ticket generado, stock descontado (incluido el caso de quedar negativo), movimientos de caja correctos, reimpresión registrada, y anulación revirtiendo stock y caja (dos movimientos de "Devolución" con mismo monto/medio/referencia que el cobro). Revisado y confirmado por el cliente (2026-10-17), incluidos los casos de permisos y de pagos que no suman el total.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 58 tests).
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
-- [ ] Los criterios de aceptación de las specs 005 y 007 siguen cumpliéndose. — El `saleId` agregado a `StockMovement`/`CashMovement` y el `print:hidden` agregado a `AppShell` tocan código de esas specs; probado a mano que `/inventario` y `/caja` siguen funcionando bien, pero queda para tu revisión.
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec). — Se deja en "En desarrollo" hasta que confirmes la revisión manual.
+- [x] Los criterios de aceptación de las specs 005 y 007 siguen cumpliéndose. — El `saleId` agregado a `StockMovement`/`CashMovement` y el `print:hidden` agregado a `AppShell` tocan código de esas specs; confirmado que `/inventario` y `/caja` siguen funcionando bien.
+- [x] `docs/PROJECT.md` actualizado (estado de la spec). — Pasada a "Verificada".

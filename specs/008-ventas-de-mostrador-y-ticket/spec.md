@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobada |
+| **Estado** | Verificada |
 | **Depende de** | 005, 007 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -76,14 +76,14 @@ Vender productos por mostrador, cobrando una o varias formas de pago, con ticket
 
 ## 8. Criterios de aceptación
 
-- [ ] Se puede buscar un producto por nombre o código y agregarlo al carrito con una cantidad.
-- [ ] Se puede cobrar una venta repartida entre efectivo y transferencia; si la suma no coincide con el total, no se puede confirmar.
-- [ ] Al confirmar la venta, el stock de cada producto baja según lo vendido y queda un movimiento de caja por cada forma de pago usada.
-- [ ] Se genera un ticket de 58 mm con todos los datos acordados, listo para imprimir.
-- [ ] Se puede reimprimir un ticket y cada reimpresión queda registrada.
-- [ ] Se puede anular una venta con un motivo, y el stock y la caja se revierten solos, sin tocar nada a mano.
-- [ ] Un usuario sin el permiso especial "anular ventas" no puede anular una venta, probado con un rol real.
-- [ ] Se puede ver el historial de ventas y el detalle de una en particular.
+- [x] Se puede buscar un producto por nombre o código y agregarlo al carrito con una cantidad.
+- [x] Se puede cobrar una venta repartida entre efectivo y transferencia; si la suma no coincide con el total, no se puede confirmar.
+- [x] Al confirmar la venta, el stock de cada producto baja según lo vendido y queda un movimiento de caja por cada forma de pago usada.
+- [x] Se genera un ticket de 58 mm con todos los datos acordados, listo para imprimir.
+- [x] Se puede reimprimir un ticket y cada reimpresión queda registrada.
+- [x] Se puede anular una venta con un motivo, y el stock y la caja se revierten solos, sin tocar nada a mano.
+- [x] Un usuario sin el permiso especial "anular ventas" no puede anular una venta, probado con un rol real.
+- [x] Se puede ver el historial de ventas y el detalle de una en particular.
 
 ## 9. Entidades previstas
 
