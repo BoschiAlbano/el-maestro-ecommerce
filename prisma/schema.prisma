@@ -551,3 +551,28 @@ model Employee {
 
   @@map("employees")
 }
+
+enum NotificationType {
+  PEDIDO_NUEVO
+  DIFERENCIA_CAJA
+}
+
+/// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
+/// de stock bajo no se persiste, se calcula en vivo (ver `loadTravelList`,
+/// specs/012). `readAt` es global, no por usuario (equipo chico, una sola
+/// caja). Sin FK a lo que originó el aviso a propósito (mismo criterio que
+/// `AuditLog`, specs/003): si se borra lo referenciado, el aviso sigue
+/// pudiendo mostrarse.
+model Notification {
+  id         String           @id @default(uuid())
+  type       NotificationType
+  message    String
+  targetType String
+  targetId   String
+
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([readAt])
+  @@map("notifications")
+}

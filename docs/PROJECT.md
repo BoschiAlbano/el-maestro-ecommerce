@@ -59,7 +59,7 @@ Cada módulo tiene su spec en `specs/`.
 | 010 | Empleados | Ficha del empleado (nombre, teléfono, DNI, fecha de ingreso, turno) con usuario asociado obligatorio y baja con desactivación de usuario. Sin fichaje de entrada/salida. |
 | 011 | Analíticas y exportación | Ventas por mes, día, empleado, producto, marca, rubro y canal. Ticket promedio, productos más vendidos y sin movimiento, margen, valorización del stock y diferencias de caja. Exportación a Excel y PDF. |
 | 012 | Inicio del dueño y lista de viaje | Pantalla de inicio con el estado de la caja actual, el resumen de caja de hoy, pedidos pendientes y alertas de stock (sin repetir ventas del mes ni más vendidos, eso está en Analíticas). La lista de viaje reúne los productos bajo el mínimo y los faltantes de pedidos pendientes, con cantidad sugerida, y se copia como texto o se exporta a Excel. |
-| 013 | Notificaciones | Avisos en pantalla de stock bajo, pedido nuevo y diferencia de caja. |
+| 013 | Notificaciones | Campanita en el header, visible en todas las pantallas, con avisos de pedido nuevo y diferencia de caja (marcables como leídos) y stock bajo (en vivo, sin leído). Se actualiza sola cada 60 segundos. |
 
 ## 5. Reglas de negocio acordadas
 
@@ -163,7 +163,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 010 | Empleados | 002 | Verificada |
 | 011 | Analíticas y exportación | 008, 009 | Verificada |
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Verificada |
-| 013 | Notificaciones | 005, 007, 009 | Borrador |
+| 013 | Notificaciones | 005, 007, 009 | Verificada |
 
 Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 

@@ -8,6 +8,7 @@ import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerCashMovement } from "@/lib/cash";
 import { computeExpectedCash } from "@/lib/cash-shift";
+import { notifyDiferenciaCaja } from "@/lib/notifications";
 
 export type ActionState = { error?: string };
 export type PreviewCloseState = { error?: string; expected?: number; difference?: number };
@@ -156,6 +157,8 @@ export async function confirmClose(
       closedByUserId: currentUser.id,
     },
   });
+
+  if (difference !== 0) await notifyDiferenciaCaja(shift.id, difference);
 
   revalidatePath("/caja");
   revalidatePath("/caja/historial");

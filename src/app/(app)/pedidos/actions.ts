@@ -11,6 +11,7 @@ import { registerStockMovement } from "@/lib/stock";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 import { computeDepositApplication } from "@/lib/order";
+import { notifyPedidoNuevo } from "@/lib/notifications";
 
 export type ActionState = { error?: string };
 export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number };
@@ -72,6 +73,8 @@ export async function createOrder(
       items: { create: parsedItems.data.map((i) => ({ productId: i.productId, quantityOrdered: i.quantity })) },
     },
   });
+
+  await notifyPedidoNuevo(order.id, order.customerName);
 
   revalidatePath("/pedidos");
   redirect(`/pedidos/${order.id}`);

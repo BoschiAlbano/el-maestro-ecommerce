@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./bottom-nav";
 import { SideNav } from "./side-nav";
+import { NotificationsBell } from "./notifications-bell";
 import type { UserLike } from "@/lib/permissions";
 
 type AppShellProps = {
@@ -21,7 +22,10 @@ export function AppShell({ children, headerEnd, user }: AppShellProps) {
       <div className="flex min-h-full flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between border-b px-4 print:hidden">
           <span className="font-semibold">Importadora</span>
-          {headerEnd}
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
+            {headerEnd}
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4 print:p-0">{children}</main>
       </div>
