@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,9 +21,12 @@ export function LoginForm() {
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
+        <CardHeader className="justify-items-center text-center">
+          <BrandLogo className="mb-2 w-24" />
+          <p className="text-lg font-semibold leading-tight">El Maestro</p>
+          <p className="mb-3 text-xs text-muted-foreground">Ecommerce</p>
           <CardTitle>Iniciar sesión</CardTitle>
-          <CardDescription>Importadora — acceso del equipo</CardDescription>
+          <CardDescription>Acceso del equipo</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-4">

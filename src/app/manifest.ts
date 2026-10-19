@@ -4,8 +4,8 @@ import type { MetadataRoute } from "next";
 // Docs: https://nextjs.org/docs/app/api-reference/file-conventions/metadata/manifest
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Importadora",
-    short_name: "Importadora",
+    name: "El Maestro Ecommerce",
+    short_name: "El Maestro",
     description: "Stock, ventas, pedidos y caja del negocio.",
     start_url: "/",
     display: "standalone",
@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/icon-192", sizes: "192x192", type: "image/png" },
       { src: "/icon-512", sizes: "512x512", type: "image/png" },
-      { src: "/icon-512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icon-maskable", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Verificada |
+| **Estado** | Verificada (el rediseño del detalle del 2026-10-19 está pendiente de verificación manual) |
 | **Depende de** | 005, 007, 008 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -39,7 +39,7 @@ Llevar el registro de lo que un cliente encargó (con o sin stock), cobrar una s
 ## 4. Requisitos funcionales
 
 - **RF-1.** El sistema permite crear un pedido con datos del cliente (nombre, teléfono, canal) y una lista de productos con cantidades, con o sin stock disponible en ese momento. **La seña no es obligatoria para crear un pedido**: un pedido puede existir y procesarse de principio a fin (entregas, cancelación) sin que se cobre nunca ninguna seña.
-- **RF-2.** Mientras un pedido está pendiente, se pueden agregar o quitar productos de su lista.
+- **RF-2.** Mientras un pedido está pendiente, se pueden agregar o quitar productos de su lista, y **cambiar la cantidad pedida** de un producto *(2026-10-19)*: no puede quedar en menos de 1 ni en menos de lo que ya se entregó de ese producto (un producto con entregas no se puede quitar, y su cantidad solo puede subir o bajar hasta lo entregado). Si se agrega un producto que ya está en el pedido, se suma a su misma línea en lugar de crear otra.
 - **RF-3.** El sistema permite cobrar una seña opcional para un pedido (en cualquier momento mientras está pendiente, no solo al crearlo), en una sola forma de pago (con referencia si es transferencia); exige caja abierta y genera un movimiento de caja.
 - **RF-4.** El sistema permite entregar uno o más ítems pendientes de un pedido: genera una venta (con ticket, spec 008) por esos ítems, descuenta el stock, y aplica contra el total de esa entrega lo que quede de la seña, si el pedido tiene (hasta cubrirlo); si no hay seña, o no alcanza, lo que falta se cobra como una venta normal.
 - **RF-5.** El ticket de una entrega muestra, además de lo habitual (spec 008), cuánto se aplicó de la seña en esa entrega y cuánto queda de saldo a favor del pedido — esta sección del ticket no aparece si el pedido nunca tuvo seña.
@@ -47,6 +47,15 @@ Llevar el registro de lo que un cliente encargó (con o sin stock), cobrar una s
 - **RF-7.** El sistema permite cancelar un pedido pendiente: si tiene seña sin aplicar, la devuelve como egreso de caja (con motivo); si el pedido nunca tuvo seña (o ya se aplicó toda), se cancela directo sin generar ningún movimiento de caja. El pedido pasa a cancelado en los dos casos.
 - **RF-8.** El sistema muestra, por producto, cuántas unidades están comprometidas en pedidos pendientes — dato informativo, no bloquea ninguna operación.
 - **RF-9.** El sistema permite ver el historial de pedidos (cliente, estado, fecha) y el detalle de uno en particular (ítems, entregas, seña), y exportar la lista. La lista muestra solo los pedidos pendientes por defecto — mezclarlos con los cerrados y cancelados dificulta ver qué hay que comprar o entregar — con un filtro arriba para ver cerrados, cancelados o todos.
+- **RF-11.** *(2026-10-19)* En la lista de pedidos, cada fila tiene un botón **Acciones** con *Ver detalle* y, para los pedidos pendientes y quien tenga permiso de anular en Pedidos, *Cancelar pedido* (la misma ventana de cancelación del detalle, con el motivo obligatorio y la misma regla de devolución de la seña, RF-7), para poder cancelar sin entrar al detalle.
+- **RF-10.** *(Presentación, 2026-10-19 — no cambia las reglas de RF-1 a RF-9.)* El detalle de un pedido se organiza así:
+  - **Encabezado:** cliente, estado, teléfono, canal y quién lo creó y cuándo; y las acciones del pedido según permisos y estado: *Entregar*, *Cobrar seña* (solo si todavía no tiene seña) y *Cancelar pedido*, cada una en una ventana modal.
+  - **Tarjetas:** *Entregado* (unidades entregadas de las pedidas), *Total del pedido* (a los precios actuales), *Seña* (monto y medio, o "sin seña") y *Falta cobrar* (lo pendiente de entregar menos el saldo de seña a favor).
+  - **Buscar producto:** un panel propio, arriba de la tabla, con la misma búsqueda de la pantalla de venta (spec 008): caja grande, resultados flotantes que no desplazan la pantalla, el **stock actual** de cada producto como dato informativo (no bloquea nada), y un código de barras exacto con un único resultado se agrega solo.
+  - **Productos del pedido:** tabla con lo pedido (con botones "−" y "+" para cambiar la cantidad, RF-2), lo entregado, lo pendiente, el precio y el subtotal, con una etiqueta de estado por producto (Pendiente, Parcial, Entregado); un producto sin entregas se puede quitar.
+  - **Entregar:** en la ventana se elige cuánto entregar de cada producto con botones "−" y "+", y se ve el total de la entrega, lo que se descuenta de la seña y lo que hay que cobrar; si hay algo para cobrar, se pasa al cobro con el mismo modal de la pantalla de venta (medios de pago, pago dividido y vuelto, spec 008); si la seña cubre todo, se confirma sin cobrar nada.
+  - **Entregas realizadas:** tabla con ticket, fecha, total, seña aplicada y el acceso al ticket en ventana modal.
+  - Un pedido cancelado muestra su motivo de forma destacada y sin acciones.
 
 ## 5. Reglas de negocio
 
@@ -86,6 +95,9 @@ Llevar el registro de lo que un cliente encargó (con o sin stock), cobrar una s
 - [x] Se puede cancelar un pedido pendiente: si tiene seña sin aplicar, se devuelve como egreso de caja; si no tiene seña, se cancela sin generar ningún movimiento.
 - [x] Un producto muestra cuántas unidades están comprometidas en pedidos pendientes.
 - [x] Se puede ver el historial de pedidos y exportar la lista.
+- [ ] (RF-11) Desde la lista de pedidos se puede cancelar un pedido pendiente con el menú Acciones (con motivo, y devolviendo la seña no usada como egreso), sin entrar al detalle; la opción no aparece en pedidos cerrados o cancelados ni sin permiso de anular.
+- [ ] (RF-2, RF-10) La cantidad de un producto del pedido se cambia con "−" y "+" (no baja de 1 ni de lo entregado, y solo mientras el pedido está pendiente); agregar un producto que ya está suma a su línea; la búsqueda muestra el stock y agrega sola con un código exacto.
+- [ ] (RF-10) El detalle muestra las tarjetas con los números correctos; Entregar, Cobrar seña y Cancelar funcionan desde las ventanas modales (con los mismos permisos y reglas que antes), y los productos se agregan con el buscador flotante.
 
 ## 9. Entidades previstas
 

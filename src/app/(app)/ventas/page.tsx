@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Panel } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
 import { SaleForm } from "./sale-form";
 
@@ -15,22 +18,40 @@ export default async function VentasPage() {
   }
 
   const shift = await prisma.cashShift.findFirst({ where: { closedAt: null } });
+  const puedeVerCaja = hasPermission(currentUser, ModuloNegocio.CAJA, "ver");
+  const puedeVerHistorial = hasPermission(currentUser, ModuloNegocio.VENTAS, "ver");
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Ventas</h1>
-        <Link href="/ventas/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-          Historial
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold">Ventas</h1>
+          <Badge variant={shift ? "default" : "outline"}>{shift ? "Caja abierta" : "Caja cerrada"}</Badge>
+        </div>
+        {puedeVerHistorial && (
+          <Link href="/ventas/historial" className={cn(buttonVariants({ variant: "outline" }))}>
+            <History data-icon="inline-start" />
+            Historial
+          </Link>
+        )}
       </div>
 
       {shift ? (
         <SaleForm />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          No hay una caja abierta. Abrí una caja antes de vender.
-        </p>
+        <Panel
+          title="No hay una caja abierta"
+          description="Para vender hace falta tener una caja abierta: ahí se registra lo que se cobra."
+          className="max-w-md"
+        >
+          {puedeVerCaja ? (
+            <Link href="/caja" className={cn(buttonVariants())}>
+              Ir a Caja
+            </Link>
+          ) : (
+            <p className="text-sm text-muted-foreground">Pedile a alguien con permiso que abra la caja.</p>
+          )}
+        </Panel>
       )}
     </div>
   );

@@ -21,7 +21,7 @@
 | `/pedidos/nuevo` | Alta de pedido (cliente + ítems) | Permiso "crear" en Pedidos |
 | `/pedidos/[id]` | Detalle: ítems (pendiente/entregado), seña, agregar/quitar ítem, entregar, cancelar | Ver: "ver". Agregar/quitar ítem y cobrar seña: "crear". Entregar: "crear" en Pedidos + "crear" en Ventas. Cancelar: "anular". |
 
-El ticket de una entrega reutiliza `/ventas/[id]/ticket` (spec 008), con una sección nueva que aparece solo si `sale.orderId` no es `null`.
+El ticket de una entrega reutiliza el ticket de la spec 008, que desde el 2026-10-19 se muestra en una ventana modal (`TicketDialog`, spec 008 RF-14; ya no existe la ruta `/ventas/[id]/ticket`), con una sección nueva que aparece solo si `sale.orderId` no es `null`.
 
 ## 3. Lógica de servidor
 
@@ -34,7 +34,7 @@ El ticket de una entrega reutiliza `/ventas/[id]/ticket` (spec 008), con una sec
   - `payDeposit(orderId, amount, method, transferReference?)` — exige "crear" en Pedidos; rechaza si ya tiene una seña (`depositAmount > 0`) o si no hay caja abierta; llama `registerCashMovement` (`type: "INGRESO"`, `orderId`) y guarda los campos de seña en `Order`.
   - `deliverOrderItems(orderId, items, extraPayments)` — exige "crear" en Pedidos + "crear" en Ventas; rechaza sin caja abierta o si algún ítem pide más de lo pendiente. Calcula `computeSaleTotal` (spec 008) sobre los ítems a entregar, `computeDepositApplication` contra `depositAmount - depositApplied`, y exige que `extraPayments` sume exacto `amountToCollect` (`validatePayments`, spec 008). En una transacción: crea la `Sale` (con `orderId`, `depositApplied`) y sus `SaleItem`, `registerStockMovement` por ítem, `registerCashMovement` solo por los pagos nuevos (la parte cubierta por la seña no genera un movimiento nuevo — esa plata ya entró cuando se cobró la seña), suma `quantityDelivered` en cada `OrderItem`, suma `depositApplied` en `Order`, y si ya no queda nada pendiente en ningún ítem, marca `Order.status = "CERRADO"`. Redirige al ticket de la venta creada.
   - `cancelOrder(orderId, reason)` — exige "anular" en Pedidos; rechaza si el pedido no está `PENDIENTE`; motivo siempre obligatorio. Si `depositAmount - depositApplied > 0`, exige caja abierta y genera el egreso (`registerCashMovement`, mismo medio/referencia que la seña original); si no queda nada de seña (o nunca hubo), cancela directo sin pedir caja abierta — no hay ninguna operación de caja que hacer.
-- `src/app/(app)/ventas/[id]/ticket/page.tsx` (spec 008): se le agrega una sección condicional — si `sale.orderId`, muestra "Seña aplicada: $X" y "Saldo a favor del pedido: $Y" (`order.depositAmount - order.depositApplied`, ya actualizado).
+- `getTicketData` / `TicketDialog` (spec 008, antes `src/app/(app)/ventas/[id]/ticket/page.tsx`): se le agrega una sección condicional — si `sale.orderId`, muestra "Seña aplicada: $X" y "Saldo a favor del pedido: $Y" (`order.depositAmount - order.depositApplied`, ya actualizado).
 - `/inventario` (spec 005): columna "Comprometido" usando `computeCommittedQuantities` sobre los `OrderItem` de pedidos `PENDIENTE` (una sola consulta, reducido en JS — mismo criterio de escala que "bajo stock").
 
 ## 4. Componentes
@@ -44,6 +44,16 @@ El ticket de una entrega reutiliza `/ventas/[id]/ticket` (spec 008), con una sec
 - `DepositForm`: monto, medio de pago, referencia si es transferencia — se oculta si el pedido ya tiene una seña cobrada.
 - `DeliverForm`: elegir cuánto entregar de cada ítem pendiente (no más de lo que queda), muestra el total, cuánto cubre la seña y cuánto hay que cobrar aparte (con el mismo armado de pagos que `SaleForm`) solo si `amountToCollect > 0`.
 - `CancelOrderForm`: motivo obligatorio, mismo wizard simple que anular una venta (spec 008).
+
+### Acciones en la lista (RF-11)
+
+`/pedidos` usa una tabla cliente (`OrdersTable`) con un menú "Acciones" por fila (`DropdownMenu` de shadcn): "Ver detalle" (enlace) y "Cancelar pedido" (abre `CancelOrderDialog`, el mismo del detalle, en modo controlado). El servidor decide qué filas pueden cancelarse (pedido pendiente y permiso "anular" en Pedidos) y si hay seña por devolver; `cancelOrder` vuelve a validar todo.
+
+### Rediseño del detalle (2026-10-19, RF-10)
+
+- `page.tsx` calcula las tarjetas (unidades entregadas/pedidas, total a precios actuales, seña, falta cobrar) y arma el encabezado con las acciones según permiso y estado.
+- `DeliverDialog` reemplaza a `DeliverForm`: elige cantidades con "−"/"+", muestra el resumen y, si hay algo para cobrar, abre el `PaymentDialog` de la spec 008 (con título y texto de confirmación propios) y recién ahí llama a `deliverOrderItems`; si la seña cubre todo, confirma directo. `DepositDialog` reemplaza a `DepositForm` y `CancelOrderDialog` a `CancelOrderForm`; `AddItemForm` pasa a ser el panel "Buscar producto" con el mismo buscador de la pantalla de venta (stock en los resultados, alta automática con código exacto). La cantidad se cambia con `updateOrderItemQuantity(orderId, orderItemId, quantity)` (exige "crear" en Pedidos y pedido pendiente; valida con `validateOrderItemQuantity` de `src/lib/order.ts`, función pura con tests: entero, mínimo 1 y no menos de lo entregado), y `addOrderItem` suma a la línea existente si el producto ya está en el pedido.
+- Se comparten `StatCard`/`Panel` (`src/components/stat-card.tsx`).
 
 ## 5. Permisos
 

@@ -1,84 +1,123 @@
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
-import { ModuloNegocio } from "@/generated/prisma/client";
+import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
+import { SALES_PERIOD_LABELS, parseSalesPeriod, salesPeriodRange, type SalesPeriod } from "@/lib/sales-history";
 import { buttonVariants } from "@/components/ui/button";
+import { Panel } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { SaleHistoryTabs, type SaleRow } from "./sale-history-tabs";
 
-export default async function HistorialVentasPage() {
+const MAX_SALES = 200;
+
+const PERIOD_DESCRIPTIONS: Record<SalesPeriod, string> = {
+  turno: "Las ventas del turno de caja que está abierto ahora.",
+  hoy: "Las ventas de hoy, de todos los turnos.",
+  "7dias": "Las ventas de hoy y de los 6 días anteriores.",
+  todas: "Todas las ventas registradas.",
+};
+
+function formatDateTime(date: Date) {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Argentina/Tucuman",
+  }).format(date);
+}
+
+export default async function HistorialVentasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string }>;
+}) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.VENTAS, "ver")) {
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver las ventas.</p>;
   }
 
+  const puedeVender = hasPermission(currentUser, ModuloNegocio.VENTAS, "crear");
+
+  const openShift = await prisma.cashShift.findFirst({ where: { closedAt: null }, select: { id: true } });
+  const { periodo } = await searchParams;
+  const period = parseSalesPeriod(periodo, openShift !== null);
+
+  const range = salesPeriodRange(period, new Date());
+  const where: Prisma.SaleWhereInput =
+    period === "turno" && openShift
+      ? { shiftId: openShift.id }
+      : range
+        ? { createdAt: { gte: range.from, lt: range.to } }
+        : {};
+
   const sales = await prisma.sale.findMany({
-    include: { user: true },
+    where,
+    include: { user: true, shift: { select: { openedAt: true, closedAt: true } } },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take: MAX_SALES,
   });
+
+  const rows: SaleRow[] = sales.map((sale) => ({
+    id: sale.id,
+    ticketNumber: sale.ticketNumber,
+    when: formatDateTime(sale.createdAt),
+    employee: sale.user.name,
+    total: sale.total.toNumber(),
+    voided: sale.voidedAt !== null,
+    shift: { label: formatDateTime(sale.shift.openedAt), current: sale.shift.closedAt === null },
+  }));
+
+  const description =
+    rows.length === MAX_SALES
+      ? `${PERIOD_DESCRIPTIONS[period]} Se muestran las últimas ${MAX_SALES}.`
+      : PERIOD_DESCRIPTIONS[period];
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">Historial de ventas</h1>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Ticket</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Empleado</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead className="text-right">Detalle</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sales.map((sale) => (
-            <TableRow key={sale.id}>
-              <TableCell>#{sale.ticketNumber}</TableCell>
-              <TableCell>
-                {new Intl.DateTimeFormat("es-AR", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                  timeZone: "America/Argentina/Tucuman",
-                }).format(sale.createdAt)}
-              </TableCell>
-              <TableCell>{sale.user.name}</TableCell>
-              <TableCell>${sale.total.toFixed(0)}</TableCell>
-              <TableCell>
-                <Badge variant={sale.voidedAt ? "destructive" : "default"}>
-                  {sale.voidedAt ? "Anulada" : "Activa"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Link
-                  href={`/ventas/historial/${sale.id}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                >
-                  Ver
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-          {sales.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                Todavía no hay ventas registradas.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold">Historial de ventas</h1>
+        {puedeVender && (
+          <Link href="/ventas" className={cn(buttonVariants())}>
+            <ShoppingCart data-icon="inline-start" />
+            Nueva venta
+          </Link>
+        )}
+      </div>
+
+      <nav aria-label="Período del historial" className="flex flex-wrap gap-2">
+        {(Object.keys(SALES_PERIOD_LABELS) as SalesPeriod[]).map((option) => {
+          const disabled = option === "turno" && !openShift;
+          const active = option === period;
+          if (disabled) {
+            return (
+              <span
+                key={option}
+                aria-disabled="true"
+                title="No hay una caja abierta"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none opacity-50")}
+              >
+                {SALES_PERIOD_LABELS[option]}
+              </span>
+            );
+          }
+          return (
+            <Link
+              key={option}
+              href={`/ventas/historial?periodo=${option}`}
+              aria-current={active ? "true" : undefined}
+              className={cn(buttonVariants({ variant: active ? "default" : "outline", size: "sm" }))}
+            >
+              {SALES_PERIOD_LABELS[option]}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <Panel title={SALES_PERIOD_LABELS[period]} description={description}>
+        <SaleHistoryTabs sales={rows} showShift={period !== "turno"} />
+      </Panel>
     </div>
   );
 }

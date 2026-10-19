@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Verificada |
+| **Estado** | Verificada (el rediseño del inicio del 2026-10-19 está pendiente de verificación manual) |
 | **Depende de** | 005, 009, 011 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -14,12 +14,12 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 
 **Incluye:**
 
-- Pantalla de inicio con los datos de la caja de hoy y de la caja actual (si hay una abierta), cantidad de pedidos pendientes y alertas de stock
+- Pantalla de inicio con tarjetas, gráficos y listas sobre la operación de hoy (rediseño del 2026-10-19, RF-8 a RF-12): el turno de caja actual, el día completo (todos los turnos), los pedidos pendientes y los productos bajo el mínimo
 - Lista de viaje: productos cuyo stock realmente disponible (stock actual menos lo comprometido en pedidos pendientes) está por debajo del mínimo, con una cantidad sugerida para cada uno
 - Copiar la lista de viaje como texto (para compartir por WhatsApp u otro chat) y exportarla a Excel
 - Diseño pensado para celular, igual que el resto del sistema
 
-**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md`. No repite lo que ya está en Analíticas (spec 011) — ventas del mes, comparaciones ni productos más vendidos. No incluye un cálculo de reposición más sofisticado que el de esta spec (por ejemplo, basado en velocidad de venta o estacionalidad) ni el envío automático de la lista (solo copiar/exportar para que el dueño lo envíe él mismo).
+**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md`. No repite lo que ya está en Analíticas (spec 011) — ventas del mes, comparaciones ni productos más vendidos. El inicio no tiene filtros: siempre muestra el turno abierto ahora y el día de hoy. No incluye un cálculo de reposición más sofisticado que el de esta spec (por ejemplo, basado en velocidad de venta o estacionalidad) ni el envío automático de la lista (solo copiar/exportar para que el dueño lo envíe él mismo).
 
 ## 3. Historias de usuario
 
@@ -35,9 +35,14 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 - **RF-2.** La pantalla de inicio muestra un resumen de los movimientos de caja de hoy: ingresos, egresos y el neto (mismo criterio horario de Tucumán que las analíticas, spec 011; cuenta todos los turnos de hoy, no solo el que esté abierto ahora) — visible para quien tenga permiso "ver" en Caja.
 - **RF-3.** La pantalla de inicio muestra la cantidad de pedidos pendientes, con acceso directo a `/pedidos` — visible para quien tenga permiso "ver" en Pedidos.
 - **RF-4.** La pantalla de inicio muestra cuántos productos tienen el stock realmente disponible por debajo del mínimo, con acceso directo a la lista de viaje — visible para quien tenga permiso "ver" en Inventario.
-- **RF-5.** La lista de viaje muestra, para cada producto con stock disponible por debajo del mínimo, la cantidad sugerida para volver a cubrirlo — visible para quien tenga permiso "ver" en Inventario.
-- **RF-6.** La lista de viaje se puede filtrar por marca y por rubro, para poder comprar por categoría (por ejemplo, todo lo de rubro "Tecnología" en una sola compra).
-- **RF-7.** La lista de viaje se puede copiar como texto plano (un producto y cantidad por línea, listo para pegar en un chat) y exportar a Excel — ambas reflejan el filtro de marca/rubro que esté aplicado en ese momento.
+- **RF-8.** *(Rediseño 2026-10-19; reemplaza la presentación de RF-1 a RF-4, que siguen vigentes en cuanto a datos y permisos.)* La pantalla de inicio se organiza, de arriba hacia abajo, en: dos filas de tarjetas, dos gráficos y dos listas. Sin filtros.
+- **RF-9.** Fila de tarjetas **"Turno actual"** (la caja abierta ahora): *Estado de caja* (quién la abrió y desde cuándo), *Efectivo esperado* (spec 007), *Ventas del turno* (monto y cantidad de ventas no anuladas) y *Transferencias del turno* (ingresos menos egresos por transferencia del turno, para controlar el cierre). Si no hay ninguna caja abierta, la tarjeta de estado lo dice y las otras tres se muestran sin datos ("—"). Visible con permiso "ver" en Caja.
+- **RF-10.** Fila de tarjetas **"Hoy"** (todos los turnos del día, para cuando haya un segundo turno): *Ingresos*, *Egresos*, *Neto* (RF-2) y *Ventas de hoy* (monto y cantidad de ventas no anuladas). Visible con permiso "ver" en Caja.
+- **RF-11.** Dos gráficos del día de hoy: *Cobrado hoy por medio de pago* (dona de efectivo y transferencia, de las ventas no anuladas de hoy; mismo criterio que el gráfico de Analíticas) y *Top 5 productos más vendidos hoy* (barras horizontales, por unidades, de las ventas no anuladas de todos los turnos de hoy; reemplaza desde el 2026-10-19 al gráfico de ventas por hora, y es el mismo gráfico del top de Analíticas, spec 011, pero limitado a hoy y sin filtros). Visibles con permiso "ver" en Caja.
+- **RF-12.** Dos listas: *Pedidos pendientes* (la cantidad y los 5 más antiguos, con cliente y fecha, y acceso a `/pedidos`; permiso "ver" en Pedidos) y *Productos bajo el mínimo* (los 5 con mayor cantidad sugerida, con acceso a `/lista-de-viaje`; permiso "ver" en Inventario).
+- **RF-5.** La lista de viaje muestra, para cada producto con stock disponible por debajo del mínimo, el stock actual, el stock mínimo, lo comprometido en pedidos pendientes ("Pedido"), el disponible real y la cantidad sugerida para volver a cubrirlo — visible para quien tenga permiso "ver" en Inventario.
+- **RF-6.** La lista de viaje se puede filtrar por nombre o código de barras, por marca y por rubro (los mismos filtros y el mismo comportamiento que `/productos` y `/inventario`, desde el 2026-10-19 también con la búsqueda por nombre o código), para poder comprar por categoría (por ejemplo, todo lo de rubro "Tecnología" en una sola compra).
+- **RF-7.** La lista de viaje se puede copiar como texto plano (un producto y cantidad por línea, listo para pegar en un chat) y exportar a Excel — ambas reflejan los filtros (nombre o código, marca y rubro) que estén aplicados en ese momento.
 
 ## 5. Reglas de negocio
 
@@ -46,6 +51,8 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 - **Cantidad sugerida** = stock mínimo − disponible real (siempre positiva para los productos que entran a la lista). Es una sugerencia simple: no considera velocidad de venta, estacionalidad ni tiempos de entrega del proveedor.
 - El inicio no repite datos de Analíticas (spec 011): nada de ventas del mes, comparaciones ni productos más vendidos — eso se consulta ahí. Lo que muestra el inicio sobre caja es operativo (¿hay una caja abierta ahora?, ¿cómo viene la de hoy?), no un reporte de ventas.
 - "Hoy" usa el mismo corte horario de Tucumán que las analíticas (spec 011): el día calendario en curso en esa zona.
+- **Turno actual** = la caja abierta en este momento. **Hoy** = el día calendario en curso, sumando todos los turnos (un turno cerrado y otro abierto el mismo día cuentan juntos). Son dos alcances distintos y se muestran separados.
+- *Ventas del turno* y *Ventas de hoy* suman el total de las ventas no anuladas; una venta anulada no cuenta.
 - Cada sección de la pantalla de inicio se muestra u oculta según el permiso de su propio módulo (Caja, Pedidos, Inventario) — igual criterio que el resto del sistema (constitución, regla 14); no hay un permiso nuevo exclusivo de "Inicio".
 - Esta spec es de solo lectura: no crea, edita ni anula nada de lo que ya existe.
 
@@ -53,7 +60,7 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 
 | Acción | Quién puede |
 |---|---|
-| Ver el estado de la caja actual y el resumen de hoy | Permiso "ver" en Caja |
+| Ver el estado de la caja actual, el resumen de hoy, las ventas de hoy y los gráficos | Permiso "ver" en Caja |
 | Ver pedidos pendientes en el inicio | Permiso "ver" en Pedidos |
 | Ver alertas de stock y la lista de viaje | Permiso "ver" en Inventario |
 | Copiar o exportar la lista de viaje | Permiso "ver" en Inventario (no exige "exportar": es una lista de compra interna, no un reporte) |
@@ -63,6 +70,8 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 - Ningún producto por debajo del mínimo disponible: la lista de viaje se muestra vacía, con un mensaje, no un error.
 - Un producto con disponible real muy negativo (mucho comprometido, poco stock): la cantidad sugerida simplemente es más alta: `mínimo − disponible` sigue siendo la cuenta, sin un tope.
 - No hay ninguna caja abierta en este momento: la pantalla lo indica (en vez de mostrar datos de una que no existe); el resumen de movimientos de hoy se calcula igual, aunque no haya ninguna abierta ahora.
+- No hay ninguna caja abierta: la fila "Turno actual" muestra el aviso y guiones; la fila "Hoy" y los gráficos se calculan igual con lo que haya pasado hoy.
+- Hoy todavía no hubo ventas: las tarjetas muestran cero y los gráficos un mensaje, no un error ni un gráfico vacío.
 - Usuario sin ninguno de los tres permisos (Caja, Pedidos, Inventario): no ve ninguna sección con datos, solo el saludo genérico que ya existe desde la spec 001.
 - Copiar la lista con cero productos: el texto generado dice que no hay nada para comprar, no queda vacío sin explicación.
 
@@ -75,10 +84,14 @@ Darle al dueño, desde el celular, lo que necesita saber antes de viajar a compr
 - [x] Se puede filtrar la lista de viaje por marca y por rubro.
 - [x] Se puede copiar la lista como texto y exportarla a Excel, respetando el filtro de marca/rubro aplicado.
 - [x] Cada sección respeta su propio permiso de forma independiente.
+- [ ] El inicio muestra la fila "Turno actual" (4 tarjetas) y la fila "Hoy" (4 tarjetas) con los datos correctos, también con un segundo turno en el mismo día.
+- [ ] Los gráficos de medios de pago y del top 5 de productos de hoy reflejan solo las ventas no anuladas de hoy.
+- [ ] Las listas de pedidos pendientes y de productos bajo el mínimo muestran los 5 que corresponden y enlazan a su pantalla.
+- [ ] Sin caja abierta, y sin ventas hoy, el inicio no falla y lo explica.
 
 ## 9. Entidades previstas
 
-Sin entidades nuevas: consultas sobre `Sale`, `SaleItem`, `Order`, `OrderItem` y `Product` ya existentes (specs 004-009, 011). Reusa `computeCommittedQuantities` (spec 009) para lo comprometido.
+Sin entidades nuevas: consultas sobre `Sale`, `SaleItem`, `CashShift`, `CashMovement`, `Order`, `OrderItem` y `Product` ya existentes (specs 004-009, 011). Reusa `computeCommittedQuantities` (spec 009) para lo comprometido.
 
 ## 10. Decisiones (ya confirmadas con el cliente)
 

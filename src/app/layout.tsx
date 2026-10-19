@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { RegisterServiceWorker } from "@/components/register-service-worker";
 import "./globals.css";
 
@@ -15,12 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Importadora",
+  title: "El Maestro Ecommerce",
   description: "Stock, ventas, pedidos y caja del negocio.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Importadora",
+    title: "El Maestro Ecommerce",
   },
 };
 
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <TooltipProvider delay={300}>{children}</TooltipProvider>
         <Toaster />
         <RegisterServiceWorker />
       </body>

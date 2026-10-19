@@ -2,55 +2,84 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { visibleNavItems } from "./nav-items";
+import { BrandMark } from "@/components/brand-logo";
+import { LogoutButton } from "./logout-button";
+import { groupedNavItems, visibleNavItems, NAV_GROUP_LABELS } from "./nav-items";
 import type { UserLike } from "@/lib/permissions";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 
-type SideNavProps = {
+type AppSidebarProps = {
   /** Datos serializables; el filtrado (con íconos) se hace acá, en cliente —
    * los íconos no se pueden pasar como prop desde un Server Component. */
   user: UserLike;
 };
 
-/** Barra lateral de navegación, para PC (la de caja y escritorio en general). */
-export function SideNav({ user }: SideNavProps) {
+/** Navegación principal: barra lateral en PC, cajón deslizable en celular (lo resuelve el propio componente Sidebar). */
+export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const items = visibleNavItems(user);
+  const sections = groupedNavItems(visibleNavItems(user));
 
   return (
-    <nav className="hidden w-56 shrink-0 flex-col gap-1 border-r p-3 sm:flex">
-      {items.map((item) => {
-        const active = pathname === item.href;
-        const Icon = item.icon;
-
-        if (!item.enabled) {
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <BrandMark className="px-2 py-1.5" />
+      </SidebarHeader>
+      <SidebarContent>
+        {sections.map((section) => {
+          const label = NAV_GROUP_LABELS[section.group];
           return (
-            <span
-              key={item.href}
-              aria-disabled="true"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground/40"
-            >
-              <Icon className="size-4" />
-              {item.label}
-              <span className="ml-auto text-xs">pronto</span>
-            </span>
-          );
-        }
+            <SidebarGroup key={section.group}>
+              {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = pathname === item.href;
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent",
-              active ? "bg-accent text-foreground" : "text-muted-foreground",
-            )}
-          >
-            <Icon className="size-4" />
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
+                    if (!item.enabled) {
+                      return (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton disabled tooltip={`${item.label} (pronto)`}>
+                            <Icon />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    }
+
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          isActive={active}
+                          tooltip={item.label}
+                          render={<Link href={item.href} aria-current={active ? "page" : undefined} />}
+                        >
+                          <Icon />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
+      </SidebarContent>
+      <SidebarFooter>
+        <LogoutButton />
+      </SidebarFooter>
+    </Sidebar>
   );
 }

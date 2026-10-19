@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
 import { loadTravelList } from "@/lib/home-data";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { CopyListButton } from "./copy-list-button";
@@ -28,7 +29,7 @@ import {
 export default async function ListaDeViajePage({
   searchParams,
 }: {
-  searchParams: Promise<{ marca?: string; rubro?: string }>;
+  searchParams: Promise<{ q?: string; brandId?: string; rubroId?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -36,12 +37,13 @@ export default async function ListaDeViajePage({
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver la lista de viaje.</p>;
   }
 
-  const { marca, rubro } = await searchParams;
-  const brandId = marca && marca !== "__all__" ? marca : undefined;
-  const rubroId = rubro && rubro !== "__all__" ? rubro : undefined;
+  const { q, brandId: brandParam, rubroId: rubroParam } = await searchParams;
+  const query = q?.trim() || undefined;
+  const brandId = brandParam && brandParam !== "__all__" ? brandParam : undefined;
+  const rubroId = rubroParam && rubroParam !== "__all__" ? rubroParam : undefined;
 
   const [items, brands, topLevelRubros] = await Promise.all([
-    loadTravelList(currentUser, { brandId, rubroId }).then((list) => list ?? []),
+    loadTravelList(currentUser, { q: query, brandId, rubroId }).then((list) => list ?? []),
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
     prisma.rubro.findMany({
       where: { parentId: null },
@@ -52,7 +54,7 @@ export default async function ListaDeViajePage({
 
   const rubroOptions = buildRubroOptions(topLevelRubros);
   const queryString = new URLSearchParams(
-    Object.entries({ marca: brandId, rubro: rubroId }).filter(([, v]) => v) as [string, string][],
+    Object.entries({ q: query, brandId, rubroId }).filter(([, v]) => v) as [string, string][],
   ).toString();
 
   return (
@@ -72,13 +74,17 @@ export default async function ListaDeViajePage({
 
       <form className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="marca">Marca</Label>
+          <Label htmlFor="q">Nombre o código</Label>
+          <Input id="q" name="q" defaultValue={query} className="w-56" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="brandId">Marca</Label>
           <Select
-            name="marca"
-            defaultValue={marca ?? "__all__"}
+            name="brandId"
+            defaultValue={brandParam ?? "__all__"}
             items={{ __all__: "Todas", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
           >
-            <SelectTrigger id="marca" className="w-48">
+            <SelectTrigger id="brandId" className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -92,13 +98,13 @@ export default async function ListaDeViajePage({
           </Select>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="rubro">Rubro</Label>
+          <Label htmlFor="rubroId">Rubro</Label>
           <Select
-            name="rubro"
-            defaultValue={rubro ?? "__all__"}
+            name="rubroId"
+            defaultValue={rubroParam ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
           >
-            <SelectTrigger id="rubro" className="w-56">
+            <SelectTrigger id="rubroId" className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -118,21 +124,27 @@ export default async function ListaDeViajePage({
         <TableHeader>
           <TableRow>
             <TableHead>Producto</TableHead>
-            <TableHead>Disponible</TableHead>
-            <TableHead>Sugerida</TableHead>
+            <TableHead className="text-right">Stock</TableHead>
+            <TableHead className="text-right">Stock mínimo</TableHead>
+            <TableHead className="text-right">Pedido</TableHead>
+            <TableHead className="text-right">Disponible</TableHead>
+            <TableHead className="text-right">Sugerida</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
-              <TableCell>{item.available}</TableCell>
-              <TableCell>{item.suggested}</TableCell>
+              <TableCell className="text-right">{item.stock}</TableCell>
+              <TableCell className="text-right">{item.minStock}</TableCell>
+              <TableCell className="text-right">{item.committed}</TableCell>
+              <TableCell className="text-right">{item.available}</TableCell>
+              <TableCell className="text-right font-medium">{item.suggested}</TableCell>
             </TableRow>
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                 No hay nada para comprar: ningún producto está por debajo del stock que necesitás.
               </TableCell>
             </TableRow>

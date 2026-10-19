@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Verificada |
+| **Estado** | Verificada (el rediseño de la pantalla del 2026-10-19 está pendiente de verificación manual) |
 | **Depende de** | 002, 003 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -45,6 +45,13 @@ Controlar la plata que entra y sale de la caja durante un turno, para saber cuá
 - **RF-7.** No puede haber más de un turno de caja abierto a la vez.
 - **RF-8.** El sistema permite ver el historial de turnos cerrados (apertura, cierre, quién los abrió/cerró, efectivo esperado, contado y diferencia) y el detalle de los movimientos de cada uno.
 - **RF-9.** El sistema permite imprimir un resumen al cerrar un turno.
+- **RF-11.** *(2026-10-19)* En la tabla de movimientos del turno, los movimientos que vienen de una venta (el cobro, o la devolución si se anuló) tienen un botón **Acciones** con: *Ver venta* (lleva al detalle de la venta, para quien tenga permiso "ver" en Ventas) y *Reimprimir ticket* (abre el ticket en una ventana modal; exige el permiso "ver" en Ventas y el permiso especial "reimprimir tickets", y deja registrada la reimpresión igual que desde el historial de ventas, spec 008 RF-6). Los movimientos manuales no tienen acciones, y la columna no aparece si el usuario no tiene ninguno de esos permisos.
+- **RF-10.** *(Presentación, 2026-10-19 — no cambia reglas ni datos de RF-1 a RF-9.)* La pantalla `/caja` con un turno abierto se organiza así:
+  - **Encabezado:** estado ("Abierta"), quién la abrió, desde cuándo y con qué monto inicial, y las acciones del turno: *Registrar ingreso*, *Registrar egreso* y *Cerrar caja* (esta última solo con el permiso especial de cierre), cada una en una ventana modal, más el acceso al *Historial*.
+  - **Tarjetas del turno:** *Efectivo esperado* (con la cuenta a la vista: inicial + ingresos en efectivo − egresos en efectivo), *Ingresos*, *Egresos* y *Transferencias* (ingresos menos egresos por transferencia, que no cambian el efectivo esperado).
+  - **Movimientos del turno** en pestañas: *Todos*, *Ingresos*, *Egresos* y *Por medio de pago* (efectivo y transferencia: ingresos, egresos y neto de cada uno). En la tabla el tipo se distingue con una etiqueta y el monto lleva signo (+/−).
+  - El cierre de caja sigue en dos pasos (calcular la diferencia y confirmar), ahora dentro de la ventana modal; el motivo de una diferencia sigue siendo obligatorio.
+  - Sin turno abierto: un aviso claro con el formulario para abrir uno (si el usuario puede) y el acceso al historial.
 
 ## 5. Reglas de negocio
 
@@ -83,6 +90,8 @@ Controlar la plata que entra y sale de la caja durante un turno, para saber cuá
 - [ ] Se puede imprimir un resumen del cierre.
 - [ ] Un usuario sin el permiso especial "cerrar caja" no puede cerrar un turno, probado con un rol real.
 - [ ] Un movimiento por transferencia exige los últimos 4 dígitos del comprobante; uno en efectivo no pide ese dato.
+- [ ] (RF-11) En los movimientos que vienen de una venta aparece el botón Acciones con "Ver venta" y "Reimprimir ticket"; reimprimir abre el ticket en el modal y queda registrado; los movimientos manuales no lo tienen, y sin los permisos la columna no aparece.
+- [ ] (RF-10) El ingreso, el egreso y el cierre de caja se hacen desde ventanas modales; las tarjetas, las pestañas de movimientos y el resumen por medio de pago muestran los mismos números que el efectivo esperado y los movimientos del turno.
 
 ## 9. Entidades previstas
 

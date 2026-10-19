@@ -19,11 +19,18 @@
   - Hecho cuando: el ticket de una entrega muestra la seña aplicada y el saldo cuando corresponde, y `/inventario` muestra cuánto está comprometido por producto.
 - [x] **T-008** Navegación: activar "Pedidos", visible según permiso.
   - Hecho cuando: un usuario con permiso "ver" en Pedidos ve la entrada; uno sin permiso, no. — `pnpm build`, `pnpm lint`, `tsc --noEmit` y los 65 tests unitarios pasan sin errores.
+- [x] **T-009** Rediseño del detalle de un pedido (2026-10-19, RF-10): encabezado con acciones, tarjetas, tabla de productos con estado, buscador flotante, y Entregar / Cobrar seña / Cancelar en ventanas modales.
+  - Hecho cuando: se puede agregar y quitar productos, cobrar la seña, entregar (con y sin cobro) y cancelar desde el detalle, con las mismas reglas y permisos que antes, y las tarjetas muestran los números correctos.
+- [x] **T-010** Búsqueda y cantidades en el detalle del pedido (2026-10-19, RF-2 y RF-10): panel "Buscar producto" con stock y alta automática con código exacto, cantidad editable con "−"/"+", y agregar un producto repetido suma a su línea.
+  - Hecho cuando: se cambia la cantidad sin bajar de 1 ni de lo entregado, no se puede cambiar en un pedido que no está pendiente, y agregar el mismo producto no crea una línea duplicada. — `validateOrderItemQuantity` con tests.
+- [x] **T-011** Acciones en la lista de pedidos (2026-10-19, RF-11): menú "Acciones" con "Ver detalle" y "Cancelar pedido".
+  - Hecho cuando: se cancela un pedido pendiente desde la lista con motivo, la opción solo aparece en pedidos pendientes y con permiso de anular, y la lista se actualiza.
 
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md` (revisión manual o prueba unitaria documentada; ver `AGENTS.md`, sección "Pruebas"). — Probado a mano en el navegador: pedido con seña parcial aplicada en dos entregas (cierre automático al completarse), pedido sin seña entregado normal, cancelación con devolución de seña (egreso de caja) y cancelación sin seña (sin ningún movimiento), columna "Comprometido" en `/inventario`, y el ticket mostrando seña aplicada/saldo.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test`).
+- [ ] Verificación manual del rediseño del detalle del pedido (T-009) por el cliente.
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
 - [x] Los criterios de aceptación de las specs 005, 007 y 008 siguen cumpliéndose. — Caja, inventario y tickets de venta comunes se probaron de nuevo en el mismo recorrido sin regresiones.
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).

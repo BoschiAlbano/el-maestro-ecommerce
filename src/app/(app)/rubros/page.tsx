@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { CatalogTabs } from "@/components/catalog-tabs";
 import { RubroManager } from "./rubro-manager";
 
 export default async function RubrosPage() {
@@ -19,6 +20,7 @@ export default async function RubrosPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <CatalogTabs />
       <h1 className="text-lg font-semibold">Rubros</h1>
       <RubroManager rubros={topLevel} />
     </div>

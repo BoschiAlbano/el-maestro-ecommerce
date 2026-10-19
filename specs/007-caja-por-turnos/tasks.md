@@ -16,11 +16,16 @@
   - Hecho cuando: se ve la lista de turnos cerrados con su diferencia, el detalle de movimientos de uno en particular, y se puede imprimir ese detalle.
 - [x] **T-007** Navegación: activar "Caja" en la navegación, visible según permiso en Caja.
   - Hecho cuando: un usuario con permiso "ver" en Caja ve la entrada; uno sin permiso, no. — Ya existía el placeholder deshabilitado; solo se activó.
+- [x] **T-008** Rediseño de `/caja` (2026-10-19, RF-10): encabezado con acciones, tarjetas del turno, movimientos en pestañas, y alta de movimiento y cierre en ventanas modales.
+  - Hecho cuando: se puede registrar un ingreso y un egreso (efectivo y transferencia) y cerrar la caja desde los modales, y las tarjetas y pestañas coinciden con el efectivo esperado y los movimientos. — `summarizeShift` (`src/lib/cash-shift.ts`) con tests.
+- [x] **T-009** Acciones en la tabla de movimientos (2026-10-19, RF-11): botón "Acciones" con "Ver venta" y "Reimprimir ticket" en los movimientos que vienen de una venta.
+  - Hecho cuando: el botón aparece solo en movimientos de venta y con los permisos correspondientes; reimprimir abre el ticket en el modal y registra la reimpresión.
 
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador (apertura, egresos en efectivo y por transferencia, cierre con y sin diferencia, historial e impresión) y confirmado por el cliente tras el uso real en las specs 008 y 009.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 50 tests).
+- [ ] Verificación manual del rediseño de `/caja` (T-008) por el cliente.
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
 - [x] Los criterios de aceptación de las specs 002 y 003 siguen cumpliéndose.
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).

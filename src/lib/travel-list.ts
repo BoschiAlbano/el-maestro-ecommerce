@@ -8,6 +8,10 @@ export type TravelListProduct = {
 export type TravelListItem = {
   id: string;
   name: string;
+  stock: number;
+  minStock: number;
+  /** Unidades comprometidas en pedidos pendientes. */
+  committed: number;
   available: number;
   suggested: number;
 };
@@ -26,11 +30,15 @@ export function computeTravelList(
 ): TravelListItem[] {
   const items: TravelListItem[] = [];
   for (const product of products) {
-    const available = product.currentStock - (committed.get(product.id) ?? 0);
+    const committedQty = committed.get(product.id) ?? 0;
+    const available = product.currentStock - committedQty;
     if (available < product.minStock) {
       items.push({
         id: product.id,
         name: product.name,
+        stock: product.currentStock,
+        minStock: product.minStock,
+        committed: committedQty,
         available,
         suggested: product.minStock - available,
       });

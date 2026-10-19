@@ -29,3 +29,14 @@ export function computeCommittedQuantities(items: OrderItemForCommitted[]): Map<
   }
   return committed;
 }
+
+/**
+ * Valida la nueva cantidad pedida de una línea de un pedido (specs/009, RF-2):
+ * entera, de al menos 1 y nunca menor a lo que ya se entregó de ese producto.
+ * Devuelve el mensaje de error, o `null` si es válida. Función pura.
+ */
+export function validateOrderItemQuantity(quantity: number, delivered: number): string | null {
+  if (!Number.isInteger(quantity) || quantity < 1) return "La cantidad tiene que ser un número entero de al menos 1.";
+  if (quantity < delivered) return `Ya se entregaron ${delivered}: la cantidad no puede ser menor.`;
+  return null;
+}

@@ -13,11 +13,18 @@
   - Nota post-cierre: a pedido del cliente, se agregó un filtro de marca y rubro en `/lista-de-viaje` (`loadTravelList` ahora acepta `{brandId?, rubroId?}`) para poder comprar por categoría — por ejemplo, filtrar a rubro "Tecnología" y llevarse esa parte de la lista. La alerta del inicio sigue sin filtro (RF-6, spec.md).
 - [x] **T-005** Exportación a Excel (`/lista-de-viaje/exportar`).
   - Hecho cuando: descarga un `.xlsx` de una sola hoja (producto, disponible, mínimo, sugerida), gateado por el permiso "ver" en Inventario (no "exportar"). — La hoja no repite "mínimo" por separado: "disponible" y "sugerida" ya alcanzan para saber qué comprar.
+- [x] **T-006** Rediseño del inicio (2026-10-19): `src/lib/home-charts.ts` (`topProductsByQuantity`, con tests; antes `groupSalesByHour`, reemplazada el 2026-10-19 por el top 5 de productos de hoy) y `loadHomeData` ampliado (ventas y transferencias del turno, ventas/medios de pago/por hora de hoy, próximos 5 pedidos, 5 productos con mayor faltante).
+  - Hecho cuando: los datos salen solo con el permiso de cada módulo y los tests de `topProductsByQuantity` pasan.
+- [x] **T-007** Pantalla `/` rediseñada: dos filas de tarjetas, dos gráficos y dos listas; `StatCard` y `Panel` compartidos con Analíticas.
+  - Hecho cuando: cada bloque respeta su permiso, y sin caja abierta o sin ventas hoy no falla y lo explica.
+- [x] **T-008** Filtros de `/lista-de-viaje` alineados con `/productos` y `/inventario` (2026-10-19, RF-6): búsqueda por nombre o código, marca y rubro, con los mismos parámetros de URL (`q`, `brandId`, `rubroId`); el Excel y "Copiar" respetan los tres.
+  - Hecho cuando: los tres filtros combinados achican la lista, y la exportación a Excel refleja lo filtrado.
 
 ## Verificación final
 
 - [x] Se probaron todos los criterios de aceptación de `spec.md`. — Probado a mano en el navegador: inicio sin caja abierta y con caja abierta (estado + efectivo esperado correctos), resumen de movimientos de hoy, pedidos pendientes, alerta de stock con link a la lista de viaje, lista completa con cantidad sugerida, filtro por marca/rubro (probado con rubro "Tecnología"), copiar al portapapeles (con timeout de seguridad) y exportación a Excel (filtrada y sin filtrar, contenido verificado). Confirmado por el cliente.
 - [x] Linter, tipos y pruebas unitarias pasan (`pnpm lint`, `pnpm build`, `pnpm test` — 89 tests).
+- [ ] Verificación manual del rediseño del inicio (T-006 y T-007) por el cliente.
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
 - [x] Los criterios de aceptación de las specs 005, 007 y 009 siguen cumpliéndose. — Sin cambios en esos módulos; solo lectura de sus datos.
 - [x] `docs/PROJECT.md` actualizado (estado de la spec).

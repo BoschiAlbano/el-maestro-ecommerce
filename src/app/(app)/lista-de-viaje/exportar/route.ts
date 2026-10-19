@@ -16,19 +16,23 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const marca = url.searchParams.get("marca");
-  const rubro = url.searchParams.get("rubro");
+  const q = url.searchParams.get("q")?.trim();
+  const brandId = url.searchParams.get("brandId");
+  const rubroId = url.searchParams.get("rubroId");
   const items =
     (await loadTravelList(currentUser, {
-      brandId: marca && marca !== "__all__" ? marca : undefined,
-      rubroId: rubro && rubro !== "__all__" ? rubro : undefined,
+      q: q || undefined,
+      brandId: brandId && brandId !== "__all__" ? brandId : undefined,
+      rubroId: rubroId && rubroId !== "__all__" ? rubroId : undefined,
     })) ?? [];
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Lista de viaje");
-  sheet.addRow(["Producto", "Disponible", "Sugerida"]);
+  sheet.addRow(["Producto", "Stock", "Stock mínimo", "Pedido", "Disponible", "Sugerida"]);
   sheet.getRow(1).font = { bold: true };
-  for (const item of items) sheet.addRow([item.name, item.available, item.suggested]);
+  for (const item of items) {
+    sheet.addRow([item.name, item.stock, item.minStock, item.committed, item.available, item.suggested]);
+  }
   sheet.columns.forEach((col) => (col.width = 28));
 
   const buffer = await workbook.xlsx.writeBuffer();

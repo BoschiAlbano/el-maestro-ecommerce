@@ -1,25 +1,35 @@
 import Link from "next/link";
+import { History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { computeExpectedCash } from "@/lib/cash-shift";
+import { summarizeShift } from "@/lib/cash-shift";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Panel, StatCard } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { OpenShiftForm } from "./open-shift-form";
-import { CashMovementForm } from "./cash-movement-form";
-import { CloseShiftWizard } from "./close-shift-wizard";
+import { MovementDialog } from "./movement-dialog";
+import { CloseShiftDialog } from "./close-shift-dialog";
+import { MovementsTabs, type MovementRow } from "./movements-tabs";
 
-const TYPE_LABELS: Record<string, string> = { INGRESO: "Ingreso", EGRESO: "Egreso" };
-const METHOD_LABELS: Record<string, string> = { EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia" };
+function formatMoney(n: number) {
+  return `$${Math.round(n).toLocaleString("es-AR")}`;
+}
+
+function formatDate(date: Date, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("es-AR", { ...options, timeZone: "America/Argentina/Tucuman" }).format(date);
+}
+
+function HistoryLink() {
+  return (
+    <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
+      <History data-icon="inline-start" />
+      Historial
+    </Link>
+  );
+}
 
 export default async function CajaPage() {
   const currentUser = await getCurrentUser();
@@ -40,89 +50,113 @@ export default async function CajaPage() {
 
   if (!shift) {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Caja</h1>
-          <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-            Historial
-          </Link>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold">Caja</h1>
+            <Badge variant="outline">Cerrada</Badge>
+          </div>
+          <HistoryLink />
         </div>
-        {puedeAbrir ? (
-          <OpenShiftForm />
-        ) : (
-          <p className="text-sm text-muted-foreground">No hay una caja abierta.</p>
-        )}
+
+        <Panel
+          title="No hay una caja abierta"
+          description={
+            puedeAbrir
+              ? "Abrí un turno para poder registrar movimientos y cobrar ventas."
+              : "Pedile a alguien con permiso que abra el turno."
+          }
+          className="max-w-md"
+        >
+          {puedeAbrir ? (
+            <OpenShiftForm />
+          ) : (
+            <p className="text-sm text-muted-foreground">No tenés permiso para abrir la caja.</p>
+          )}
+        </Panel>
       </div>
     );
   }
 
-  const expected = computeExpectedCash(
-    shift.openingAmount.toNumber(),
+  // Acciones sobre los movimientos que vienen de una venta (specs/007, RF-11).
+  const canViewSales = hasPermission(currentUser, ModuloNegocio.VENTAS, "ver");
+  const canReprint = canViewSales && hasSpecialPermission(currentUser, "reimprimirTickets");
+
+  const openingAmount = shift.openingAmount.toNumber();
+  const summary = summarizeShift(
+    openingAmount,
     shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod })),
   );
 
+  const movements: MovementRow[] = shift.movements.map((m) => ({
+    id: m.id,
+    when: formatDate(m.createdAt, { dateStyle: "short", timeStyle: "short" }),
+    type: m.type,
+    amount: m.amount.toNumber(),
+    concept: m.concept,
+    paymentMethod: m.paymentMethod,
+    transferReference: m.transferReference,
+    userName: m.user.name,
+    saleId: m.saleId,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Caja</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold">Caja</h1>
+            <Badge>Abierta</Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Abierta por {shift.openedByUser.name} con ${shift.openingAmount.toFixed(0)} inicial ·
-            Efectivo esperado: ${expected.toFixed(0)}
+            Abierta por {shift.openedByUser.name} el {formatDate(shift.openedAt, { dateStyle: "short", timeStyle: "short" })}{" "}
+            con {formatMoney(openingAmount)} de efectivo inicial.
           </p>
         </div>
-        <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-          Historial
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {puedeAbrir && (
+            <>
+              <MovementDialog type="INGRESO" />
+              <MovementDialog type="EGRESO" />
+            </>
+          )}
+          {puedeCerrar && <CloseShiftDialog />}
+          <HistoryLink />
+        </div>
       </div>
 
-      {puedeAbrir && <CashMovementForm />}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Efectivo esperado"
+          value={formatMoney(summary.expectedCash)}
+          hint={`Inicial ${formatMoney(openingAmount)} + neto en efectivo`}
+        />
+        <StatCard
+          label="Ingresos del turno"
+          value={formatMoney(summary.ingresos)}
+          hint={`Efectivo ${formatMoney(summary.efectivo.ingresos)} · Transf. ${formatMoney(summary.transferencia.ingresos)}`}
+        />
+        <StatCard
+          label="Egresos del turno"
+          value={formatMoney(summary.egresos)}
+          hint={`Efectivo ${formatMoney(summary.efectivo.egresos)} · Transf. ${formatMoney(summary.transferencia.egresos)}`}
+        />
+        <StatCard
+          label="Transferencias del turno"
+          value={formatMoney(summary.transferencia.neto)}
+          hint="No cambian el efectivo esperado"
+        />
+      </section>
 
-      {puedeCerrar && <CloseShiftWizard />}
-
-      <div>
-        <h2 className="mb-2 text-sm font-semibold">Movimientos del turno</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Monto</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead>Medio</TableHead>
-              <TableHead>Usuario</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shift.movements.map((movement) => (
-              <TableRow key={movement.id}>
-                <TableCell>
-                  {new Intl.DateTimeFormat("es-AR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                    timeZone: "America/Argentina/Tucuman",
-                  }).format(movement.createdAt)}
-                </TableCell>
-                <TableCell>{TYPE_LABELS[movement.type]}</TableCell>
-                <TableCell>${movement.amount.toFixed(0)}</TableCell>
-                <TableCell>{movement.concept}</TableCell>
-                <TableCell>
-                  {METHOD_LABELS[movement.paymentMethod]}
-                  {movement.transferReference ? ` (••${movement.transferReference})` : ""}
-                </TableCell>
-                <TableCell>{movement.user.name}</TableCell>
-              </TableRow>
-            ))}
-            {shift.movements.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  Todavía no hay movimientos en este turno.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Panel title="Movimientos del turno" description="Todo lo que entró y salió desde que se abrió la caja">
+        <MovementsTabs
+          movements={movements}
+          summary={summary}
+          openingAmount={openingAmount}
+          canViewSales={canViewSales}
+          canReprint={canReprint}
+        />
+      </Panel>
     </div>
   );
 }

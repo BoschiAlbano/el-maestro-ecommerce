@@ -3,13 +3,15 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { buildRubroOptions } from "@/lib/rubro-options";
 import { parseAnalyticsFilters, type AnalyticsSearchParams } from "@/lib/analytics";
-import { loadAnalyticsData, MOSTRADOR } from "@/lib/analytics-data";
+import { loadAnalyticsData } from "@/lib/analytics-data";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Panel, StatCard } from "@/components/stat-card";
+import { PaymentMethodsChart } from "@/components/analytics/payment-methods-chart";
+import { TopProductsChart } from "@/components/analytics/top-products-chart";
 import {
   Select,
   SelectContent,
@@ -30,10 +32,6 @@ function formatMoney(n: number) {
   return `$${Math.round(n).toLocaleString("es-AR")}`;
 }
 
-function formatDateKey(key: string) {
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "short" }).format(new Date(`${key}T12:00:00Z`));
-}
-
 export default async function AnaliticasPage({
   searchParams,
 }: {
@@ -45,30 +43,17 @@ export default async function AnaliticasPage({
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver las analíticas.</p>;
   }
 
-  const rawParams = await searchParams;
+  const { desde, hasta, empleado, medioPago } = await searchParams;
+  // Solo estos cuatro filtros existen en pantalla: un link viejo con ?marca=… no debe filtrar a escondidas.
+  const rawParams: AnalyticsSearchParams = { desde, hasta, empleado, medioPago };
   const filters = parseAnalyticsFilters(rawParams, new Date());
   const puedeExportar = hasPermission(currentUser, ModuloNegocio.ANALITICAS, "exportar");
   const verCostos = hasSpecialPermission(currentUser, "verCostosMargenes");
 
-  const [data, employees, products, brands, topLevelRubros, channelRows] = await Promise.all([
+  const [data, employees] = await Promise.all([
     loadAnalyticsData(filters, currentUser),
     prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    prisma.product.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.rubro.findMany({
-      where: { parentId: null },
-      include: { children: { orderBy: { name: "asc" } } },
-      orderBy: { name: "asc" },
-    }),
-    prisma.order.findMany({
-      where: { channel: { not: null } },
-      select: { channel: true },
-      distinct: ["channel"],
-    }),
   ]);
-
-  const rubroOptions = buildRubroOptions(topLevelRubros);
-  const channels = [MOSTRADOR, ...channelRows.map((o) => o.channel!).filter((c) => c !== MOSTRADOR)];
 
   const desdeDefault = filters.from.toISOString().slice(0, 10);
   const hastaDefault = new Date(filters.to.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -129,86 +114,6 @@ export default async function AnaliticasPage({
           </Select>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="producto">Producto</Label>
-          <Select
-            name="producto"
-            defaultValue={rawParams.producto ?? "__all__"}
-            items={{ __all__: "Todos", ...Object.fromEntries(products.map((p) => [p.id, p.name])) }}
-          >
-            <SelectTrigger id="producto" className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos</SelectItem>
-              {products.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="marca">Marca</Label>
-          <Select
-            name="marca"
-            defaultValue={rawParams.marca ?? "__all__"}
-            items={{ __all__: "Todas", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
-          >
-            <SelectTrigger id="marca" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todas</SelectItem>
-              {brands.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="rubro">Rubro</Label>
-          <Select
-            name="rubro"
-            defaultValue={rawParams.rubro ?? "__all__"}
-            items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
-          >
-            <SelectTrigger id="rubro" className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos</SelectItem>
-              {rubroOptions.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="canal">Canal</Label>
-          <Select
-            name="canal"
-            defaultValue={rawParams.canal ?? "__all__"}
-            items={{ __all__: "Todos", ...Object.fromEntries(channels.map((c) => [c, c])) }}
-          >
-            <SelectTrigger id="canal" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos</SelectItem>
-              {channels.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-2">
           <Label htmlFor="medioPago">Medio de pago</Label>
           <Select
             name="medioPago"
@@ -228,283 +133,161 @@ export default async function AnaliticasPage({
         <Button type="submit">Filtrar</Button>
       </form>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border p-3">
-          <p className="text-xs text-muted-foreground">Total vendido</p>
-          <p className="text-lg font-semibold">{formatMoney(data.totalVentas)}</p>
-          <p className="text-xs text-muted-foreground">
-            Período anterior: {formatMoney(data.periodoAnterior.totalVentas)}
-          </p>
-        </div>
-        <div className="rounded-lg border p-3">
-          <p className="text-xs text-muted-foreground">Cantidad de ventas</p>
-          <p className="text-lg font-semibold">{data.cantidadVentas}</p>
-          <p className="text-xs text-muted-foreground">
-            Período anterior: {data.periodoAnterior.cantidadVentas}
-          </p>
-        </div>
-        <div className="rounded-lg border p-3">
-          <p className="text-xs text-muted-foreground">Ticket promedio</p>
-          <p className="text-lg font-semibold">{formatMoney(data.ticketPromedio)}</p>
-          <p className="text-xs text-muted-foreground">
-            Período anterior: {formatMoney(data.periodoAnterior.ticketPromedio)}
-          </p>
-        </div>
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Total vendido"
+          value={formatMoney(data.totalVentas)}
+          hint={`Período anterior: ${formatMoney(data.periodoAnterior.totalVentas)}`}
+        />
+        <StatCard
+          label="Cantidad de ventas"
+          value={data.cantidadVentas.toLocaleString("es-AR")}
+          hint={`Período anterior: ${data.periodoAnterior.cantidadVentas.toLocaleString("es-AR")}`}
+        />
+        <StatCard
+          label="Ticket promedio"
+          value={formatMoney(data.ticketPromedio)}
+          hint={`Período anterior: ${formatMoney(data.periodoAnterior.ticketPromedio)}`}
+        />
+        <StatCard
+          label="Unidades vendidas"
+          value={data.unidadesVendidas.toLocaleString("es-AR")}
+          hint={`Período anterior: ${data.periodoAnterior.unidadesVendidas.toLocaleString("es-AR")}`}
+        />
+        <StatCard
+          label="Ventas anuladas"
+          value={data.ventasAnuladas.cantidad.toLocaleString("es-AR")}
+          hint={`${formatMoney(data.ventasAnuladas.total)} anulados`}
+        />
+        <StatCard
+          label="Venta más grande"
+          value={data.ventaMasGrande ? formatMoney(data.ventaMasGrande.total) : "—"}
+          hint={
+            data.ventaMasGrande
+              ? `${data.ventaMasGrande.employeeName} · ${new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeZone: "America/Argentina/Tucuman" }).format(data.ventaMasGrande.createdAt)}`
+              : "Sin ventas en el rango"
+          }
+        />
+        {verCostos && data.costoVendido !== null && (
+          <StatCard
+            label="Costo de lo vendido"
+            value={formatMoney(data.costoVendido)}
+            hint="Costo de la mercadería vendida"
+          />
+        )}
         {verCostos && data.margen && (
-          <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Margen</p>
-            <p className="text-lg font-semibold">{formatMoney(data.margen.totalMargin)}</p>
-            <p className="text-xs text-muted-foreground">{data.margen.marginPct.toFixed(1)}%</p>
-          </div>
+          <StatCard
+            label="Margen"
+            value={formatMoney(data.margen.totalMargin)}
+            hint={`${data.margen.marginPct.toFixed(1)}% sobre lo vendido`}
+          />
         )}
       </section>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold">Evolución diaria</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Día</TableHead>
-              <TableHead>Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.evolucionDiaria.map((d) => (
-              <TableRow key={d.day}>
-                <TableCell>{formatDateKey(d.day)}</TableCell>
-                <TableCell>{formatMoney(d.total)}</TableCell>
-              </TableRow>
-            ))}
-            {data.evolucionDiaria.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">
-                  No hay ventas en el rango filtrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <section className="grid gap-4 lg:grid-cols-5">
+        <Panel title="Top 5 productos más vendidos" description="Por unidades vendidas" className="lg:col-span-3">
+          <TopProductsChart data={data.masVendidos.slice(0, 5)} />
+        </Panel>
+        <Panel title="Cobrado por medio de pago" description="Efectivo y transferencia" className="lg:col-span-2">
+          <PaymentMethodsChart data={data.porMedioPago} />
+        </Panel>
       </section>
 
-      <div className="grid gap-6 sm:grid-cols-3">
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Por empleado</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empleado</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Ventas</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.porEmpleado.map((g) => (
-                <TableRow key={g.key}>
-                  <TableCell>{g.label}</TableCell>
-                  <TableCell>{formatMoney(g.total)}</TableCell>
-                  <TableCell>{g.count}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Por turno de caja</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Turno</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Ventas</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.porTurno.map((g) => (
-                <TableRow key={g.key}>
-                  <TableCell>{g.label}</TableCell>
-                  <TableCell>{formatMoney(g.total)}</TableCell>
-                  <TableCell>{g.count}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Por canal</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Canal</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Ventas</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.porCanal.map((g) => (
-                <TableRow key={g.key}>
-                  <TableCell>{g.label}</TableCell>
-                  <TableCell>{formatMoney(g.total)}</TableCell>
-                  <TableCell>{g.count}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Productos más vendidos</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Producto</TableHead>
-                <TableHead>Cantidad</TableHead>
-                <TableHead>Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.masVendidos.map((g) => (
-                <TableRow key={g.key}>
-                  <TableCell>{g.label}</TableCell>
-                  <TableCell>{g.cantidad}</TableCell>
-                  <TableCell>{formatMoney(g.total)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-        {data.sinMovimiento && (
-          <section>
-            <h2 className="mb-2 text-sm font-semibold">Productos sin movimiento</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Producto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.sinMovimiento.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>{p.name}</TableCell>
-                  </TableRow>
-                ))}
-                {data.sinMovimiento.length === 0 && (
-                  <TableRow>
-                    <TableCell className="text-center text-sm text-muted-foreground">
-                      Todos los productos tuvieron movimiento.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </section>
-        )}
-      </div>
-
-      {verCostos && data.valorizacionStock !== null && (
-        <section className="rounded-lg border p-3">
-          <p className="text-xs text-muted-foreground">Valorización del stock actual</p>
-          <p className="text-lg font-semibold">{formatMoney(data.valorizacionStock)}</p>
+      {verCostos && data.margenPorMarca && data.margenPorRubro && (
+        <section className="grid gap-4 lg:grid-cols-2">
+          <Panel title="Margen por marca">
+            <MarginTable rows={data.margenPorMarca} firstColumn="Marca" />
+          </Panel>
+          <Panel title="Margen por rubro">
+            <MarginTable rows={data.margenPorRubro} firstColumn="Rubro" />
+          </Panel>
         </section>
       )}
 
-      {verCostos && data.margenPorProducto && data.margenPorMarca && data.margenPorRubro && (
-        <div className="grid gap-6 sm:grid-cols-3">
-          <section>
-            <h2 className="mb-2 text-sm font-semibold">Margen por producto</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead>Margen</TableHead>
-                  <TableHead>%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.margenPorProducto.map((g) => (
-                  <TableRow key={g.key}>
-                    <TableCell>{g.label}</TableCell>
-                    <TableCell>{formatMoney(g.totalMargin)}</TableCell>
-                    <TableCell>{g.marginPct.toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </section>
-          <section>
-            <h2 className="mb-2 text-sm font-semibold">Margen por marca</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Marca</TableHead>
-                  <TableHead>Margen</TableHead>
-                  <TableHead>%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.margenPorMarca.map((g) => (
-                  <TableRow key={g.key}>
-                    <TableCell>{g.label}</TableCell>
-                    <TableCell>{formatMoney(g.totalMargin)}</TableCell>
-                    <TableCell>{g.marginPct.toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </section>
-          <section>
-            <h2 className="mb-2 text-sm font-semibold">Margen por rubro</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rubro</TableHead>
-                  <TableHead>Margen</TableHead>
-                  <TableHead>%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.margenPorRubro.map((g) => (
-                  <TableRow key={g.key}>
-                    <TableCell>{g.label}</TableCell>
-                    <TableCell>{formatMoney(g.totalMargin)}</TableCell>
-                    <TableCell>{g.marginPct.toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </section>
-        </div>
-      )}
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold">Diferencias de caja por empleado</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Empleado</TableHead>
-              <TableHead>Diferencia total</TableHead>
-              <TableHead>Cierres</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.diferenciasCaja.map((g) => (
-              <TableRow key={g.key}>
-                <TableCell>{g.label}</TableCell>
-                <TableCell>{formatMoney(g.total)}</TableCell>
-                <TableCell>{g.count}</TableCell>
-              </TableRow>
-            ))}
-            {data.diferenciasCaja.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
-                  No hubo cierres de caja en el rango filtrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Ventas por empleado">
+          <TotalsTable rows={data.porEmpleado} firstColumn="Empleado" />
+        </Panel>
+        <Panel title="Ventas por canal">
+          <TotalsTable rows={data.porCanal} firstColumn="Canal" />
+        </Panel>
       </section>
+
+      <Panel title="Ventas por turno de caja">
+        <TotalsTable rows={data.porTurno} firstColumn="Turno" />
+      </Panel>
     </div>
+  );
+}
+
+function TotalsTable({
+  rows,
+  firstColumn,
+}: {
+  rows: { key: string; label: string; total: number; count: number }[];
+  firstColumn: string;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{firstColumn}</TableHead>
+          <TableHead className="text-right">Total</TableHead>
+          <TableHead className="text-right">Ventas</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((g) => (
+          <TableRow key={g.key}>
+            <TableCell>{g.label}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatMoney(g.total)}</TableCell>
+            <TableCell className="text-right tabular-nums">{g.count}</TableCell>
+          </TableRow>
+        ))}
+        {rows.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+              No hay ventas en el rango filtrado.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function MarginTable({
+  rows,
+  firstColumn,
+}: {
+  rows: { key: string; label: string; totalMargin: number; marginPct: number }[];
+  firstColumn: string;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{firstColumn}</TableHead>
+          <TableHead className="text-right">Margen</TableHead>
+          <TableHead className="text-right">%</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((g) => (
+          <TableRow key={g.key}>
+            <TableCell>{g.label}</TableCell>
+            <TableCell className="text-right tabular-nums">{formatMoney(g.totalMargin)}</TableCell>
+            <TableCell className="text-right tabular-nums">{g.marginPct.toFixed(1)}%</TableCell>
+          </TableRow>
+        ))}
+        {rows.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+              No hay ventas en el rango filtrado.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }

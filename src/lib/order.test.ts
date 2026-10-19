@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDepositApplication, computeCommittedQuantities } from "./order";
+import { computeDepositApplication, computeCommittedQuantities, validateOrderItemQuantity } from "./order";
 
 describe("computeDepositApplication", () => {
   it("la seña cubre todo (sobra)", () => {
@@ -39,5 +39,25 @@ describe("computeCommittedQuantities", () => {
 
   it("devuelve vacío sin ítems", () => {
     expect(computeCommittedQuantities([]).size).toBe(0);
+  });
+});
+
+describe("validateOrderItemQuantity", () => {
+  it("acepta una cantidad entera mayor a lo entregado", () => {
+    expect(validateOrderItemQuantity(5, 2)).toBeNull();
+  });
+
+  it("acepta justo lo entregado", () => {
+    expect(validateOrderItemQuantity(3, 3)).toBeNull();
+  });
+
+  it("rechaza menos de lo entregado", () => {
+    expect(validateOrderItemQuantity(2, 3)).toContain("Ya se entregaron 3");
+  });
+
+  it("rechaza cero, negativos y decimales", () => {
+    expect(validateOrderItemQuantity(0, 0)).not.toBeNull();
+    expect(validateOrderItemQuantity(-1, 0)).not.toBeNull();
+    expect(validateOrderItemQuantity(1.5, 0)).not.toBeNull();
   });
 });

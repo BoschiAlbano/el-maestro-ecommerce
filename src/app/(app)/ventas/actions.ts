@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
@@ -11,8 +10,8 @@ import { registerStockMovement } from "@/lib/stock";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 
-export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number };
-export type ConfirmSaleState = { error?: string };
+export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number; stock: number };
+export type ConfirmSaleState = { error?: string; saleId?: string };
 export type ReprintState = { error?: string };
 export type VoidSaleState = { error?: string };
 
@@ -28,7 +27,7 @@ export async function searchProducts(query: string): Promise<SearchedProduct[]> 
       active: true,
       OR: [{ name: { contains: trimmed, mode: "insensitive" } }, { barcode: { contains: trimmed } }],
     },
-    select: { id: true, name: true, barcode: true, salePrice: true },
+    select: { id: true, name: true, barcode: true, salePrice: true, currentStock: true },
     orderBy: { name: "asc" },
     take: 20,
   });
@@ -38,6 +37,7 @@ export async function searchProducts(query: string): Promise<SearchedProduct[]> 
     name: p.name,
     barcode: p.barcode,
     salePrice: p.salePrice.toNumber(),
+    stock: p.currentStock,
   }));
 }
 
@@ -142,7 +142,7 @@ export async function confirmSale(
   revalidatePath("/ventas/historial");
   revalidatePath("/inventario");
   revalidatePath("/caja");
-  redirect(`/ventas/${sale.id}/ticket`);
+  return { saleId: sale.id };
 }
 
 export async function reprintTicket(saleId: string): Promise<ReprintState> {
@@ -214,4 +214,61 @@ export async function voidSale(saleId: string, reason: string): Promise<VoidSale
   revalidatePath("/inventario");
   revalidatePath("/caja");
   return {};
+}
+
+export type TicketData = {
+  razonSocial: string | null;
+  extraText: string | null;
+  ticketNumber: number;
+  /** Ya formateada en horario de Tucumán. */
+  when: string;
+  employee: string;
+  voided: boolean;
+  items: { id: string; quantity: number; name: string; subtotal: number }[];
+  total: number;
+  /** Solo en la entrega de un pedido con seña aplicada (specs/009, RF-5). */
+  deposit: { applied: number; remaining: number } | null;
+};
+
+/** Datos del ticket de una venta para mostrarlo en la ventana modal (specs/008, RF-5 y RF-14). */
+export async function getTicketData(saleId: string): Promise<TicketData | null> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.VENTAS, "ver");
+
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    include: { user: true, items: { include: { product: true } }, order: true },
+  });
+  if (!sale) return null;
+
+  const settings = await prisma.setting.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
+
+  const applied = sale.depositApplied?.toNumber() ?? 0;
+  return {
+    razonSocial: settings.razonSocial || null,
+    extraText: settings.textoTicketAdicional || null,
+    ticketNumber: sale.ticketNumber,
+    when: new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Argentina/Tucuman",
+    }).format(sale.createdAt),
+    employee: sale.user.name,
+    voided: sale.voidedAt !== null,
+    items: sale.items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      name: item.product.name,
+      subtotal: item.quantity * item.unitSalePrice.toNumber(),
+    })),
+    total: sale.total.toNumber(),
+    deposit:
+      sale.order && applied > 0
+        ? { applied, remaining: sale.order.depositAmount.toNumber() - sale.order.depositApplied.toNumber() }
+        : null,
+  };
 }

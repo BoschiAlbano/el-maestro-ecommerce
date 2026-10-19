@@ -31,9 +31,10 @@
 ## 4. Componentes
 
 - `OpenShiftForm` (monto inicial).
-- `CashMovementForm` (tipo, monto, concepto, medio de pago — `<Select>` con el prop `items` desde el primer uso, no como el bug encontrado en la spec 006 — y el campo de referencia que aparece solo si el medio es transferencia).
-- `ShiftSummary` (efectivo esperado, totales por medio, lista de movimientos del turno abierto).
-- `CloseShiftWizard` (dos pasos: previsualizar diferencia → confirmar, con motivo si hace falta — mismo wizard de dos pasos que la importación de productos y el conteo físico).
+- `MovementDialog` (modal; desde el rediseño del 2026-10-19 reemplaza a `CashMovementForm`): botones *Registrar ingreso* y *Registrar egreso* que abren la ventana con monto, concepto, medio de pago (`<Select>` con el prop `items`) y el campo de referencia que aparece solo si el medio es transferencia.
+- `StatCard` (compartida con Analíticas e Inicio) para las tarjetas del turno, y `summarizeShift` (`src/lib/cash-shift.ts`, función pura con tests) para el efectivo esperado y los totales por medio. `MovementsTabs` muestra los movimientos del turno en pestañas (todos, ingresos, egresos, por medio de pago).
+- `MovementActions` (dentro de `MovementsTabs`, RF-11): menú "Acciones" (`DropdownMenu` de shadcn) por cada movimiento con `saleId`, con "Ver venta" (enlace a `/ventas/historial/[id]`) y "Reimprimir ticket" (`reprintTicket` de la spec 008 + `TicketDialog`). El permiso se decide en el servidor (`/caja` pasa `canViewSales` y `canReprint`); las Server Actions vuelven a validarlo.
+- `CloseShiftDialog` (modal; reemplaza a `CloseShiftWizard`): los mismos dos pasos (previsualizar diferencia → confirmar, con motivo si hace falta) dentro de una ventana, abierta con el botón *Cerrar caja*.
 - `ShiftHistoryTable` / detalle con botón "Imprimir" (`window.print()`, sin librería de PDF).
 
 ## 5. Permisos

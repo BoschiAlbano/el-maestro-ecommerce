@@ -1,11 +1,20 @@
 "use client";
 
 import { useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { removeOrderItem } from "../actions";
 import { Button } from "@/components/ui/button";
 
-export function RemoveItemButton({ orderId, orderItemId }: { orderId: string; orderItemId: string }) {
+export function RemoveItemButton({
+  orderId,
+  orderItemId,
+  productName,
+}: {
+  orderId: string;
+  orderItemId: string;
+  productName: string;
+}) {
   const [pending, startTransition] = useTransition();
 
   function handleClick() {
@@ -16,8 +25,15 @@ export function RemoveItemButton({ orderId, orderItemId }: { orderId: string; or
   }
 
   return (
-    <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={handleClick}>
-      Quitar
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={`Quitar ${productName} del pedido`}
+      disabled={pending}
+      onClick={handleClick}
+    >
+      <Trash2 />
     </Button>
   );
 }

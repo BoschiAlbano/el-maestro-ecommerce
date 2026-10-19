@@ -33,6 +33,14 @@
 - `TicketView` (la pantalla de `/ventas/[id]/ticket`): layout angosto (`width: 58mm` en CSS de impresión, fuente monoespaciada, ~32 caracteres por línea — requisito no funcional de `docs/PROJECT.md` sección 7), con razón social (desde `Setting`, spec 003) y la leyenda fija. Un botón "Imprimir" (`window.print()`), sin librería de PDF, mismo criterio que etiquetas y el resumen de caja.
 - `SaleHistoryTable` / detalle con los botones "Reimprimir" y "Anular" (este último con motivo obligatorio, mismo wizard simple que el cierre de caja).
 
+### Rediseño de las pantallas (2026-10-19)
+
+- `SaleForm` pasa a dos zonas (RF-9): buscador y carrito a la izquierda, resumen fijo con el total y *Cobrar* a la derecha (barra fija abajo en el celular). `searchProducts` devuelve además `stock` (RF-12) y, si la búsqueda es un código de barras exacto con un único resultado, el formulario lo agrega solo.
+- `PaymentDialog` (modal, RF-10 y RF-11): reparto del cobro en una o más líneas, estado "completo / falta / sobra", efectivo recibido y vuelto. Funciones puras nuevas en `src/lib/sale.ts`, con tests: `computeChange(received, cashAmount)` y `computePaymentStatus(total, payments)`.
+- `TicketDialog` (modal, RF-14; reemplaza a la pantalla `/ventas/[id]/ticket`, que se eliminó): carga los datos con la Server Action `getTicketData(saleId)` (exige "ver" en Ventas), arma el ticket como **texto plano monoespaciado** con `buildTicketLines` (`src/lib/ticket-lines.ts`, con tests; usa los helpers de `src/lib/ticket-texto.ts`: `MAX` = 24 caracteres por línea, `addCenter`, `addExtremes`, `formatoMonto`, etc.) y lo imprime con `window.print()` desde un iframe oculto que contiene solo ese texto — así no sale el resto de la pantalla. Se arma como texto porque las térmicas en modo "Generic / Text Only" ignoran el CSS (flex, bordes, alineación): cada línea se alinea con espacios. Si las líneas se cortan en la impresora real, se baja `MAX`; si sobra margen, se sube. `confirmSale` ya no redirige: devuelve el `saleId` y el formulario abre el modal.
+- Período del historial (RF-15): `parseSalesPeriod` y `salesPeriodRange` (`src/lib/sales-history.ts`, con tests; reusan los helpers de fecha de Tucumán de `lib/analytics.ts`). El período viaja en la URL (`?periodo=turno|hoy|7dias|todas`) y la página filtra en el servidor: por `shiftId` del turno abierto, por rango de `createdAt`, o sin filtro, siempre con `take: 200`.
+- `SaleHistoryTabs` (cliente) para el historial en pestañas y `SaleActions` con la anulación en una ventana modal (RF-13). Los componentes `StatCard` y `Panel` se comparten con Caja, Inicio y Analíticas (`src/components/stat-card.tsx`).
+
 ## 5. Permisos
 
 Primer uso real del módulo `VENTAS` de la matriz y de los permisos especiales "anular ventas" y "reimprimir tickets" (los tres existen desde la spec 002, sin nada que los ejerciera).

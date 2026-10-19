@@ -3,7 +3,6 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -14,20 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDIENTE: "Pendiente",
-  CERRADO: "Cerrado",
-  CANCELADO: "Cancelado",
-};
+import { OrdersTable, type OrderRow } from "./orders-table";
 
 const ESTADOS: { value: string; label: string }[] = [
   { value: "PENDIENTE", label: "Pendientes" },
@@ -49,6 +35,7 @@ export default async function PedidosPage({
 
   const puedeCrear = hasPermission(currentUser, ModuloNegocio.PEDIDOS, "crear");
   const puedeExportar = hasPermission(currentUser, ModuloNegocio.PEDIDOS, "exportar");
+  const puedeAnular = hasPermission(currentUser, ModuloNegocio.PEDIDOS, "anular");
 
   // Por defecto solo los pendientes: son los que el dueño tiene que
   // comprar/entregar — mezclarlos con cerrados y cancelados hace difícil
@@ -64,6 +51,20 @@ export default async function PedidosPage({
     orderBy: { createdAt: "desc" },
     take: 200,
   });
+
+  const rows: OrderRow[] = orders.map((order) => ({
+    id: order.id,
+    customerName: order.customerName,
+    when: new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Argentina/Tucuman",
+    }).format(order.createdAt),
+    items: order._count.items,
+    status: order.status,
+    canCancel: puedeAnular && order.status === "PENDIENTE",
+    hasDepositToReturn: order.depositAmount.toNumber() - order.depositApplied.toNumber() > 0,
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,62 +107,10 @@ export default async function PedidosPage({
         <Button type="submit">Filtrar</Button>
       </form>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Ítems</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead className="text-right">Detalle</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>{order.customerName}</TableCell>
-              <TableCell>
-                {new Intl.DateTimeFormat("es-AR", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                  timeZone: "America/Argentina/Tucuman",
-                }).format(order.createdAt)}
-              </TableCell>
-              <TableCell>{order._count.items}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    order.status === "PENDIENTE"
-                      ? "secondary"
-                      : order.status === "CERRADO"
-                        ? "default"
-                        : "destructive"
-                  }
-                >
-                  {STATUS_LABELS[order.status]}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Link
-                  href={`/pedidos/${order.id}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                >
-                  Ver
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-          {orders.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                {estado === "PENDIENTE"
-                  ? "No hay pedidos pendientes."
-                  : "No hay pedidos para este filtro."}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <OrdersTable
+        orders={rows}
+        emptyMessage={estado === "PENDIENTE" ? "No hay pedidos pendientes." : "No hay pedidos para este filtro."}
+      />
     </div>
   );
 }

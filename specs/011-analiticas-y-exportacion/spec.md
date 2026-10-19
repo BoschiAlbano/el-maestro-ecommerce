@@ -14,14 +14,14 @@ Mostrar al dueño qué se vende, cuánto, quién lo vende y cuánto se gana, con
 
 **Incluye:**
 
-- Filtros combinables por rango de fechas, empleado, producto, marca, rubro, canal y medio de pago
+- Filtros combinables por rango de fechas, empleado y medio de pago (producto, marca, rubro y canal se quitaron de la pantalla el 2026-10-19)
 - Resumen del período: total vendido, cantidad de operaciones, ticket promedio y comparación con el período anterior equivalente
 - Evolución diaria de ventas dentro del rango elegido
 - Ventas agrupadas por empleado, por turno de caja y por canal
-- Productos más vendidos y productos sin movimiento en el período
+- Productos más vendidos en el período (los productos sin movimiento se quitaron de la pantalla el 2026-10-19)
 - Margen por producto, marca y rubro — solo visible con el permiso especial "ver costos y márgenes"
 - Valorización del stock actual — mismo permiso que el margen
-- Diferencias de caja por empleado, dentro del rango
+- ~~Diferencias de caja por empleado, dentro del rango~~ (quitado de la pantalla el 2026-10-19)
 - Exportación a Excel (el detalle tabular, tal como está filtrado en pantalla) y a PDF (un resumen imprimible de los indicadores principales)
 - Pantallas pensadas para celular, igual que el resto del sistema
 
@@ -38,13 +38,15 @@ Mostrar al dueño qué se vende, cuánto, quién lo vende y cuánto se gana, con
 
 ## 4. Requisitos funcionales
 
-- **RF-1.** El sistema permite filtrar todas las vistas de esta spec por rango de fechas (por defecto, el mes en curso), empleado, producto, marca, rubro, canal y medio de pago, combinados entre sí.
+- **RF-1.** El sistema permite filtrar todas las vistas de esta spec por rango de fechas (por defecto, el mes en curso), empleado y medio de pago, combinados entre sí (producto, marca, rubro y canal se quitaron el 2026-10-19).
 - **RF-2.** El sistema muestra, para el rango filtrado: total vendido, cantidad de ventas, ticket promedio, y la comparación contra el período anterior de igual duración (por ejemplo, el mes en curso contra el mes anterior).
-- **RF-3.** El sistema muestra la evolución día por día de las ventas dentro del rango filtrado.
+- **RF-3.** ~~El sistema muestra la evolución día por día de las ventas dentro del rango filtrado.~~ Quitado de la pantalla (2026-10-19): el dato sigue calculándose para las exportaciones.
 - **RF-4.** El sistema muestra las ventas agrupadas por empleado, por turno de caja (la sesión de caja en la que se vendió, spec 007 — no el turno de la ficha del empleado, spec 010, que es un dato distinto) y por canal.
-- **RF-5.** El sistema muestra los productos más vendidos (por cantidad e importe) y los productos sin ninguna venta en el rango filtrado.
-- **RF-6.** El sistema muestra el margen por producto, por marca y por rubro, usando el costo que quedó guardado en cada venta (no el precio de compra actual del producto) — visible solo para quien tenga el permiso especial "ver costos y márgenes" (spec 002).
-- **RF-7.** El sistema muestra la valorización del stock actual (stock de cada producto por su costo) — mismo permiso que RF-6.
+- **RF-5.** El sistema muestra los 5 productos más vendidos por cantidad en un gráfico de barras (con el importe en el detalle al pasar el cursor) (los productos sin movimiento se quitaron de la pantalla el 2026-10-19).
+- **RF-6.** El sistema muestra el margen por marca y por rubro (el margen por producto se quitó de la pantalla el 2026-10-19), usando el costo que quedó guardado en cada venta (no el precio de compra actual del producto) — visible solo para quien tenga el permiso especial "ver costos y márgenes" (spec 002).
+- **RF-7.** El sistema muestra la valorización del stock actual (stock de cada producto por su costo) — mismo permiso que RF-6. Se quitó de la pantalla el 2026-10-19 (es el stock de hoy y no depende del rango de fechas); sigue en las exportaciones.
+- **RF-7b.** El sistema muestra, en un gráfico de dona, el total cobrado por medio de pago (efectivo y transferencia) del rango filtrado, a la par del top 5 de productos (2026-10-19). Se calcula con los ingresos de caja de ventas no anuladas.
+- **RF-7c.** El resumen muestra 8 tarjetas en dos filas de 4 (2026-10-19): Total vendido, Cantidad de ventas, Ticket promedio, Unidades vendidas (con comparación contra el período anterior), Ventas anuladas (cantidad y monto, por fecha de anulación; respeta empleado y medio de pago), Venta más grande (importe, quién la hizo y cuándo), y — solo con el permiso de costos — Costo de lo vendido y Margen.
 - **RF-8.** El sistema muestra las diferencias de cierre de caja por empleado, dentro del rango filtrado.
 - **RF-9.** El sistema permite exportar a Excel el detalle tabular de lo que está filtrado en pantalla, y a PDF un resumen imprimible con los indicadores principales (RF-2 y RF-5, y RF-6/RF-7 si quien exporta tiene el permiso).
 

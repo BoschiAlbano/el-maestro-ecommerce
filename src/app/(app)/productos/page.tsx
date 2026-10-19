@@ -4,6 +4,7 @@ import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
+import { CatalogTabs } from "@/components/catalog-tabs";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -67,15 +68,11 @@ export default async function ProductosPage({
 
   return (
     <div className="flex flex-col gap-4">
+      <CatalogTabs />
+
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Productos</h1>
         <div className="flex gap-2">
-          <Link href="/marcas" className={cn(buttonVariants({ variant: "outline" }))}>
-            Marcas
-          </Link>
-          <Link href="/rubros" className={cn(buttonVariants({ variant: "outline" }))}>
-            Rubros
-          </Link>
           <Link href="/productos/etiquetas" className={cn(buttonVariants({ variant: "outline" }))}>
             Etiquetas
           </Link>

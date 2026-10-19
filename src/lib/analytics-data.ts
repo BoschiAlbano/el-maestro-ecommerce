@@ -24,7 +24,14 @@ export type AnalyticsData = {
   totalVentas: number;
   cantidadVentas: number;
   ticketPromedio: number;
-  periodoAnterior: { totalVentas: number; cantidadVentas: number; ticketPromedio: number };
+  unidadesVendidas: number;
+  periodoAnterior: { totalVentas: number; cantidadVentas: number; ticketPromedio: number; unidadesVendidas: number };
+  /** Ventas anuladas dentro del rango (por fecha de anulación). */
+  ventasAnuladas: { cantidad: number; total: number };
+  /** La venta de mayor importe del rango (null si no hubo ventas). */
+  ventaMasGrande: { total: number; employeeName: string; createdAt: Date } | null;
+  /** Costo de la mercadería vendida — solo con el permiso de costos. */
+  costoVendido: number | null;
   evolucionDiaria: { day: string; total: number }[];
   porEmpleado: GroupTotal[];
   porTurno: GroupTotal[];
@@ -37,6 +44,8 @@ export type AnalyticsData = {
   margenPorRubro: MarginGroup[] | null;
   valorizacionStock: number | null;
   diferenciasCaja: GroupTotal[];
+  /** Lo cobrado en el período por medio de pago (ingresos de caja de ventas no anuladas). */
+  porMedioPago: { method: string; total: number; count: number }[];
 };
 
 type SaleItemRow = {
@@ -150,6 +159,29 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
   const prevPeriod = computePreviousPeriod(filters.from, filters.to);
   const prevRows = await fetchSaleItemRows(filters, prevPeriod.from, prevPeriod.to);
   const prevSummary = summarize(prevRows);
+  const unidadesVendidas = rows.reduce((sum, r) => sum + r.quantity, 0);
+  const prevUnidadesVendidas = prevRows.reduce((sum, r) => sum + r.quantity, 0);
+
+  const voidedAgg = await prisma.sale.aggregate({
+    where: {
+      voidedAt: { gte: filters.from, lt: filters.to },
+      ...(filters.employeeId ? { userId: filters.employeeId } : {}),
+      ...(filters.paymentMethod
+        ? { cashMovements: { some: { paymentMethod: filters.paymentMethod, type: "INGRESO" as const } } }
+        : {}),
+    },
+    _sum: { total: true },
+    _count: true,
+  });
+  const ventasAnuladas = { cantidad: voidedAgg._count, total: voidedAgg._sum.total?.toNumber() ?? 0 };
+
+  let ventaMasGrande: AnalyticsData["ventaMasGrande"] = null;
+  for (const saleRows of groupBy(rows, (r) => r.saleId).values()) {
+    const { total } = summarize(saleRows);
+    if (!ventaMasGrande || total > ventaMasGrande.total) {
+      ventaMasGrande = { total, employeeName: saleRows[0].employeeName, createdAt: saleRows[0].createdAt };
+    }
+  }
 
   const dayGroups = groupBy(rows, (r) => toTucumanDateKey(r.createdAt));
   const evolucionDiaria = [...dayGroups.entries()]
@@ -180,6 +212,7 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
     sinMovimiento = allProducts.filter((p) => !soldIds.has(p.id));
   }
 
+  let costoVendido: number | null = null;
   let margen: { totalMargin: number; marginPct: number } | null = null;
   let margenPorProducto: MarginGroup[] | null = null;
   let margenPorMarca: MarginGroup[] | null = null;
@@ -187,6 +220,7 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
   let valorizacionStock: number | null = null;
   if (puedeVerCostos) {
     margen = computeMarginSummary(rows);
+    costoVendido = rows.reduce((sum, r) => sum + r.quantity * r.unitCost, 0);
     margenPorProducto = groupMargins(rows, (r) => r.productId, (r) => r.productName);
     margenPorMarca = groupMargins(rows, (r) => r.brandId ?? "__sin_marca__", (r) => r.brandName);
     margenPorRubro = groupMargins(rows, (r) => r.rubroId, (r) => r.rubroName);
@@ -221,11 +255,34 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
     }))
     .sort((a, b) => b.total - a.total);
 
+  const paymentRows = await prisma.cashMovement.groupBy({
+    by: ["paymentMethod"],
+    where: {
+      type: "INGRESO",
+      ...(filters.paymentMethod ? { paymentMethod: filters.paymentMethod } : {}),
+      sale: {
+        voidedAt: null,
+        createdAt: { gte: filters.from, lt: filters.to },
+        ...(filters.employeeId ? { userId: filters.employeeId } : {}),
+      },
+    },
+    _sum: { amount: true },
+    _count: true,
+  });
+  const porMedioPago = paymentRows
+    .map((r) => ({ method: r.paymentMethod, total: r._sum.amount?.toNumber() ?? 0, count: r._count }))
+    .sort((a, b) => b.total - a.total);
+
   return {
     totalVentas,
     cantidadVentas,
     ticketPromedio: computeTicketPromedio(totalVentas, cantidadVentas),
+    unidadesVendidas,
+    ventasAnuladas,
+    ventaMasGrande,
+    costoVendido,
     periodoAnterior: {
+      unidadesVendidas: prevUnidadesVendidas,
       totalVentas: prevSummary.total,
       cantidadVentas: prevSummary.count,
       ticketPromedio: computeTicketPromedio(prevSummary.total, prevSummary.count),
@@ -242,5 +299,6 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
     margenPorRubro,
     valorizacionStock,
     diferenciasCaja,
+    porMedioPago,
   };
 }

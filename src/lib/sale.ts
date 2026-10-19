@@ -20,3 +20,26 @@ export function validatePayments(total: number, payments: { amount: number }[]):
   const sum = payments.reduce((acc, p) => acc + p.amount, 0);
   return roundToPeso(sum) === total;
 }
+
+export type PaymentStatus = {
+  paid: number;
+  /** Lo que falta cobrar (positivo) o lo que sobra (negativo). */
+  remaining: number;
+  status: "complete" | "missing" | "excess";
+};
+
+/** Estado del reparto del cobro frente al total (specs/008, RF-10): completo, falta o sobra. */
+export function computePaymentStatus(total: number, payments: { amount: number }[]): PaymentStatus {
+  const paid = roundToPeso(payments.reduce((acc, p) => acc + p.amount, 0));
+  const remaining = roundToPeso(total - paid);
+  return { paid, remaining, status: remaining === 0 ? "complete" : remaining > 0 ? "missing" : "excess" };
+}
+
+/**
+ * Vuelto a devolver (specs/008, RF-11): el efectivo que entregó el cliente
+ * menos la parte de la venta cobrada en efectivo. Es solo una ayuda en
+ * pantalla — no se guarda ni cambia lo que se registra en la caja.
+ */
+export function computeChange(cashReceived: number, cashAmount: number): number {
+  return Math.max(0, roundToPeso(cashReceived - cashAmount));
+}

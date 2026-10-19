@@ -1,37 +1,40 @@
 import type { ReactNode } from "react";
-import { BottomNav } from "./bottom-nav";
-import { SideNav } from "./side-nav";
+import { AppBreadcrumb } from "./app-breadcrumb";
+import { AppSidebar } from "./app-sidebar";
 import { NotificationsBell } from "./notifications-bell";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { UserLike } from "@/lib/permissions";
 
 type AppShellProps = {
   children: ReactNode;
-  /** Slot para el menú de usuario (nombre/email + cerrar sesión). */
+  /** Slot para el menú de usuario (nombre/email). */
   headerEnd?: ReactNode;
   /** Datos serializables — el filtrado de nav (con íconos) es cosa del cliente. */
   user: UserLike;
 };
 
-/** Layout base: header + navegación lateral (PC) / inferior (celular). */
+/** Layout base: barra lateral (PC) / cajón deslizable (celular, lo resuelve el propio Sidebar) + header. */
 export function AppShell({ children, headerEnd, user }: AppShellProps) {
   return (
-    <div className="flex min-h-full flex-col sm:flex-row">
+    <SidebarProvider className="print:block">
       <div className="print:hidden">
-        <SideNav user={user} />
+        <AppSidebar user={user} />
       </div>
-      <div className="flex min-h-full flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b px-4 print:hidden">
-          <span className="font-semibold">Importadora</span>
+      <SidebarInset className="print:m-0 print:shadow-none">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4 print:hidden">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="h-5" />
+            <AppBreadcrumb />
+          </div>
           <div className="flex items-center gap-2">
             <NotificationsBell />
             {headerEnd}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4 print:p-0">{children}</main>
-      </div>
-      <div className="print:hidden">
-        <BottomNav user={user} />
-      </div>
-    </div>
+        <div className="flex-1 overflow-y-auto p-4 print:p-0">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

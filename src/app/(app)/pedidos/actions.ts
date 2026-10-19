@@ -10,11 +10,11 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
-import { computeDepositApplication } from "@/lib/order";
+import { computeDepositApplication, validateOrderItemQuantity } from "@/lib/order";
 import { notifyPedidoNuevo } from "@/lib/notifications";
 
 export type ActionState = { error?: string };
-export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number };
+export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number; stock: number };
 
 export async function searchProducts(query: string): Promise<SearchedProduct[]> {
   const currentUser = await getCurrentUser();
@@ -28,7 +28,7 @@ export async function searchProducts(query: string): Promise<SearchedProduct[]> 
       active: true,
       OR: [{ name: { contains: trimmed, mode: "insensitive" } }, { barcode: { contains: trimmed } }],
     },
-    select: { id: true, name: true, barcode: true, salePrice: true },
+    select: { id: true, name: true, barcode: true, salePrice: true, currentStock: true },
     orderBy: { name: "asc" },
     take: 20,
   });
@@ -38,6 +38,7 @@ export async function searchProducts(query: string): Promise<SearchedProduct[]> 
     name: p.name,
     barcode: p.barcode,
     salePrice: p.salePrice.toNumber(),
+    stock: p.currentStock,
   }));
 }
 
@@ -102,8 +103,41 @@ export async function addOrderItem(
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return { error: "El producto no existe." };
 
-  await prisma.orderItem.create({ data: { orderId, productId, quantityOrdered: quantity } });
+  // Si el producto ya está en el pedido, se suma a su línea en lugar de crear otra (specs/009, RF-2).
+  const existing = await prisma.orderItem.findFirst({ where: { orderId, productId } });
+  if (existing) {
+    await prisma.orderItem.update({
+      where: { id: existing.id },
+      data: { quantityOrdered: { increment: quantity } },
+    });
+  } else {
+    await prisma.orderItem.create({ data: { orderId, productId, quantityOrdered: quantity } });
+  }
   revalidatePath(`/pedidos/${orderId}`);
+  return {};
+}
+
+export async function updateOrderItemQuantity(
+  orderId: string,
+  orderItemId: string,
+  quantity: number,
+): Promise<ActionState> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.PEDIDOS, "crear");
+
+  const result = await getPendingOrder(orderId);
+  if ("error" in result) return { error: result.error };
+
+  const item = await prisma.orderItem.findFirst({ where: { id: orderItemId, orderId } });
+  if (!item) return { error: "El producto no pertenece a este pedido." };
+
+  const error = validateOrderItemQuantity(quantity, item.quantityDelivered);
+  if (error) return { error };
+
+  await prisma.orderItem.update({ where: { id: item.id }, data: { quantityOrdered: quantity } });
+  revalidatePath(`/pedidos/${orderId}`);
+  revalidatePath("/pedidos");
+  revalidatePath("/inventario");
   return {};
 }
 
@@ -114,7 +148,12 @@ export async function removeOrderItem(orderId: string, orderItemId: string): Pro
   const result = await getPendingOrder(orderId);
   if ("error" in result) return { error: result.error };
 
-  await prisma.orderItem.delete({ where: { id: orderItemId } });
+  const item = await prisma.orderItem.findFirst({ where: { id: orderItemId, orderId } });
+  if (!item) return { error: "El producto no pertenece a este pedido." };
+  // Un producto con entregas no se puede quitar (specs/009, RF-2): su cantidad solo puede bajar hasta lo entregado.
+  if (item.quantityDelivered > 0) return { error: "Este producto ya tiene entregas: no se puede quitar del pedido." };
+
+  await prisma.orderItem.delete({ where: { id: item.id } });
   revalidatePath(`/pedidos/${orderId}`);
   return {};
 }
@@ -172,7 +211,7 @@ export async function deliverOrderItems(
   orderId: string,
   deliveries: { orderItemId: string; quantity: number }[],
   extraPayments: { method: "EFECTIVO" | "TRANSFERENCIA"; amount: number; transferReference?: string }[],
-): Promise<ActionState> {
+): Promise<ActionState & { saleId?: string }> {
   const currentUser = await getCurrentUser();
   requirePermission(currentUser, ModuloNegocio.PEDIDOS, "crear");
   requirePermission(currentUser, ModuloNegocio.VENTAS, "crear");
@@ -302,7 +341,7 @@ export async function deliverOrderItems(
   revalidatePath("/pedidos");
   revalidatePath("/inventario");
   revalidatePath("/caja");
-  redirect(`/ventas/${sale.id}/ticket`);
+  return { saleId: sale.id };
 }
 
 export async function cancelOrder(orderId: string, reason: string): Promise<ActionState> {
