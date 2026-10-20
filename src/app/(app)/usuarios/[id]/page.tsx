@@ -3,7 +3,9 @@ import { isOwner } from "@/lib/permissions";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditUserForm } from "./edit-user-form";
+import { ResetPasswordForm } from "./reset-password-form";
 import { setUserActive } from "../actions";
 
 export default async function EditarUsuarioPage({
@@ -40,20 +42,54 @@ export default async function EditarUsuarioPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold">Editar usuario</h1>
-      <EditUserForm user={user} roles={roles} />
+      <div>
+        <h1 className="text-lg font-semibold">{user.name}</h1>
+        <p className="text-sm text-muted-foreground">{user.email}</p>
+      </div>
 
-      <div className="max-w-sm border-t pt-4">
-        <form action={toggleActive}>
-          <Button type="submit" variant={user.active ? "destructive" : "default"} disabled={isSelf}>
-            {user.active ? "Desactivar usuario" : "Reactivar usuario"}
-          </Button>
-        </form>
-        {isSelf && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            No podés desactivarte a vos mismo.
-          </p>
-        )}
+      <div className="grid max-w-5xl items-start gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Datos del usuario</CardTitle>
+            <CardDescription>Nombre, email de ingreso y rol.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EditUserForm user={user} roles={roles} />
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contraseña</CardTitle>
+              <CardDescription>Fijale una contraseña nueva para que pueda ingresar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResetPasswordForm userId={user.id} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado de la cuenta</CardTitle>
+              <CardDescription>
+                {user.active
+                  ? "Un usuario desactivado no puede iniciar sesión, pero conserva su historial."
+                  : "Este usuario está desactivado y no puede iniciar sesión."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={toggleActive}>
+                <Button type="submit" variant={user.active ? "destructive" : "default"} disabled={isSelf}>
+                  {user.active ? "Desactivar usuario" : "Reactivar usuario"}
+                </Button>
+              </form>
+              {isSelf && (
+                <p className="mt-2 text-sm text-muted-foreground">No podés desactivarte a vos mismo.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

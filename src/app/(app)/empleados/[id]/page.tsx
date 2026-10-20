@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditEmployeeForm } from "./edit-employee-form";
 import { DeactivateEmployeeButton } from "./deactivate-employee-button";
 
@@ -34,26 +35,50 @@ export default async function EmpleadoDetailPage({ params }: { params: Promise<{
         </Badge>
       </div>
 
-      {estaDeBaja && (
-        <p className="text-sm text-muted-foreground">
-          Fecha de baja:{" "}
-          {new Intl.DateTimeFormat("es-AR", {
-            dateStyle: "short",
-            timeZone: "America/Argentina/Tucuman",
-          }).format(employee.terminatedAt!)}
-        </p>
-      )}
+      <div className="grid max-w-5xl items-start gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Datos del empleado</CardTitle>
+            <CardDescription>DNI, teléfono, fecha de ingreso y turno.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EditEmployeeForm
+              employeeId={employee.id}
+              dni={employee.dni}
+              phone={employee.phone ?? ""}
+              hireDate={employee.hireDate.toISOString().slice(0, 10)}
+              shift={employee.shift}
+              disabled={!puedeEditar}
+            />
+          </CardContent>
+        </Card>
 
-      <EditEmployeeForm
-        employeeId={employee.id}
-        dni={employee.dni}
-        phone={employee.phone ?? ""}
-        hireDate={employee.hireDate.toISOString().slice(0, 10)}
-        shift={employee.shift}
-        disabled={!puedeEditar}
-      />
-
-      {puedeAnular && !estaDeBaja && <DeactivateEmployeeButton employeeId={employee.id} />}
+        {(estaDeBaja || puedeAnular) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado del empleado</CardTitle>
+              <CardDescription>
+                {estaDeBaja
+                  ? "Este empleado está dado de baja y no puede iniciar sesión."
+                  : "Dar de baja impide que vuelva a iniciar sesión, pero conserva su historial."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {estaDeBaja ? (
+                <p className="text-sm text-muted-foreground">
+                  Fecha de baja:{" "}
+                  {new Intl.DateTimeFormat("es-AR", {
+                    dateStyle: "short",
+                    timeZone: "America/Argentina/Tucuman",
+                  }).format(employee.terminatedAt!)}
+                </p>
+              ) : (
+                <DeactivateEmployeeButton employeeId={employee.id} />
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

@@ -73,6 +73,7 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
 
 const updateUserSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio."),
+  email: z.string().trim().toLowerCase().email("Email inválido."),
   roleId: z.string().min(1, "Elegí un rol."),
 });
 
@@ -86,17 +87,19 @@ export async function updateUser(
 
   const parsed = updateUserSchema.safeParse({
     name: formData.get("name"),
+    email: formData.get("email"),
     roleId: formData.get("roleId"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
-  const { name, roleId } = parsed.data;
+  const { name, email, roleId } = parsed.data;
 
   const target = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   if (!target) return { error: "El usuario no existe." };
 
   const cambiaRol = roleId !== target.roleId;
+  const cambiaEmail = email !== target.email.toLowerCase();
 
   if (cambiaRol && userId === currentUser.id) {
     return { error: "No podés cambiar tu propio rol." };
@@ -113,25 +116,99 @@ export async function updateUser(
 
   const newRole = cambiaRol ? await prisma.role.findUnique({ where: { id: roleId } }) : target.role;
 
+  const admin = createAdminClient();
+
+  if (cambiaEmail) {
+    const enUso = await prisma.user.findUnique({ where: { email } });
+    if (enUso && enUso.id !== userId) return { error: "Ya existe un usuario con ese email." };
+
+    const { error } = await admin.auth.admin.updateUserById(target.authUserId, {
+      email,
+      email_confirm: true, // sin esto, Supabase manda un mail de confirmación y el email nuevo no sirve para loguear.
+    });
+    if (error) {
+      return {
+        error: error.code === "email_exists" ? "Ya existe un usuario con ese email." : "No se pudo cambiar el email.",
+      };
+    }
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { name, email, roleId } });
+      await logAudit(tx, {
+        userId: currentUser.id,
+        action: "USER_UPDATED",
+        targetType: "User",
+        targetId: userId,
+        detail: {
+          nombreViejo: target.name,
+          nombreNuevo: name,
+          emailViejo: target.email,
+          emailNuevo: email,
+          rolViejo: target.role.name,
+          rolNuevo: newRole?.name ?? target.role.name,
+        },
+      });
+    });
+  } catch {
+    // Que Supabase Auth y Prisma no queden con emails distintos.
+    if (cambiaEmail) await admin.auth.admin.updateUserById(target.authUserId, { email: target.email, email_confirm: true });
+    return { error: "No se pudo guardar el usuario." };
+  }
+
+  revalidatePath("/usuarios");
+  revalidatePath("/configuracion/auditoria");
+  redirect("/usuarios");
+}
+
+const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "La contraseña tiene que tener al menos 8 caracteres."),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, { message: "Las contraseñas no coinciden.", path: ["confirm"] });
+
+export type PasswordActionState = { error?: string; success?: boolean };
+
+/** El Dueño le fija una contraseña nueva a un usuario (specs/002, sección 4). */
+export async function resetUserPassword(
+  userId: string,
+  _prev: PasswordActionState,
+  formData: FormData,
+): Promise<PasswordActionState> {
+  const currentUser = await getCurrentUser();
+  requireOwner(currentUser);
+
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get("password"),
+    confirm: formData.get("confirm"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) return { error: "El usuario no existe." };
+
+  const { error } = await createAdminClient().auth.admin.updateUserById(target.authUserId, {
+    password: parsed.data.password,
+  });
+  if (error) return { error: "No se pudo cambiar la contraseña." };
+
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: userId }, data: { name, roleId } });
     await logAudit(tx, {
       userId: currentUser.id,
       action: "USER_UPDATED",
       targetType: "User",
       targetId: userId,
-      detail: {
-        nombreViejo: target.name,
-        nombreNuevo: name,
-        rolViejo: target.role.name,
-        rolNuevo: newRole?.name ?? target.role.name,
-      },
+      // Nunca se guarda la contraseña, solo que se cambió.
+      detail: { name: target.name, email: target.email, motivo: "Cambio de contraseña" },
     });
   });
 
-  revalidatePath("/usuarios");
   revalidatePath("/configuracion/auditoria");
-  redirect("/usuarios");
+  return { success: true };
 }
 
 export async function setUserActive(userId: string, active: boolean): Promise<ActionState> {

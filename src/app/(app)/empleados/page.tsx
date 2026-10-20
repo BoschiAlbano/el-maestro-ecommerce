@@ -3,7 +3,6 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -14,14 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { EmployeesTable } from "./employees-table";
 
 const TURNO_LABELS: Record<string, string> = { MANANA: "Mañana", TARDE: "Tarde" };
 
@@ -43,6 +35,7 @@ export default async function EmpleadosPage({
   }
 
   const puedeCrear = hasPermission(currentUser, ModuloNegocio.EMPLEADOS, "crear");
+  const puedeAnular = hasPermission(currentUser, ModuloNegocio.EMPLEADOS, "anular");
 
   // Por defecto solo los activos: mezclarlos con los dados de baja dificulta
   // ver quién trabaja hoy (mismo criterio que el filtro de pedidos, spec 009).
@@ -93,46 +86,17 @@ export default async function EmpleadosPage({
         <Button type="submit">Filtrar</Button>
       </form>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Teléfono</TableHead>
-            <TableHead>Turno</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead className="text-right">Detalle</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {employees.map((employee) => (
-            <TableRow key={employee.id}>
-              <TableCell>{employee.user.name}</TableCell>
-              <TableCell>{employee.phone ?? "—"}</TableCell>
-              <TableCell>{TURNO_LABELS[employee.shift]}</TableCell>
-              <TableCell>
-                <Badge variant={employee.terminatedAt ? "destructive" : "default"}>
-                  {employee.terminatedAt ? "Dado de baja" : "Activo"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Link
-                  href={`/empleados/${employee.id}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                >
-                  Ver
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-          {employees.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                {estado === "ACTIVO" ? "No hay empleados activos." : "No hay empleados para este filtro."}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <EmployeesTable
+        employees={employees.map((e) => ({
+          id: e.id,
+          name: e.user.name,
+          phone: e.phone,
+          shiftLabel: TURNO_LABELS[e.shift],
+          terminated: Boolean(e.terminatedAt),
+          canDeactivate: puedeAnular && !e.terminatedAt,
+        }))}
+        emptyMessage={estado === "ACTIVO" ? "No hay empleados activos." : "No hay empleados para este filtro."}
+      />
     </div>
   );
 }

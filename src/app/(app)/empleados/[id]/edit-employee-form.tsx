@@ -36,7 +36,7 @@ export function EditEmployeeForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="flex max-w-sm flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="dni">DNI</Label>
         <Input id="dni" name="dni" defaultValue={dni} required disabled={disabled} />

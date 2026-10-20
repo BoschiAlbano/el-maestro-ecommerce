@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 
 type EditUserFormProps = {
-  user: { id: string; name: string; roleId: string };
+  user: { id: string; name: string; email: string; roleId: string };
   roles: { id: string; name: string }[];
 };
 
@@ -25,10 +25,15 @@ export function EditUserForm({ user, roles }: EditUserFormProps) {
   const [state, formAction, pending] = useActionState(updateUserWithId, initialState);
 
   return (
-    <form action={formAction} className="flex max-w-sm flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Nombre</Label>
         <Input id="name" name="name" defaultValue={user.name} required />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="email">Usuario (email)</Label>
+        <Input id="email" name="email" type="email" defaultValue={user.email} required />
+        <p className="text-xs text-muted-foreground">Es el email con el que inicia sesión.</p>
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="roleId">Rol</Label>
