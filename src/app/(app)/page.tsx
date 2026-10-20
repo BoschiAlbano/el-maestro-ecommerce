@@ -92,7 +92,12 @@ export default async function HomePage() {
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Hoy</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">Hoy</h2>
+              <Link href="/caja/dia" className="text-sm text-muted-foreground hover:underline">
+                Ver caja del día
+              </Link>
+            </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard label="Ingresos de hoy" value={formatMoney(caja.today.ingresos)} hint="Todos los turnos" />
               <StatCard label="Egresos de hoy" value={formatMoney(caja.today.egresos)} hint="Todos los turnos" />

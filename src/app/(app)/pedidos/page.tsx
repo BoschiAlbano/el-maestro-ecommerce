@@ -13,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 import { OrdersTable, type OrderRow } from "./orders-table";
+
+const PAGE_SIZE = 10;
 
 const ESTADOS: { value: string; label: string }[] = [
   { value: "PENDIENTE", label: "Pendientes" },
@@ -25,7 +28,7 @@ const ESTADOS: { value: string; label: string }[] = [
 export default async function PedidosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string }>;
+  searchParams: Promise<{ estado?: string; pagina?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -40,16 +43,23 @@ export default async function PedidosPage({
   // Por defecto solo los pendientes: son los que el dueño tiene que
   // comprar/entregar — mezclarlos con cerrados y cancelados hace difícil
   // encontrarlos.
-  const { estado = "PENDIENTE" } = await searchParams;
+  const { estado = "PENDIENTE", pagina } = await searchParams;
 
   const where: Prisma.OrderWhereInput = {};
   if (estado !== "__all__") where.status = estado as Prisma.OrderWhereInput["status"];
+
+  const total = await prisma.order.count({ where });
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pagina), totalPages);
 
   const orders = await prisma.order.findMany({
     where,
     include: { user: true, _count: { select: { items: true } } },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   const rows: OrderRow[] = orders.map((order) => ({
@@ -110,6 +120,17 @@ export default async function PedidosPage({
       <OrdersTable
         orders={rows}
         emptyMessage={estado === "PENDIENTE" ? "No hay pedidos pendientes." : "No hay pedidos para este filtro."}
+      />
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => {
+          const params = new URLSearchParams({ estado });
+          if (p > 1) params.set("pagina", String(p));
+          return `/pedidos?${params}`;
+        }}
       />
     </div>
   );

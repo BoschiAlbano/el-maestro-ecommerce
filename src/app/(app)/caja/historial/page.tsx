@@ -5,6 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -14,17 +15,32 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function HistorialCajaPage() {
+const PAGE_SIZE = 10;
+
+export default async function HistorialCajaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pagina?: string }>;
+}) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CAJA, "ver")) {
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver la caja.</p>;
   }
 
+  const where = { closedAt: { not: null } };
+  const total = await prisma.cashShift.count({ where });
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage((await searchParams).pagina), totalPages);
+
   const shifts = await prisma.cashShift.findMany({
-    where: { closedAt: { not: null } },
+    where,
     include: { openedByUser: true, closedByUser: true },
     orderBy: { closedAt: "desc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   return (
@@ -83,6 +99,12 @@ export default async function HistorialCajaPage() {
           )}
         </TableBody>
       </Table>
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => (p === 1 ? "/caja/historial" : `/caja/historial?pagina=${p}`)}
+      />
     </div>
   );
 }

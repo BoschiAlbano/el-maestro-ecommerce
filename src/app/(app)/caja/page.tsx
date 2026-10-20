@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { History } from "lucide-react";
+import { CalendarDays, History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
@@ -24,10 +24,16 @@ function formatDate(date: Date, options: Intl.DateTimeFormatOptions) {
 
 function HistoryLink() {
   return (
-    <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-      <History data-icon="inline-start" />
-      Historial
-    </Link>
+    <>
+      <Link href="/caja/dia" className={cn(buttonVariants({ variant: "outline" }))}>
+        <CalendarDays data-icon="inline-start" />
+        Caja del día
+      </Link>
+      <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
+        <History data-icon="inline-start" />
+        Historial
+      </Link>
+    </>
   );
 }
 

@@ -8,9 +8,12 @@ import { SALES_PERIOD_LABELS, parseSalesPeriod, salesPeriodRange, type SalesPeri
 import { buttonVariants } from "@/components/ui/button";
 import { Panel } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
-import { SaleHistoryTabs, type SaleRow } from "./sale-history-tabs";
+import { TablePagination, parsePage } from "@/components/table-pagination";
+import { SaleHistoryTabs, type SaleRow, type SaleView } from "./sale-history-tabs";
 
-const MAX_SALES = 200;
+const PAGE_SIZE = 10;
+
+const VIEWS: SaleView[] = ["todas", "activas", "anuladas"];
 
 const PERIOD_DESCRIPTIONS: Record<SalesPeriod, string> = {
   turno: "Las ventas del turno de caja que está abierto ahora.",
@@ -30,7 +33,7 @@ function formatDateTime(date: Date) {
 export default async function HistorialVentasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string }>;
+  searchParams: Promise<{ periodo?: string; vista?: string; pagina?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -41,7 +44,8 @@ export default async function HistorialVentasPage({
   const puedeVender = hasPermission(currentUser, ModuloNegocio.VENTAS, "crear");
 
   const openShift = await prisma.cashShift.findFirst({ where: { closedAt: null }, select: { id: true } });
-  const { periodo } = await searchParams;
+  const { periodo, vista, pagina } = await searchParams;
+  const view = VIEWS.find((v) => v === vista) ?? "todas";
   const period = parseSalesPeriod(periodo, openShift !== null);
 
   const range = salesPeriodRange(period, new Date());
@@ -52,12 +56,39 @@ export default async function HistorialVentasPage({
         ? { createdAt: { gte: range.from, lt: range.to } }
         : {};
 
+  // Los conteos de las pestañas son los del período completo, no los de la página.
+  const [totalAll, totalVoided] = await Promise.all([
+    prisma.sale.count({ where }),
+    prisma.sale.count({ where: { ...where, voidedAt: { not: null } } }),
+  ]);
+  const counts: Record<SaleView, number> = {
+    todas: totalAll,
+    activas: totalAll - totalVoided,
+    anuladas: totalVoided,
+  };
+
+  const total = counts[view];
+  const listWhere: Prisma.SaleWhereInput =
+    view === "activas" ? { ...where, voidedAt: null } : view === "anuladas" ? { ...where, voidedAt: { not: null } } : where;
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pagina), totalPages);
+
   const sales = await prisma.sale.findMany({
-    where,
+    where: listWhere,
     include: { user: true, shift: { select: { openedAt: true, closedAt: true } } },
     orderBy: { createdAt: "desc" },
-    take: MAX_SALES,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
+
+  const viewHref = (v: SaleView, p = 1) => {
+    const params = new URLSearchParams({ periodo: period });
+    if (v !== "todas") params.set("vista", v);
+    if (p > 1) params.set("pagina", String(p));
+    return `/ventas/historial?${params}`;
+  };
 
   const rows: SaleRow[] = sales.map((sale) => ({
     id: sale.id,
@@ -68,11 +99,6 @@ export default async function HistorialVentasPage({
     voided: sale.voidedAt !== null,
     shift: { label: formatDateTime(sale.shift.openedAt), current: sale.shift.closedAt === null },
   }));
-
-  const description =
-    rows.length === MAX_SALES
-      ? `${PERIOD_DESCRIPTIONS[period]} Se muestran las últimas ${MAX_SALES}.`
-      : PERIOD_DESCRIPTIONS[period];
 
   return (
     <div className="flex flex-col gap-4">
@@ -115,8 +141,17 @@ export default async function HistorialVentasPage({
         })}
       </nav>
 
-      <Panel title={SALES_PERIOD_LABELS[period]} description={description}>
-        <SaleHistoryTabs sales={rows} showShift={period !== "turno"} />
+      <Panel title={SALES_PERIOD_LABELS[period]} description={PERIOD_DESCRIPTIONS[period]}>
+        <div className="flex flex-col gap-4">
+          <SaleHistoryTabs
+            sales={rows}
+            showShift={period !== "turno"}
+            view={view}
+            counts={counts}
+            hrefs={{ todas: viewHref("todas"), activas: viewHref("activas"), anuladas: viewHref("anuladas") }}
+          />
+          <TablePagination page={page} pageSize={PAGE_SIZE} total={total} buildHref={(p) => viewHref(view, p)} />
+        </div>
       </Panel>
     </div>
   );

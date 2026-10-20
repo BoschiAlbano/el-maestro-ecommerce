@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,26 +86,43 @@ function SalesTable({ rows, emptyMessage, showShift }: { rows: SaleRow[]; emptyM
   );
 }
 
-/** Historial de ventas en pestañas: todas, activas y anuladas (specs/008, RF-13). */
-export function SaleHistoryTabs({ sales, showShift }: { sales: SaleRow[]; showShift: boolean }) {
-  const active = sales.filter((s) => !s.voided);
-  const voided = sales.filter((s) => s.voided);
+export type SaleView = "todas" | "activas" | "anuladas";
+
+const VIEW_EMPTY_MESSAGES: Record<SaleView, string> = {
+  todas: "No hay ventas en este período.",
+  activas: "No hay ventas activas en este período.",
+  anuladas: "No hay ventas anuladas en este período.",
+};
+
+/**
+ * Historial de ventas en pestañas: todas, activas y anuladas (specs/008, RF-13).
+ * La pestaña vive en la URL (`?vista=`) y la lista llega ya filtrada y paginada
+ * del servidor, así que los conteos (`counts`) son los del período completo.
+ */
+export function SaleHistoryTabs({
+  sales,
+  showShift,
+  view,
+  counts,
+  hrefs,
+}: {
+  sales: SaleRow[];
+  showShift: boolean;
+  view: SaleView;
+  counts: Record<SaleView, number>;
+  hrefs: Record<SaleView, string>;
+}) {
+  const router = useRouter();
 
   return (
-    <Tabs defaultValue="todas" className="gap-3">
+    <Tabs value={view} onValueChange={(value) => router.push(hrefs[value as SaleView])} className="gap-3">
       <TabsList>
-        <TabsTrigger value="todas">Todas ({sales.length})</TabsTrigger>
-        <TabsTrigger value="activas">Activas ({active.length})</TabsTrigger>
-        <TabsTrigger value="anuladas">Anuladas ({voided.length})</TabsTrigger>
+        <TabsTrigger value="todas">Todas ({counts.todas})</TabsTrigger>
+        <TabsTrigger value="activas">Activas ({counts.activas})</TabsTrigger>
+        <TabsTrigger value="anuladas">Anuladas ({counts.anuladas})</TabsTrigger>
       </TabsList>
-      <TabsContent value="todas">
-        <SalesTable rows={sales} showShift={showShift} emptyMessage="No hay ventas en este período." />
-      </TabsContent>
-      <TabsContent value="activas">
-        <SalesTable rows={active} showShift={showShift} emptyMessage="No hay ventas activas en este período." />
-      </TabsContent>
-      <TabsContent value="anuladas">
-        <SalesTable rows={voided} showShift={showShift} emptyMessage="No hay ventas anuladas en este período." />
+      <TabsContent value={view}>
+        <SalesTable rows={sales} showShift={showShift} emptyMessage={VIEW_EMPTY_MESSAGES[view]} />
       </TabsContent>
     </Tabs>
   );
