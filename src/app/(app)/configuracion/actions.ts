@@ -9,30 +9,56 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 
 export type ActionState = { error?: string; success?: boolean };
 
-const settingsSchema = z.object({
+const ticketSchema = z.object({
   razonSocial: z.string().trim().min(1, "La razón social es obligatoria."),
   textoTicketAdicional: z.string().trim().optional(),
+});
+
+const articleSchema = z.object({
   stockMinimoDefault: z.coerce.number().int().min(0, "No puede ser negativo."),
 });
 
-export async function updateSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
+/** Datos del ticket: razón social y texto adicional. */
+export async function updateTicketSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const currentUser = await getCurrentUser();
   requirePermission(currentUser, ModuloNegocio.CONFIGURACION, "editar");
 
-  const parsed = settingsSchema.safeParse({
+  const parsed = ticketSchema.safeParse({
     razonSocial: formData.get("razonSocial"),
     textoTicketAdicional: formData.get("textoTicketAdicional"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
+  const { razonSocial, textoTicketAdicional } = parsed.data;
+
+  await prisma.setting.upsert({
+    where: { id: "singleton" },
+    update: { razonSocial, textoTicketAdicional },
+    create: { id: "singleton", razonSocial, textoTicketAdicional },
+  });
+
+  revalidatePath("/configuracion");
+  return { success: true };
+}
+
+/** Parámetros de artículos: stock mínimo por defecto. */
+export async function updateArticleSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.CONFIGURACION, "editar");
+
+  const parsed = articleSchema.safeParse({
     stockMinimoDefault: formData.get("stockMinimoDefault"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
-  const { razonSocial, textoTicketAdicional, stockMinimoDefault } = parsed.data;
+  const { stockMinimoDefault } = parsed.data;
 
   await prisma.setting.upsert({
     where: { id: "singleton" },
-    update: { razonSocial, textoTicketAdicional, stockMinimoDefault },
-    create: { id: "singleton", razonSocial, textoTicketAdicional, stockMinimoDefault },
+    update: { stockMinimoDefault },
+    create: { id: "singleton", stockMinimoDefault },
   });
 
   revalidatePath("/configuracion");

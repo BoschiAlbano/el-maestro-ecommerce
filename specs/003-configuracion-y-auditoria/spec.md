@@ -34,8 +34,10 @@ Guardar los datos del negocio y los parámetros del sistema, y registrar las acc
 
 - El sistema permite editar la razón social y el texto adicional del ticket.
 - El sistema permite definir el stock mínimo por defecto para productos nuevos.
+- La pantalla de configuración se organiza en pestañas por tema — **Ticket** (razón social y texto adicional) y **Artículos** (stock mínimo por defecto) — y cada pestaña se guarda por separado. *(Agregado 2026-10-20.)*
 - Cada alta, edición, desactivación/reactivación de usuario y cada alta, edición o borrado de rol genera automáticamente una entrada de auditoría, con quién la hizo, qué hizo, cuándo, y el motivo si corresponde.
 - El registro de auditoría se puede consultar filtrado por fecha, usuario y tipo de acción.
+- El menú lateral tiene una entrada "Auditoría" (grupo Administración, junto a "Configuración") que lleva a `/configuracion/auditoria`, visible para quien tenga permiso "ver" en Configuración. *(Agregado 2026-10-20: la pantalla existía pero no tenía acceso desde el menú.)*
 - Ninguna pantalla permite editar ni borrar una entrada de auditoría ya creada.
 
 ## 5. Reglas de negocio
