@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks } from "lucide-react";
+import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks, ShieldCheck } from "lucide-react";
 // Desde "enums" (no desde "client"): ver nota en components/permission-matrix.tsx.
 import { ModuloNegocio } from "@/generated/prisma/enums";
 import { isOwner, hasPermission, type Accion, type UserLike } from "@/lib/permissions";
@@ -101,6 +101,14 @@ export const navItems: NavItem[] = [
     href: "/usuarios",
     label: "Usuarios",
     icon: Users,
+    group: "administracion",
+    enabled: true,
+    ownerOnly: true,
+  },
+  {
+    href: "/roles",
+    label: "Roles",
+    icon: ShieldCheck,
     group: "administracion",
     enabled: true,
     ownerOnly: true,

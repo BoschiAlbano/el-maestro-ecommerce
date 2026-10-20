@@ -39,6 +39,7 @@ Que el dueño cree usuarios y roles, y controle qué puede ver y hacer cada uno 
 - El sistema permite al dueño crear un usuario con email; la cuenta queda lista para iniciar sesión.
 - El sistema permite al dueño cambiarle a un usuario el email (que es su usuario de ingreso) y fijarle una contraseña nueva, sin que la contraseña quede guardada en la auditoría (solo que se cambió). *(Agregado 2026-10-20 a pedido del cliente.)*
 - Desde la lista de usuarios, un menú de acciones por fila permite ver el detalle o desactivar/reactivar directamente. *(Agregado 2026-10-20.)*
+- El menú lateral tiene una entrada "Roles" (junto a "Usuarios", solo para el Dueño) que lleva a la lista de roles, desde donde se crean, editan y borran. *(Agregado 2026-10-20: el CRUD existía pero no tenía acceso desde el menú.)*
 - El sistema permite al dueño editar los datos de un usuario y desactivarlo sin borrar su historial (ventas, movimientos de caja, etc. siguen existiendo con su nombre).
 - Un usuario desactivado no puede iniciar sesión, aunque conserve su contraseña.
 - El sistema permite al dueño crear, editar y borrar roles, salvo el rol Dueño.
