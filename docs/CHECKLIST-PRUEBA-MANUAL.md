@@ -78,7 +78,9 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 - [ ] La auditoría se puede filtrar por fecha, usuario y acción, y no tiene ningún botón para editar o borrar.
 - [ ] *(Correcciones 2026-10-20, pruebas rápidas)* **Pedidos**: cobrar una seña abre un ticket con lo abonado, el total y lo que falta pagar, y se puede imprimir; el botón **Ticket de seña** del pedido lo vuelve a abrir. Al entregar lo último del pedido el ticket **queda abierto** para imprimirlo. En **Caja**, el pago de esa entrega dice "Pago total pedido de <cliente> (ticket #N)" y no "Venta #N".
 - [ ] **Campanita**: con productos bajo el mínimo aparece el aviso de stock bajo con **Marcar leído**; al marcarlo desaparece y no vuelve hasta que otro producto quede bajo el mínimo.
-- [ ] **Caja** y **Caja del día**: arriba se ven Entradas, Salidas y Total, y una tabla con Efectivo / Transferencia / Total.
+- [ ] **Caja**, **Caja del día** y el **detalle de un turno cerrado** muestran las mismas cuatro tarjetas: Efectivo (con sus entradas y salidas), Transferencia (idem), Total (efectivo + transferencia) y Ventas (monto, cantidad y cobrado por efectivo y transferencia). Debajo: en Caja, la tabla de movimientos; en Caja del día, pestañas Movimientos / Turnos; en el detalle, pestañas Cierre de caja / Movimientos.
+- [ ] Si un pedido con **seña** se entrega, la tarjeta **Ventas** muestra la fila **Seña aplicada** y el cobrado + la seña suman lo vendido; el ícono ⓘ junto a "Ventas" explica por qué.
+- [ ] Al **imprimir** el detalle de un turno o la Caja del día salen todas las secciones seguidas (resumen, turnos y todos los movimientos), sin la barra de pestañas.
 - [ ] **Configuración → Sistema** (spec 017): solo el Dueño ve la pestaña; con otro rol no aparece.
 - [ ] El botón "Reiniciar el sistema" queda deshabilitado hasta escribir la contraseña **y** la frase exacta; con la frase en minúsculas sigue deshabilitado.
 - [ ] Con la contraseña incorrecta aparece "La contraseña es incorrecta. No se borró nada." y los datos siguen ahí.

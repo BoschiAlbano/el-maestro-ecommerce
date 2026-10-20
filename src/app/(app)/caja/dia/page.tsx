@@ -9,8 +9,9 @@ import { collectedBySales, dayRange, parseDayKey, shiftContinuity, summarizeDay,
 import { computeExpectedCash, summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Panel, StatCard } from "@/components/stat-card";
-import { CashBreakdown } from "@/components/cash-breakdown";
+import { Panel } from "@/components/stat-card";
+import { CashSummaryCards } from "@/components/cash-cards";
+import { SectionTabs } from "@/components/section-tabs";
 import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Table,
@@ -36,20 +37,6 @@ function formatMoney(n: number) {
 
 function formatDate(date: Date, options: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat("es-AR", { ...options, timeZone: "America/Argentina/Tucuman" }).format(date);
-}
-
-/** Una línea "nombre … valor" dentro de un panel de totales. */
-function TotalRow({ label, value, strong, negative }: { label: string; value: string; strong?: boolean; negative?: boolean }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-1.5">
-      <span className={cn("text-sm", strong ? "font-medium" : "text-muted-foreground")}>{label}</span>
-      <span
-        className={cn("tabular-nums", strong ? "text-lg font-semibold" : "text-sm", negative && "text-destructive")}
-      >
-        {value}
-      </span>
-    </div>
-  );
 }
 
 /** Tabla de movimientos de caja; se usa paginada en pantalla y completa al imprimir. */
@@ -128,7 +115,7 @@ function MovementsTable({ rows, canViewSales }: { rows: MovementRow[]; canViewSa
 export default async function CajaDelDiaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fecha?: string; pagina?: string }>;
+  searchParams: Promise<{ fecha?: string; pagina?: string; vista?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -142,31 +129,14 @@ export default async function CajaDelDiaPage({
   const dateKey = parseDayKey(params.fecha, todayKey);
   const range = dayRange(dateKey);
 
-  const [openShift, dayMovements, daySales] = await Promise.all([
-    prisma.cashShift.findFirst({
-      where: { closedAt: null },
-      include: { openedByUser: true, movements: true },
-    }),
+  const [dayMovements, daySales] = await Promise.all([
     prisma.cashMovement.findMany({
       where: { createdAt: range },
       include: { user: true, shift: { include: { openedByUser: true } } },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.sale.findMany({ where: { createdAt: range }, select: { total: true, voidedAt: true } }),
+    prisma.sale.findMany({ where: { createdAt: range }, select: { total: true, voidedAt: true, depositApplied: true } }),
   ]);
-
-  // Ventas del turno abierto (no anuladas): parte del estado de ahora, no del día que se mira.
-  const openShiftSales = openShift
-    ? await prisma.sale.aggregate({
-        where: { shiftId: openShift.id, voidedAt: null },
-        _sum: { total: true },
-        _count: true,
-      })
-    : null;
-
-  const lastClosed = openShift
-    ? null
-    : await prisma.cashShift.findFirst({ where: { closedAt: { not: null } }, orderBy: { closedAt: "desc" } });
 
   // Turnos del día: los que tuvieron movimientos ese día y los que se abrieron ese día
   // (aunque todavía no tengan movimientos). Con todos sus movimientos, para el esperado.
@@ -183,15 +153,10 @@ export default async function CajaDelDiaPage({
     saleId: m.saleId,
   }));
   const day = summarizeDay(movementsForSums);
-  const sales = summarizeSales(daySales.map((s) => ({ total: s.total.toNumber(), voided: s.voidedAt !== null })));
+  const sales = summarizeSales(
+    daySales.map((s) => ({ total: s.total.toNumber(), voided: s.voidedAt !== null, depositApplied: s.depositApplied?.toNumber() ?? 0 })),
+  );
   const collected = collectedBySales(movementsForSums);
-
-  const openExpected = openShift
-    ? computeExpectedCash(
-        openShift.openingAmount.toNumber(),
-        openShift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod })),
-      )
-    : null;
 
   // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
   const totalPages = Math.max(1, Math.ceil(dayMovements.length / PAGE_SIZE));
@@ -225,54 +190,6 @@ export default async function CajaDelDiaPage({
         </div>
       </div>
 
-      {/* Estado actual: siempre es el de ahora, aunque se mire otro día */}
-      <Panel
-        title="Estado actual de la caja"
-        description="Es el estado de ahora, sin importar el día que estés mirando."
-      >
-        {openShift && openExpected !== null ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="flex flex-col gap-1 rounded-xl border bg-card p-3">
-              <p className="text-xs text-muted-foreground">Estado</p>
-              <div className="flex items-center gap-2">
-                <Badge>Abierta</Badge>
-                <Link href="/caja" className={cn(buttonVariants({ variant: "outline", size: "xs" }))}>
-                  Ir a la caja
-                </Link>
-              </div>
-              <p className="truncate text-xs text-muted-foreground">
-                {openShift.openedByUser.name} · desde {formatDate(openShift.openedAt, { dateStyle: "short", timeStyle: "short" })}
-              </p>
-            </div>
-            <StatCard
-              label="Efectivo en caja ahora"
-              value={formatMoney(openExpected)}
-              hint="Efectivo esperado del turno abierto"
-            />
-            <StatCard
-              label="Efectivo inicial del turno"
-              value={formatMoney(openShift.openingAmount.toNumber())}
-              hint="Con lo que se abrió la caja"
-            />
-            <StatCard
-              label="Ventas del turno"
-              value={formatMoney(openShiftSales?._sum.total?.toNumber() ?? 0)}
-              hint={`${openShiftSales?._count ?? 0} ${openShiftSales?._count === 1 ? "venta" : "ventas"} · sin anuladas`}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="outline">Cerrada</Badge>
-            <p className="text-sm text-muted-foreground">
-              No hay un turno abierto
-              {lastClosed?.closedAt
-                ? `. El último se cerró el ${formatDate(lastClosed.closedAt, { dateStyle: "short", timeStyle: "short" })}.`
-                : "."}
-            </p>
-          </div>
-        )}
-      </Panel>
-
       {!hasActivity ? (
         <Panel title="Sin actividad" description="No hubo movimientos de caja este día.">
           <p className="text-sm text-muted-foreground">
@@ -281,50 +198,47 @@ export default async function CajaDelDiaPage({
         </Panel>
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Entradas" value={formatMoney(day.ingresos)} hint="Total que entró en el día" />
-            <StatCard
-              tone={day.egresos > 0 ? "negative" : undefined}
-              label="Salidas"
-              value={formatMoney(day.egresos)}
-              hint="Total que salió en el día"
-            />
-            <StatCard
-              tone="emphasis"
-              label="Total del día"
-              value={formatMoney(day.ingresos - day.egresos)}
-              hint="Entradas menos salidas"
-            />
-            <StatCard
-              label="Ventas del día"
-              value={formatMoney(sales.total)}
-              hint={`${sales.count} ${sales.count === 1 ? "venta" : "ventas"}${sales.voidedCount ? ` · ${sales.voidedCount} anulada${sales.voidedCount === 1 ? "" : "s"}` : ""}`}
-            />
-          </section>
+          <CashSummaryCards
+            summary={day}
+            sales={{ count: sales.count, total: sales.total, voidedCount: sales.voidedCount, depositApplied: sales.depositApplied, collected }}
+            period="día"
+            cashLabel="Efectivo del día"
+            cashValue={day.efectivo.neto}
+            cashNote="Sin contar los montos iniciales"
+          />
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <Panel
-              title="Entradas y salidas"
-              description="Todos los turnos del día, por medio de pago. Sin contar los montos iniciales."
-            >
-              <CashBreakdown summary={day} />
-            </Panel>
+          <SectionTabs
+            defaultValue={params.vista}
+            tabs={[
+              {
+                value: "movimientos",
+                label: `Movimientos (${dayMovements.length})`,
+                content: (
 
-            <Panel title="Ventas" description="Sin contar las anuladas">
-              <TotalRow label="Cantidad de ventas" value={String(sales.count)} />
-              <TotalRow label="Cobrado en efectivo" value={formatMoney(collected.efectivo)} />
-              <TotalRow label="Cobrado por transferencia" value={formatMoney(collected.transferencia)} />
-              {sales.voidedCount > 0 && (
-                <TotalRow
-                  label={`Anuladas (${sales.voidedCount})`}
-                  value={formatMoney(sales.voidedTotal)}
-                  negative
-                />
-              )}
-              <div className="my-1 border-t" />
-              <TotalRow label="Total vendido" value={formatMoney(sales.total)} strong />
-            </Panel>
-          </section>
+          <Panel title="Movimientos del día" description="De todos los turnos, del más reciente al más antiguo">
+            <div className="flex flex-col gap-4">
+              <div className="print:hidden">
+                <MovementsTable rows={pageMovements} canViewSales={canViewSales} />
+              </div>
+              <div className="hidden print:block">
+                <MovementsTable rows={dayMovements} canViewSales={canViewSales} />
+              </div>
+              <div className="print:hidden">
+              <TablePagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={dayMovements.length}
+                buildHref={(p) => `/caja/dia?fecha=${dateKey}&vista=movimientos${p > 1 ? `&pagina=${p}` : ""}`}
+              />
+              </div>
+            </div>
+          </Panel>
+                ),
+              },
+              {
+                value: "turnos",
+                label: `Turnos (${shifts.length})`,
+                content: (
 
           <Panel title="Turnos del día" description="Cuánto aportó cada turno y cómo cerró">
             <Table>
@@ -411,25 +325,10 @@ export default async function CajaDelDiaPage({
               </TableBody>
             </Table>
           </Panel>
-
-          <Panel title="Movimientos del día" description="De todos los turnos, del más reciente al más antiguo">
-            <div className="flex flex-col gap-4">
-              <div className="print:hidden">
-                <MovementsTable rows={pageMovements} canViewSales={canViewSales} />
-              </div>
-              <div className="hidden print:block">
-                <MovementsTable rows={dayMovements} canViewSales={canViewSales} />
-              </div>
-              <div className="print:hidden">
-              <TablePagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={dayMovements.length}
-                buildHref={(p) => `/caja/dia?fecha=${dateKey}${p > 1 ? `&pagina=${p}` : ""}`}
-              />
-              </div>
-            </div>
-          </Panel>
+                ),
+              },
+            ]}
+          />
         </>
       )}
     </div>

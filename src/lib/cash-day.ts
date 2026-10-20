@@ -31,18 +31,25 @@ export function summarizeDay(movements: CashMovementForExpected[]): ShiftSummary
   return summarizeShift(0, movements);
 }
 
-export type SaleForTotals = { total: number; voided: boolean };
+export type SaleForTotals = {
+  total: number;
+  voided: boolean;
+  /** Parte del total que ya estaba pagada con la seña de un pedido (specs/009). */
+  depositApplied?: number;
+};
 
 export type SalesSummary = {
   count: number;
   total: number;
   voidedCount: number;
   voidedTotal: number;
+  /** Seña aplicada en las ventas no anuladas: se cobró antes, así que no figura como cobro de la venta. */
+  depositApplied: number;
 };
 
 /** Cantidad y monto de las ventas del día; las anuladas no cuentan como ventas. */
 export function summarizeSales(sales: SaleForTotals[]): SalesSummary {
-  const summary: SalesSummary = { count: 0, total: 0, voidedCount: 0, voidedTotal: 0 };
+  const summary: SalesSummary = { count: 0, total: 0, voidedCount: 0, voidedTotal: 0, depositApplied: 0 };
   for (const sale of sales) {
     if (sale.voided) {
       summary.voidedCount += 1;
@@ -50,6 +57,7 @@ export function summarizeSales(sales: SaleForTotals[]): SalesSummary {
     } else {
       summary.count += 1;
       summary.total += sale.total;
+      summary.depositApplied += sale.depositApplied ?? 0;
     }
   }
   return summary;

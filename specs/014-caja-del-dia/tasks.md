@@ -4,7 +4,7 @@
 
 - [x] **T-001** `src/lib/cash-day.ts` (`parseDayKey`, `summarizeDay`, `summarizeSales`, `collectedBySales`) con pruebas unitarias.
   - Hecho cuando: Vitest cubre fecha inválida/futura, neto por medio, ventas activas vs anuladas y cobrado por ventas con anulación.
-- [x] **T-002** Pantalla `/caja/dia`: estado actual, paneles de Efectivo / Transferencias / Ventas, desglose por turno y movimientos paginados.
+- [x] **T-002** Pantalla `/caja/dia`: ~~estado actual~~ *(quitado 2026-10-20)*, paneles de Efectivo / Transferencias / Ventas, desglose por turno y movimientos paginados.
   - Hecho cuando: con dos turnos en el mismo día los totales los suman y coinciden con cada turno.
 - [x] **T-003** Selector de fecha (anterior / siguiente / hoy / input) y fecha inválida o futura → hoy.
   - Hecho cuando: se puede navegar a un día anterior y una fecha futura por URL vuelve a hoy.

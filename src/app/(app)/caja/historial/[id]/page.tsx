@@ -12,8 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { summarizeShift } from "@/lib/cash-shift";
-import { CashBreakdown } from "@/components/cash-breakdown";
-import { Panel, StatCard } from "@/components/stat-card";
+import { CashSummaryCards } from "@/components/cash-cards";
+import { collectedBySales, summarizeSales } from "@/lib/cash-day";
+import { Panel } from "@/components/stat-card";
+import { SectionTabs } from "@/components/section-tabs";
 import { PrintButton } from "./print-button";
 
 const TYPE_LABELS: Record<string, string> = { INGRESO: "Ingreso", EGRESO: "Egreso" };
@@ -50,6 +52,16 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
   if (!shift || !shift.closedAt) notFound();
 
   const expected = shift.countedCash!.toNumber() - (shift.difference?.toNumber() ?? 0);
+  const shiftSales = summarizeSales(
+    (await prisma.sale.findMany({ where: { shiftId: shift.id }, select: { total: true, voidedAt: true, depositApplied: true } })).map((sale) => ({
+      total: sale.total.toNumber(),
+      voided: sale.voidedAt !== null,
+      depositApplied: sale.depositApplied?.toNumber() ?? 0,
+    })),
+  );
+  const collected = collectedBySales(
+    shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod, saleId: m.saleId })),
+  );
   const summary = summarizeShift(
     shift.openingAmount.toNumber(),
     shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod })),
@@ -68,61 +80,66 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
         <PrintButton />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-        <div>
-          <p className="text-muted-foreground">Monto inicial</p>
-          <p>${shift.openingAmount.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Esperado</p>
-          <p>${expected.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Contado</p>
-          <p>${shift.countedCash!.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Diferencia</p>
-          <p className={shift.difference?.toNumber() ? "text-destructive" : ""}>
-            ${shift.difference?.toFixed(0) ?? "0"}
-          </p>
-        </div>
-      </div>
-      {shift.differenceReason && (
-        <p className="text-sm">
-          <span className="text-muted-foreground">Motivo de la diferencia:</span>{" "}
-          {shift.differenceReason}
-        </p>
-      )}
+      <CashSummaryCards
+        summary={summary}
+        sales={{
+          count: shiftSales.count,
+          total: shiftSales.total,
+          voidedCount: shiftSales.voidedCount,
+          depositApplied: shiftSales.depositApplied,
+          collected,
+        }}
+        period="turno"
+        cashLabel="Efectivo esperado"
+        cashValue={summary.expectedCash}
+        cashNote={`Inicial ${formatMoney(shift.openingAmount.toNumber())} + neto en efectivo`}
+      />
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          tone="emphasis"
-          label="Efectivo esperado"
-          value={formatMoney(summary.expectedCash)}
-          hint="Inicial + neto en efectivo"
-        />
-        <StatCard label="Entradas" value={formatMoney(summary.ingresos)} hint="Total que entró en el turno" />
-        <StatCard
-          tone={summary.egresos > 0 ? "negative" : undefined}
-          label="Salidas"
-          value={formatMoney(summary.egresos)}
-          hint="Total que salió en el turno"
-        />
-        <StatCard
-          label="Total del turno"
-          value={formatMoney(summary.ingresos - summary.egresos)}
-          hint="Entradas menos salidas"
-        />
-      </section>
-
-      <Panel
-        title="Entradas y salidas"
-        description={`Por medio de pago. El efectivo esperado es el inicial (${formatMoney(shift.openingAmount.toNumber())}) más el neto en efectivo; las transferencias no lo cambian.`}
-      >
-        <CashBreakdown summary={summary} />
+      <SectionTabs
+        tabs={[
+          {
+            value: "cierre",
+            label: "Cierre de caja",
+            content: (
+              <>
+      <Panel title="Cierre de caja" description="Lo que había que tener, lo que se contó y la diferencia">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            <div>
+              <p className="text-muted-foreground">Monto inicial</p>
+              <p>{formatMoney(shift.openingAmount.toNumber())}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Esperado</p>
+              <p>{formatMoney(expected)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Contado</p>
+              <p>{formatMoney(shift.countedCash!.toNumber())}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Diferencia</p>
+              <p className={shift.difference?.toNumber() ? "text-destructive" : ""}>
+                {formatMoney(shift.difference?.toNumber() ?? 0)}
+              </p>
+            </div>
+          </div>
+          {shift.differenceReason && (
+            <p className="text-sm">
+              <span className="text-muted-foreground">Motivo de la diferencia:</span>{" "}
+              {shift.differenceReason}
+            </p>
+          )}
+        </div>
       </Panel>
 
+              </>
+            ),
+          },
+          {
+            value: "movimientos",
+            label: `Movimientos (${shift.movements.length})`,
+            content: (
       <Table>
         <TableHeader>
           <TableRow>
@@ -139,7 +156,7 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
             <TableRow key={movement.id}>
               <TableCell>{formatDateTime(movement.createdAt)}</TableCell>
               <TableCell>{TYPE_LABELS[movement.type]}</TableCell>
-              <TableCell>${movement.amount.toFixed(0)}</TableCell>
+              <TableCell>{formatMoney(movement.amount.toNumber())}</TableCell>
               <TableCell>{movement.concept}</TableCell>
               <TableCell>
                 {METHOD_LABELS[movement.paymentMethod]}
@@ -157,6 +174,10 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
           )}
         </TableBody>
       </Table>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

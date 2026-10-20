@@ -60,6 +60,18 @@ describe("summarizeDay", () => {
   });
 });
 
+describe("summarizeSales: seña aplicada", () => {
+  it("suma la seña de las ventas no anuladas y no la de las anuladas", () => {
+    const summary = summarizeSales([
+      { total: 10000, voided: false, depositApplied: 5000 },
+      { total: 8000, voided: false },
+      { total: 3000, voided: true, depositApplied: 1000 },
+    ]);
+    expect(summary.depositApplied).toBe(5000);
+    expect(summary.total).toBe(18000);
+  });
+});
+
 describe("summarizeSales", () => {
   it("separa las ventas activas de las anuladas", () => {
     expect(
@@ -68,11 +80,11 @@ describe("summarizeSales", () => {
         { total: 2500, voided: false },
         { total: 700, voided: true },
       ]),
-    ).toEqual({ count: 2, total: 3500, voidedCount: 1, voidedTotal: 700 });
+    ).toEqual({ count: 2, total: 3500, voidedCount: 1, voidedTotal: 700, depositApplied: 0 });
   });
 
   it("sin ventas devuelve ceros", () => {
-    expect(summarizeSales([])).toEqual({ count: 0, total: 0, voidedCount: 0, voidedTotal: 0 });
+    expect(summarizeSales([])).toEqual({ count: 0, total: 0, voidedCount: 0, voidedTotal: 0, depositApplied: 0 });
   });
 });
 

@@ -140,7 +140,7 @@ function MovementsTable({
   );
 }
 
-/** Movimientos del turno en pestañas: todos, ingresos y egresos (specs/007, RF-10). El resumen por medio de pago está arriba, en `CashBreakdown`. */
+/** Movimientos del turno en pestañas: todos, ingresos y egresos (specs/007, RF-10). Los totales por medio de pago están arriba, en `CashSummaryCards`. */
 export function MovementsTabs({
   movements,
   canViewSales,

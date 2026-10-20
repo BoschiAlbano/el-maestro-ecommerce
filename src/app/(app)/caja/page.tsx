@@ -7,8 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Panel, StatCard } from "@/components/stat-card";
-import { CashBreakdown } from "@/components/cash-breakdown";
+import { Panel } from "@/components/stat-card";
+import { CashSummaryCards } from "@/components/cash-cards";
+import { collectedBySales, summarizeSales } from "@/lib/cash-day";
 import { cn } from "@/lib/utils";
 import { OpenShiftForm } from "./open-shift-form";
 import { MovementDialog } from "./movement-dialog";
@@ -95,6 +96,17 @@ export default async function CajaPage() {
     shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod })),
   );
 
+  const shiftSales = summarizeSales(
+    (await prisma.sale.findMany({ where: { shiftId: shift.id }, select: { total: true, voidedAt: true, depositApplied: true } })).map((sale) => ({
+      total: sale.total.toNumber(),
+      voided: sale.voidedAt !== null,
+      depositApplied: sale.depositApplied?.toNumber() ?? 0,
+    })),
+  );
+  const collected = collectedBySales(
+    shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod, saleId: m.saleId })),
+  );
+
   const movements: MovementRow[] = shift.movements.map((m) => ({
     id: m.id,
     when: formatDate(m.createdAt, { dateStyle: "short", timeStyle: "short" }),
@@ -132,40 +144,23 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          tone="emphasis"
-          label="Efectivo en caja"
-          value={formatMoney(summary.expectedCash)}
-          hint="Lo que debería haber ahora"
-        />
-        <StatCard label="Entradas" value={formatMoney(summary.ingresos)} hint="Total que entró en el turno" />
-        <StatCard
-          tone={summary.egresos > 0 ? "negative" : undefined}
-          label="Salidas"
-          value={formatMoney(summary.egresos)}
-          hint="Total que salió en el turno"
-        />
-        <StatCard
-          label="Total del turno"
-          value={formatMoney(summary.ingresos - summary.egresos)}
-          hint="Entradas menos salidas"
-        />
-      </section>
-
-      <Panel
-        title="Entradas y salidas"
-        description={`Por medio de pago. El efectivo en caja es el inicial (${formatMoney(openingAmount)}) más el neto en efectivo; las transferencias no lo cambian.`}
-      >
-        <CashBreakdown summary={summary} />
-      </Panel>
+      <CashSummaryCards
+        summary={summary}
+        sales={{
+          count: shiftSales.count,
+          total: shiftSales.total,
+          voidedCount: shiftSales.voidedCount,
+          depositApplied: shiftSales.depositApplied,
+          collected,
+        }}
+        period="turno"
+        cashLabel="Efectivo en caja"
+        cashValue={summary.expectedCash}
+        cashNote={`Inicial ${formatMoney(openingAmount)} + neto en efectivo`}
+      />
 
       <Panel title="Movimientos del turno" description="Todo lo que entró y salió desde que se abrió la caja">
-        <MovementsTabs
-          movements={movements}
-          canViewSales={canViewSales}
-          canReprint={canReprint}
-        />
+        <MovementsTabs movements={movements} canViewSales={canViewSales} canReprint={canReprint} />
       </Panel>
     </div>
   );

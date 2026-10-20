@@ -17,7 +17,7 @@ Hoy la caja se mira por turno (spec 007). Si el cajero de la mañana cerró y el
 **Incluye:**
 
 - Una pantalla `/caja/dia`: **un resumen completo** del día calendario (hoy por defecto, cambiable a cualquier día anterior)
-- El **estado actual de la caja** (abierta o cerrada, quién la tiene, cuánto efectivo debería haber ahora)
+- ~~El **estado actual de la caja** (abierta o cerrada, quién la tiene, cuánto efectivo debería haber ahora)~~ *(Quitado 2026-10-20: la pantalla se alineó con `/caja`; el estado actual se ve en `/caja`.)*
 - Los **totales en efectivo y en transferencia** del día, sumando todos los turnos
 - Los **totales de ventas** del día (cantidad, monto, anuladas y cómo se cobraron)
 - Desglose por turno: quién lo abrió y lo cerró, horario, monto inicial, efectivo esperado, contado y diferencia
@@ -46,14 +46,15 @@ Hoy la caja se mira por turno (spec 007). Si el cajero de la mañana cerró y el
 ## 4. Requisitos funcionales
 
 - **RF-1.** El sistema ofrece la pantalla `/caja/dia`, que muestra el resumen de un día calendario. Por defecto muestra **hoy**; con un selector de fecha y con botones "día anterior" y "día siguiente" se puede ver cualquier otro día (la fecha viaja en la URL: `/caja/dia?fecha=AAAA-MM-DD`). No se puede elegir una fecha futura.
-- **RF-2.** *Estado actual de la caja* (siempre es el de **ahora**, sea cual sea el día que se está mirando): si hay un turno abierto, la etiqueta "Abierta", quién lo abrió, desde cuándo, con cuánto efectivo inicial y el **efectivo esperado ahora** (spec 007, RF-3: la cifra de cuánto efectivo debería haber físicamente en la caja en este momento, aunque el turno lo haya abierto otra persona). Si no hay ninguno, muestra "Cerrada" y cuándo se cerró el último turno.
+- ~~**RF-2.** *Estado actual de la caja* (siempre es el de **ahora**, sea cual sea el día que se está mirando): si hay un turno abierto, la etiqueta "Abierta", quién lo abrió, desde cuándo, con cuánto efectivo inicial y el **efectivo esperado ahora** (spec 007, RF-3: la cifra de cuánto efectivo debería haber físicamente en la caja en este momento, aunque el turno lo haya abierto otra persona). Si no hay ninguno, muestra "Cerrada" y cuándo se cerró el último turno.~~ *(Quitado 2026-10-20: `/caja/dia` ya no muestra el estado actual de la caja, para tener la misma interfaz que `/caja`; ese estado se ve en `/caja`.)*
 - **RF-3.** *Totales del día*, sumando **todos los turnos** que tuvieron movimientos ese día, en tres bloques:
   - **Efectivo:** ingresos, egresos y **neto** en efectivo (sin contar los montos iniciales de los turnos; ver regla de negocio sobre el monto inicial).
   - **Transferencias:** ingresos, egresos y **neto** por transferencia (no cambian el efectivo, igual que en la spec 007).
   - **Ventas:** cantidad y monto total de las ventas no anuladas; cantidad y monto de las anuladas; y lo **cobrado por ventas** separado en efectivo y transferencia (neto de lo devuelto por las anulaciones).
   - Además, el total general de ingresos y egresos del día (efectivo más transferencia).
 - **RF-4.** *Desglose por turno*: una fila por cada turno que tuvo movimientos ese día, ordenada por apertura, con: estado (abierto o cerrado), quién lo abrió y quién lo cerró, hora de apertura y de cierre, monto inicial, ingresos y egresos en efectivo del turno, efectivo esperado y, si está cerrado, efectivo contado y diferencia. Cada fila lleva al detalle del turno (`/caja/historial/[id]` si está cerrado, `/caja` si está abierto).
-- **RF-5b.** *(Presentación, 2026-10-20 — no cambia reglas ni números.)* Lo más importante va primero: tarjetas de *Entradas*, *Salidas*, *Total del día* (entradas menos salidas) y *Ventas del día*, y una tabla de *Entradas y salidas* con efectivo, transferencia y total (reemplaza a los paneles separados de Efectivo y Transferencias), junto al panel de *Ventas*.
+- **RF-5b.** *(Presentación, 2026-10-20 — no cambia reglas ni números.)* Las mismas **cuatro tarjetas** que `/caja` (spec 007, RF-10), calculadas sobre todos los turnos del día: *Efectivo del día* (el neto en efectivo, sin contar los montos iniciales, con sus entradas y salidas), *Transferencia*, *Total del día* (efectivo + transferencia) y *Ventas* (monto, cantidad y cobrado por medio de pago, más la fila *Seña aplicada* y un tooltip explicativo cuando hubo seña; la cuarta era "Total de salidas" hasta el 2026-10-20). La tabla de "Entradas y salidas" se eliminó: las tarjetas muestran lo mismo.
+- **RF-5c.** *(Presentación, 2026-10-20.)* Bajo las tarjetas, la pantalla se ordena en pestañas: *Movimientos (N)* y *Turnos (N)* (la pestaña *Ventas* se quitó el 2026-10-20: repetía la tarjeta de Ventas). La pestaña abierta viaja en la URL (`?vista=`) para que la paginación de los movimientos no cambie de sección. **Al imprimir salen todas las secciones seguidas**, sin la barra de pestañas.
 - **RF-5.** *Por medio de pago*: efectivo y transferencia, cada uno con ingresos, egresos y neto del día, sumando todos los turnos. Los números coinciden con los de las tarjetas (RF-2).
 - **RF-6.** *Movimientos del día*: lista cronológica de todos los movimientos de caja del día, de todos los turnos, con hora, tipo (ingreso o egreso, distinguido como en la spec 007), concepto, medio de pago (con los últimos 4 dígitos del comprobante si es transferencia), monto con signo, usuario que lo registró y turno al que pertenece. Los movimientos que vienen de una venta enlazan a su detalle (para quien tenga permiso "ver" en Ventas). La lista está paginada (mismo componente que los historiales).
 - **RF-7.** Un día sin ningún movimiento de caja muestra un mensaje claro ("No hubo movimientos de caja este día"), no un error ni tarjetas con números engañosos.
@@ -91,11 +92,13 @@ No hay un permiso nuevo: se reutiliza el de Caja (spec 002). El permiso se valid
 - **Usuario sin permiso "ver" en Caja** entra por URL: el servidor lo rechaza con un mensaje claro.
 - **Muchos movimientos en un día**: la lista se pagina; los totales y el desglose siempre se calculan sobre el día completo, no sobre la página visible.
 
+- **Anulación de una venta de un día anterior** *(aclaración 2026-10-20)*: la venta sigue siendo del día en que se hizo (ahí figura como anulada y no suma a *Ventas*), pero la devolución es un egreso del día en que se anuló. Ese día aparece una devolución de una venta que no está en su lista de ventas, y el día original conserva el cobro entre sus entradas. Ambos son correctos según el ledger; solo se nota al mirar los días por separado.
+
 ## 8. Criterios de aceptación
 
 - [ ] Con dos turnos en el mismo día (uno cerrado a la mañana por un usuario y uno abierto a la tarde por otro), `/caja/dia` muestra los totales sumados de ambos, sin tener que entrar al historial.
 - [ ] Los totales en efectivo y en transferencia del día (ingresos, egresos y neto) coinciden con la suma de lo que muestra cada turno en su propio detalle.
-- [ ] El *Estado actual de la caja* coincide con lo que muestra `/caja` (abierta por quién, desde cuándo, efectivo esperado), y se ve igual aunque se esté mirando un día anterior.
+- ~~[ ] El *Estado actual de la caja* coincide con lo que muestra `/caja` (abierta por quién, desde cuándo, efectivo esperado), y se ve igual aunque se esté mirando un día anterior.~~ *(Quitado 2026-10-20.)*
 - [ ] Los totales de ventas (cantidad, monto, anuladas y cobrado por medio) coinciden con el historial de ventas del mismo día.
 - [ ] El desglose por turno muestra quién abrió y cerró cada uno, horarios, monto inicial, esperado, contado y diferencia, y cada fila lleva al detalle correcto.
 - [ ] El resumen por medio de pago separa efectivo de transferencia y coincide con las tarjetas.
