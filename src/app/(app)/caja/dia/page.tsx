@@ -2,9 +2,9 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
-import { ModuloNegocio } from "@/generated/prisma/client";
+import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { addDaysToDateKey, toTucumanDateKey } from "@/lib/analytics";
+import { toTucumanDateKey } from "@/lib/analytics";
 import { collectedBySales, dayRange, parseDayKey, shiftContinuity, summarizeDay, summarizeSales } from "@/lib/cash-day";
 import { computeExpectedCash, summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +21,11 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { DayPicker } from "./day-picker";
+import { PrintButton } from "./print-button";
 
 const PAGE_SIZE = 10;
+
+type MovementRow = Prisma.CashMovementGetPayload<{ include: { user: true; shift: { include: { openedByUser: true } } } }>;
 
 const METHOD_LABELS = { EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia" } as const;
 
@@ -45,6 +48,79 @@ function TotalRow({ label, value, strong, negative }: { label: string; value: st
         {value}
       </span>
     </div>
+  );
+}
+
+/** Tabla de movimientos de caja; se usa paginada en pantalla y completa al imprimir. */
+function MovementsTable({ rows, canViewSales }: { rows: MovementRow[]; canViewSales: boolean }) {
+  return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Hora</TableHead>
+              <TableHead>Turno</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Concepto</TableHead>
+              <TableHead>Medio</TableHead>
+              <TableHead>Usuario</TableHead>
+              <TableHead className="text-right">Monto</TableHead>
+              {canViewSales && <TableHead className="text-right">Venta</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((movement) => (
+              <TableRow key={movement.id}>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {formatDate(movement.createdAt, { timeStyle: "short" })}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {movement.shift.openedByUser.name}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={movement.type === "INGRESO" ? "secondary" : "destructive"}>
+                    {movement.type === "INGRESO" ? "Ingreso" : "Egreso"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-64 truncate" title={movement.concept}>
+                  {movement.concept}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {METHOD_LABELS[movement.paymentMethod]}
+                  {movement.transferReference ? ` (••${movement.transferReference})` : ""}
+                </TableCell>
+                <TableCell>{movement.user.name}</TableCell>
+                <TableCell
+                  className={cn(
+                    "text-right font-medium tabular-nums",
+                    movement.type === "EGRESO" && "text-destructive",
+                  )}
+                >
+                  {movement.type === "INGRESO" ? "+" : "−"}
+                  {formatMoney(movement.amount.toNumber())}
+                </TableCell>
+                {canViewSales && (
+                  <TableCell className="text-right">
+                    {movement.saleId && (
+                      <Link
+                        href={`/ventas/historial/${movement.saleId}`}
+                        className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                      >
+                        Ver
+                      </Link>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={canViewSales ? 8 : 7} className="text-center text-sm text-muted-foreground">
+                  No hubo movimientos de caja este día.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
   );
 }
 
@@ -138,13 +214,9 @@ export default async function CajaDelDiaPage({
             {isToday ? " (hoy)" : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <DayPicker
-            dateKey={dateKey}
-            todayKey={todayKey}
-            previousKey={addDaysToDateKey(dateKey, -1)}
-            nextKey={addDaysToDateKey(dateKey, 1)}
-          />
+        <div className="flex flex-wrap items-end gap-2 print:hidden">
+          <DayPicker dateKey={dateKey} todayKey={todayKey} />
+          <PrintButton />
           <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
             <History data-icon="inline-start" />
             Historial
@@ -354,79 +426,20 @@ export default async function CajaDelDiaPage({
 
           <Panel title="Movimientos del día" description="De todos los turnos, del más reciente al más antiguo">
             <div className="flex flex-col gap-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Hora</TableHead>
-                    <TableHead>Turno</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Concepto</TableHead>
-                    <TableHead>Medio</TableHead>
-                    <TableHead>Usuario</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                    {canViewSales && <TableHead className="text-right">Venta</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pageMovements.map((movement) => (
-                    <TableRow key={movement.id}>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {formatDate(movement.createdAt, { timeStyle: "short" })}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {movement.shift.openedByUser.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={movement.type === "INGRESO" ? "secondary" : "destructive"}>
-                          {movement.type === "INGRESO" ? "Ingreso" : "Egreso"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-64 truncate" title={movement.concept}>
-                        {movement.concept}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {METHOD_LABELS[movement.paymentMethod]}
-                        {movement.transferReference ? ` (••${movement.transferReference})` : ""}
-                      </TableCell>
-                      <TableCell>{movement.user.name}</TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-medium tabular-nums",
-                          movement.type === "EGRESO" && "text-destructive",
-                        )}
-                      >
-                        {movement.type === "INGRESO" ? "+" : "−"}
-                        {formatMoney(movement.amount.toNumber())}
-                      </TableCell>
-                      {canViewSales && (
-                        <TableCell className="text-right">
-                          {movement.saleId && (
-                            <Link
-                              href={`/ventas/historial/${movement.saleId}`}
-                              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                            >
-                              Ver
-                            </Link>
-                          )}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                  {dayMovements.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={canViewSales ? 8 : 7} className="text-center text-sm text-muted-foreground">
-                        No hubo movimientos de caja este día.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <div className="print:hidden">
+                <MovementsTable rows={pageMovements} canViewSales={canViewSales} />
+              </div>
+              <div className="hidden print:block">
+                <MovementsTable rows={dayMovements} canViewSales={canViewSales} />
+              </div>
+              <div className="print:hidden">
               <TablePagination
                 page={page}
                 pageSize={PAGE_SIZE}
                 total={dayMovements.length}
                 buildHref={(p) => `/caja/dia?fecha=${dateKey}${p > 1 ? `&pagina=${p}` : ""}`}
               />
+              </div>
             </div>
           </Panel>
         </>
