@@ -29,8 +29,14 @@ export function NewUserForm({ roles }: NewUserFormProps) {
         <Input id="name" name="name" required />
       </div>
       <div className="flex flex-col gap-2">
+        <Label htmlFor="username">Usuario</Label>
+        <Input id="username" name="username" required minLength={3} maxLength={40} autoComplete="off" />
+        <p className="text-xs text-muted-foreground">Con este nombre entra al sistema, por ejemplo El Maestro.</p>
+      </div>
+      <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" required />
+        <p className="text-xs text-muted-foreground">No se usa para ingresar.</p>
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Contraseña inicial</Label>

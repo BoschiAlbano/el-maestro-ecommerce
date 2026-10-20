@@ -26,7 +26,7 @@ import {
 export type UserRow = {
   id: string;
   name: string;
-  email: string;
+  username: string;
   roleName: string;
   active: boolean;
 };
@@ -50,7 +50,7 @@ export function UsersTable({ users, currentUserId }: { users: UserRow[]; current
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
-          <TableHead>Email</TableHead>
+          <TableHead>Usuario</TableHead>
           <TableHead>Rol</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead className="text-right">Acciones</TableHead>
@@ -60,7 +60,7 @@ export function UsersTable({ users, currentUserId }: { users: UserRow[]; current
         {users.map((user) => (
           <TableRow key={user.id}>
             <TableCell>{user.name}</TableCell>
-            <TableCell>{user.email}</TableCell>
+            <TableCell>{user.username}</TableCell>
             <TableCell>{user.roleName}</TableCell>
             <TableCell>
               <Badge variant={user.active ? "default" : "secondary"}>

@@ -31,10 +31,10 @@ export function LoginForm() {
         <CardContent>
           <form action={formAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
+              <label htmlFor="username" className="text-sm font-medium">
+                Usuario
               </label>
-              <Input id="email" name="email" type="email" required autoComplete="email" />
+              <Input id="username" name="username" type="text" required autoComplete="username" />
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="password" className="text-sm font-medium">

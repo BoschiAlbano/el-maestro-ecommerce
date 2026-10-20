@@ -28,7 +28,7 @@ export default async function EmpleadoDetailPage({ params }: { params: Promise<{
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">{employee.user.name}</h1>
-          <p className="text-sm text-muted-foreground">{employee.user.email}</p>
+          <p className="text-sm text-muted-foreground">{employee.user.username}</p>
         </div>
         <Badge variant={estaDeBaja ? "destructive" : "default"}>
           {estaDeBaja ? "Dado de baja" : "Activo"}

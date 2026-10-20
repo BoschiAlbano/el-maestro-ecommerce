@@ -38,7 +38,7 @@ Saber cuánto stock real tiene cada producto en todo momento, para poder vender 
 - **RF-2.** El sistema permite un conteo físico: se ingresa la cantidad contada de cada producto (lista editable en pantalla, no una planilla), se muestra la diferencia contra el stock registrado, y recién al confirmar se genera un movimiento de ajuste por cada producto con diferencia, con motivo "conteo físico".
 - **RF-3.** El sistema permite un ajuste manual de stock para un producto puntual (suma o resta una cantidad), con un motivo obligatorio de texto libre.
 - **RF-4.** La pantalla de inventario muestra, por producto, el stock actual y si está en o por debajo de su stock mínimo (el umbral ya definido en la spec 004).
-- **RF-5.** Cada producto tiene un historial de sus movimientos de stock (tipo, cantidad, motivo, quién y cuándo), visible desde su ficha.
+- **RF-5.** Cada producto tiene un historial de sus movimientos de stock (tipo, cantidad, motivo, quién y cuándo), visible desde su ficha. El historial está paginado de a 10 (`?pagina=N`). *(Agregado 2026-10-20.)*
 - **RF-6.** El sistema expone una función interna para registrar un movimiento de stock, que las specs 006 (ingreso de mercadería) y 008 (ventas) van a usar para sus propios movimientos — ningún módulo futuro inventa su propia forma de cambiar el stock.
 - **RF-7.** Un movimiento que deja el stock de un producto en negativo no se bloquea; se guarda igual y la pantalla de inventario lo señala como una situación a revisar.
 - **RF-8.** El alta de un producto (spec 004) permite opcionalmente indicar su stock inicial; si no tiene el permiso especial "ajustar stock", ese campo no está disponible.

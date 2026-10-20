@@ -43,7 +43,7 @@ Tener el catálogo completo de productos, con marca y rubro, precios en ARS y c�
 - El sistema permite crear, editar y desactivar/reactivar un producto con: nombre, marca, rubro (y subrubro opcional), foto (opcional), precio de compra, precio de venta, stock mínimo y código de barras.
 - Si no se ingresa un código de barras, el sistema genera uno propio, que nunca coincide con uno real de fábrica.
 - El sistema permite crear y editar marcas y rubros (con subrubros); no se puede borrar una marca o rubro que todavía tiene productos.
-- El catálogo se puede buscar por nombre o código, y filtrar por marca y rubro.
+- El catálogo se puede buscar por nombre o código, y filtrar por marca y rubro. La lista está paginada de a 20 y conserva los filtros al cambiar de página (`?pagina=N`). *(Agregado 2026-10-20.)*
 - El sistema permite importar productos desde una planilla de Excel o CSV, usando una plantilla descargable; antes de confirmar, muestra qué filas tienen errores y por qué.
 - El sistema guarda un historial cada vez que cambia el precio de venta o de compra de un producto.
 - El sistema permite generar e imprimir etiquetas con el código de barras de uno o varios productos.

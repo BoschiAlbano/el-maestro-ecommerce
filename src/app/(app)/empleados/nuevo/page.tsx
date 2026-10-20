@@ -17,7 +17,7 @@ export default async function NuevoEmpleadoPage() {
     canCreateUser ? prisma.role.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
     prisma.user.findMany({
       where: { employee: null },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, username: true },
       orderBy: { name: "asc" },
     }),
   ]);

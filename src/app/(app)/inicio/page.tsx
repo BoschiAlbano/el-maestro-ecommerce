@@ -20,8 +20,13 @@ function salesHint(count: number) {
   return `${count} ${count === 1 ? "venta" : "ventas"}`;
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reiniciado?: string }>;
+}) {
   const currentUser = await getCurrentUser();
+  const reiniciado = (await searchParams).reiniciado === "1";
 
   if (!currentUser) {
     return (
@@ -54,6 +59,11 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {reiniciado && (
+        <p className="rounded-lg border bg-muted px-4 py-3 text-sm">
+          El sistema se reinició: ya no hay datos y podés empezar de cero.
+        </p>
+      )}
       {caja && (
         <>
           <section className="flex flex-col gap-2">

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { PrismaClient, ModuloNegocio } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { normalizeUsername, usernameKey } from "../src/lib/username";
 
 // Semilla de desarrollo: crea (o reutiliza) el rol Dueño, dos roles de
 // ejemplo (Encargado y Cajero — specs/002, sección 10) y un usuario Dueño
@@ -17,6 +18,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const email = process.env.SEED_ADMIN_EMAIL ?? "dueno@importadora.local";
 const password = process.env.SEED_ADMIN_PASSWORD ?? "cambiar-esta-password-123";
 const name = process.env.SEED_ADMIN_NAME ?? "Dueño de prueba";
+const username = normalizeUsername(process.env.SEED_ADMIN_USERNAME ?? name);
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -182,13 +184,15 @@ async function main() {
 
   const user = await prisma.user.upsert({
     where: { authUserId },
+    // El usuario solo se fija al crear: si el dueño lo cambió desde /usuarios, el seed no lo pisa.
     update: { name, email, roleId: ownerRole.id },
-    create: { authUserId, name, email, roleId: ownerRole.id },
+    create: { authUserId, name, email, username, usernameKey: usernameKey(username), roleId: ownerRole.id },
   });
 
   await prisma.$disconnect();
 
   console.log("Usuario de prueba listo:");
+  console.log(`  Usuario:    ${username}`);
   console.log(`  Email:      ${email}`);
   console.log(`  Rol:        Dueño`);
   console.log(`  authUserId: ${authUserId}`);

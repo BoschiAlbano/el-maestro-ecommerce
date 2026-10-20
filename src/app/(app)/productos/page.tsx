@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Select,
   SelectContent,
@@ -26,10 +27,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+const PAGE_SIZE = 20;
+
 export default async function ProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; brandId?: string; rubroId?: string }>;
+  searchParams: Promise<{ q?: string; brandId?: string; rubroId?: string; pagina?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -38,7 +41,7 @@ export default async function ProductosPage({
   }
 
   const verCostos = hasSpecialPermission(currentUser, "verCostosMargenes");
-  const { q, brandId, rubroId } = await searchParams;
+  const { q, brandId, rubroId, pagina } = await searchParams;
 
   const where: Prisma.ProductWhereInput = {};
   if (q) {
@@ -50,11 +53,19 @@ export default async function ProductosPage({
   if (brandId && brandId !== "__all__") where.brandId = brandId;
   if (rubroId && rubroId !== "__all__") where.rubroId = rubroId;
 
+  const total = await prisma.product.count({ where });
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pagina), totalPages);
+
   const [products, brands, topLevelRubros] = await Promise.all([
     prisma.product.findMany({
       where,
       include: { brand: true, rubro: { include: { parent: true } } },
       orderBy: { name: "asc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
     prisma.rubro.findMany({
@@ -181,6 +192,21 @@ export default async function ProductosPage({
           )}
         </TableBody>
       </Table>
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => {
+          const query = new URLSearchParams();
+          if (q) query.set("q", q);
+          if (brandId && brandId !== "__all__") query.set("brandId", brandId);
+          if (rubroId && rubroId !== "__all__") query.set("rubroId", rubroId);
+          if (p > 1) query.set("pagina", String(p));
+          const qs = query.toString();
+          return qs ? `/productos?${qs}` : "/productos";
+        }}
+      />
     </div>
   );
 }

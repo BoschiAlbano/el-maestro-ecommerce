@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdjustStockForm } from "../adjust-stock-form";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 
 const TYPE_LABELS: Record<string, string> = {
   INGRESO: "Ingreso",
@@ -20,10 +21,14 @@ const TYPE_LABELS: Record<string, string> = {
   MERMA: "Merma",
 };
 
+const PAGE_SIZE = 10;
+
 export default async function InventarioProductoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ productId: string }>;
+  searchParams: Promise<{ pagina?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -32,13 +37,22 @@ export default async function InventarioProductoPage({
   }
 
   const { productId } = await params;
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    include: {
-      stockMovements: { include: { user: true }, orderBy: { createdAt: "desc" } },
-    },
-  });
+  const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) notFound();
+
+  const total = await prisma.stockMovement.count({ where: { productId } });
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage((await searchParams).pagina), totalPages);
+
+  const movements = await prisma.stockMovement.findMany({
+    where: { productId },
+    include: { user: true },
+    orderBy: { createdAt: "desc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+  });
 
   const puedeAjustar =
     hasPermission(currentUser, ModuloNegocio.INVENTARIO, "editar") &&
@@ -72,7 +86,7 @@ export default async function InventarioProductoPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {product.stockMovements.map((movement) => (
+            {movements.map((movement) => (
               <TableRow key={movement.id}>
                 <TableCell>
                   {new Intl.DateTimeFormat("es-AR", {
@@ -89,7 +103,7 @@ export default async function InventarioProductoPage({
                 <TableCell>{movement.user.name}</TableCell>
               </TableRow>
             ))}
-            {product.stockMovements.length === 0 && (
+            {movements.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                   Todavía no hay movimientos.
@@ -98,6 +112,14 @@ export default async function InventarioProductoPage({
             )}
           </TableBody>
         </Table>
+        <div className="mt-4">
+          <TablePagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            buildHref={(p) => (p === 1 ? `/inventario/${productId}` : `/inventario/${productId}?pagina=${p}`)}
+          />
+        </div>
       </div>
     </div>
   );

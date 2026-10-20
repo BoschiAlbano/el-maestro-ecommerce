@@ -18,14 +18,17 @@
 
 ### 0.2 Empezar de cero (opcional, pero los números de abajo suponen una base limpia)
 
-> ⚠️ **Esto borra TODO**: productos, marcas, rubros, stock, ventas, caja, pedidos, auditoría, usuarios y roles. Hacelo solo si en la base no hay datos reales que quieras conservar. Si preferís no borrar, los valores esperados de Inicio y Analíticas (secciones 10, 13 y 14) no van a coincidir porque se suman a lo que ya haya.
+> ⚠️ **Esto borra TODO** y no se puede deshacer: productos, marcas, rubros, stock, ventas, caja, pedidos, empleados, auditoría, fotos, los demás usuarios y los roles. Hacelo solo si en la base no hay datos reales que quieras conservar. **La base es la misma que usa el sitio publicado.** Si preferís no borrar, los valores esperados de Inicio y Analíticas (secciones 10, 13 y 14) no van a coincidir porque se suman a lo que ya haya.
+
+1. Entrá como **Dueño** → **Configuración → pestaña Sistema**.
+2. Revisá el resumen de lo que se va a borrar, escribí tu contraseña y la frase `REINICIAR EL SISTEMA`, y apretá **Reiniciar el sistema**.
+3. Para volver a tener los roles de ejemplo (Encargado y Cajero), corré en PowerShell:
 
 ```powershell
-$env:CONFIRM_RESET = "yes"; npx tsx scripts/reset-database.ts
 pnpm db:seed
 ```
 
-- [ ] Reinicié la base y corrí el seed (queda solo el usuario Dueño y los roles de ejemplo).
+- [ ] Reinicié el sistema desde **Configuración → Sistema** y corrí el seed (queda solo el usuario Dueño y los roles de ejemplo).
 - [ ] **No** corrí `seed-catalog.ts` (cargaría 50 productos de muestra que aparecerían en la lista de viaje y ensuciarían los números).
 
 ### 0.3 Datos que vamos a usar
@@ -44,7 +47,8 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 
 - [ ] Entrar a http://localhost:3000 sin sesión → me lleva a `/login`.
 - [ ] El login muestra el logo, **El Maestro** y **Ecommerce**, y el formulario está centrado.
-- [ ] Email o contraseña incorrectos → mensaje de error claro, la pantalla no se rompe.
+- [ ] El login pide **Usuario** y **Contraseña** (sin email). Usuario o contraseña incorrectos, o un usuario que no existe → el **mismo** mensaje de error, la pantalla no se rompe.
+- [ ] Entrar con el usuario en mayúsculas, en minúsculas o con espacios de más (`el  maestro`) → entra igual (spec 016).
 - [ ] Entro como **Dueño** → llego al **Inicio** (`/inicio`).
 - [ ] Con sesión iniciada, ir a `/login` → me redirige al Inicio (`/inicio`).
 - [ ] Con sesión iniciada, ir a `/` → me redirige al Inicio (`/inicio`). Sin sesión, `/` se ve en blanco, sin menú y sin pasar por el login (landing reservada para la tienda online, spec 015).
@@ -61,7 +65,9 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 - [ ] En **Usuarios → Roles** → **Nuevo rol** "Cajero de prueba": permisos *Ventas: ver y crear*, *Caja: ver y crear*, *Pedidos: ver*, *Catálogo: ver*, *Inventario: ver*. **Sin** permisos especiales.
 - [ ] Guardar el rol → aparece en la lista.
 - [ ] El rol **Dueño** no se puede borrar, renombrar ni editar sus permisos.
-- [ ] **Usuarios → Nuevo usuario** `cajero.prueba@…` (un email que puedas usar) con rol "Cajero de prueba" y una contraseña → queda creado.
+- [ ] **Usuarios → Nuevo usuario** con usuario `Cajero Prueba`, email `cajero.prueba@…` (se pide pero no se usa para ingresar), rol "Cajero de prueba" y una contraseña → queda creado y entra con `Cajero Prueba`.
+- [ ] Crear otro usuario con `cajero prueba` (otras mayúsculas) → "Ese usuario ya existe.". Con `juan@gmail.com` o con símbolos → mensaje claro.
+- [ ] Editar al cajero y cambiarle el usuario → entra con el nuevo y no con el viejo; el cambio figura en Auditoría.
 - [ ] Editar el usuario y desactivarlo → ya no puede iniciar sesión; lo **vuelvo a activar**.
 - [ ] No se puede desactivar al único usuario con rol Dueño.
 
@@ -70,6 +76,10 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 - [ ] **Configuración**: cargo razón social "**El Maestro Ecommerce**" y texto adicional del ticket "**Gracias por su compra**" → guarda.
 - [ ] **Configuración → Auditoría**: aparecen las acciones de las secciones anteriores (rol creado, usuario creado/desactivado…).
 - [ ] La auditoría se puede filtrar por fecha, usuario y acción, y no tiene ningún botón para editar o borrar.
+- [ ] **Configuración → Sistema** (spec 017): solo el Dueño ve la pestaña; con otro rol no aparece.
+- [ ] El botón "Reiniciar el sistema" queda deshabilitado hasta escribir la contraseña **y** la frase exacta; con la frase en minúsculas sigue deshabilitado.
+- [ ] Con la contraseña incorrecta aparece "La contraseña es incorrecta. No se borró nada." y los datos siguen ahí.
+- [ ] *(Solo si querés probar el reinicio real, después de la sección 18)* Con la contraseña correcta: vuelvo a **Inicio** con el aviso de que el sistema se reinició, no quedan productos, ventas ni usuarios (salvo el mío), la **Auditoría** tiene una sola entrada "Sistema reiniciado", la configuración del negocio sigue cargada y la primera venta nueva es el **ticket Nº 1**.
 
 ## 4. Catálogo de productos (spec 004)
 

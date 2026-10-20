@@ -3,22 +3,36 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { usernameKey } from "@/lib/username";
 
 export type LoginState = { error?: string };
 
+const INVALID_CREDENTIALS = "Usuario o contraseña incorrectos.";
+
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const username = String(formData.get("username") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  if (!email || !password) {
-    return { error: "Completá email y contraseña." };
+  if (!username.trim() || !password) {
+    return { error: "Completá usuario y contraseña." };
+  }
+
+  // El usuario se traduce al email con el que está registrada la cuenta en
+  // Supabase Auth (specs/016). Si no existe, el mensaje es el mismo que con una
+  // contraseña incorrecta: no se revela si el usuario existe.
+  const account = await prisma.user.findUnique({
+    where: { usernameKey: usernameKey(username) },
+    select: { email: true },
+  });
+  if (!account) {
+    return { error: INVALID_CREDENTIALS };
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: account.email, password });
 
   if (error || !data.user) {
-    return { error: "Email o contraseña incorrectos." };
+    return { error: INVALID_CREDENTIALS };
   }
 
   // La fila en `users` la crea el dueño al dar de alta al usuario (spec 002,

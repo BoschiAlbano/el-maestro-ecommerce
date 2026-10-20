@@ -36,14 +36,14 @@ export default async function EditarUsuarioPage({
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-lg font-semibold">{user.name}</h1>
-        <p className="text-sm text-muted-foreground">{user.email}</p>
+        <p className="text-sm text-muted-foreground">{user.username}</p>
       </div>
 
       <div className="grid max-w-5xl items-start gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Datos del usuario</CardTitle>
-            <CardDescription>Nombre, email de ingreso y rol.</CardDescription>
+            <CardDescription>Nombre, usuario, email y rol.</CardDescription>
           </CardHeader>
           <CardContent>
             <EditUserForm user={user} roles={roles} />

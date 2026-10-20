@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppShell user={appUser} headerEnd={<UserMenu name={appUser.name} email={appUser.email} />}>
+    <AppShell user={appUser} headerEnd={<UserMenu name={appUser.name} username={appUser.username} />}>
       {children}
     </AppShell>
   );

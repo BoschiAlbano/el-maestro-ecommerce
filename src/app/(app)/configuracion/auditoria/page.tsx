@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ const ACCIONES: { value: AuditAction; label: string }[] = [
   { value: "ROLE_CREATED", label: "Rol creado" },
   { value: "ROLE_UPDATED", label: "Rol editado" },
   { value: "ROLE_DELETED", label: "Rol borrado" },
+  { value: "SYSTEM_RESET", label: "Sistema reiniciado" },
 ];
 
 function labelFor(action: AuditAction): string {
@@ -42,10 +44,12 @@ function formatDetail(detail: Prisma.JsonValue): string {
     .join(" · ");
 }
 
+const PAGE_SIZE = 20;
+
 export default async function AuditoriaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ desde?: string; hasta?: string; userId?: string; action?: string }>;
+  searchParams: Promise<{ desde?: string; hasta?: string; userId?: string; action?: string; pagina?: string }>;
 }) {
   const currentUser = await getCurrentUser();
 
@@ -53,7 +57,7 @@ export default async function AuditoriaPage({
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver esta sección.</p>;
   }
 
-  const { desde, hasta, userId, action } = await searchParams;
+  const { desde, hasta, userId, action, pagina } = await searchParams;
 
   const where: Prisma.AuditLogWhereInput = {};
   if (desde || hasta) {
@@ -65,12 +69,19 @@ export default async function AuditoriaPage({
   if (userId && userId !== "__all__") where.userId = userId;
   if (action && action !== "__all__") where.action = action as AuditAction;
 
+  const total = await prisma.auditLog.count({ where });
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pagina), totalPages);
+
   const [logs, users] = await Promise.all([
     prisma.auditLog.findMany({
       where,
       include: { user: true },
       orderBy: { createdAt: "desc" },
-      take: 200,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
     prisma.user.findMany({ orderBy: { name: "asc" } }),
   ]);
@@ -166,6 +177,22 @@ export default async function AuditoriaPage({
           )}
         </TableBody>
       </Table>
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => {
+          const query = new URLSearchParams();
+          if (desde) query.set("desde", desde);
+          if (hasta) query.set("hasta", hasta);
+          if (userId && userId !== "__all__") query.set("userId", userId);
+          if (action && action !== "__all__") query.set("action", action);
+          if (p > 1) query.set("pagina", String(p));
+          const qs = query.toString();
+          return qs ? `/configuracion/auditoria?${qs}` : "/configuracion/auditoria";
+        }}
+      />
     </div>
   );
 }

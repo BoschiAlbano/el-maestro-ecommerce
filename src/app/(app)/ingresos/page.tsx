@@ -5,6 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -14,16 +15,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function IngresosPage() {
+const PAGE_SIZE = 10;
+
+export default async function IngresosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pagina?: string }>;
+}) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.INGRESO_MERCADERIA, "ver")) {
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver los ingresos.</p>;
   }
 
+  const total = await prisma.stockEntry.count();
+
+  // Si la URL pide una página que no existe (p. ej. ?pagina=99), se muestra la última.
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage((await searchParams).pagina), totalPages);
+
   const entries = await prisma.stockEntry.findMany({
     include: { user: true, _count: { select: { items: true } } },
     orderBy: { createdAt: "desc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   return (
@@ -77,6 +92,13 @@ export default async function IngresosPage() {
           )}
         </TableBody>
       </Table>
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => (p === 1 ? "/ingresos" : `/ingresos?pagina=${p}`)}
+      />
     </div>
   );
 }

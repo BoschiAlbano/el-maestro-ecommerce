@@ -58,8 +58,14 @@ function NewUserEmployeeForm({ roles }: { roles: { id: string; name: string }[] 
         <Input id="name" name="name" required />
       </div>
       <div className="flex flex-col gap-2">
+        <Label htmlFor="username">Usuario</Label>
+        <Input id="username" name="username" required minLength={3} maxLength={40} autoComplete="off" />
+        <p className="text-xs text-muted-foreground">Con este nombre entra al sistema, por ejemplo El Maestro.</p>
+      </div>
+      <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" required />
+        <p className="text-xs text-muted-foreground">No se usa para ingresar.</p>
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Contraseña inicial</Label>
@@ -92,7 +98,7 @@ function NewUserEmployeeForm({ roles }: { roles: { id: string; name: string }[] 
 function ExistingUserEmployeeForm({
   availableUsers,
 }: {
-  availableUsers: { id: string; name: string; email: string }[];
+  availableUsers: { id: string; name: string; username: string }[];
 }) {
   const [state, formAction, pending] = useActionState(createEmployeeForExistingUser, initialState);
 
@@ -103,7 +109,7 @@ function ExistingUserEmployeeForm({
         <Select
           name="userId"
           required
-          items={Object.fromEntries(availableUsers.map((u) => [u.id, `${u.name} (${u.email})`]))}
+          items={Object.fromEntries(availableUsers.map((u) => [u.id, `${u.name} (${u.username})`]))}
         >
           <SelectTrigger id="userId" className="w-full">
             <SelectValue placeholder="Elegí un usuario" />
@@ -111,7 +117,7 @@ function ExistingUserEmployeeForm({
           <SelectContent>
             {availableUsers.map((u) => (
               <SelectItem key={u.id} value={u.id}>
-                {u.name} ({u.email})
+                {u.name} ({u.username})
               </SelectItem>
             ))}
           </SelectContent>
@@ -133,7 +139,7 @@ export function EmployeeForm({
 }: {
   canCreateUser: boolean;
   roles: { id: string; name: string }[];
-  availableUsers: { id: string; name: string; email: string }[];
+  availableUsers: { id: string; name: string; username: string }[];
 }) {
   const [mode, setMode] = useState<"new" | "existing">(canCreateUser ? "new" : "existing");
 

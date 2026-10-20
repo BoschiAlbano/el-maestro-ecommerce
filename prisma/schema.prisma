@@ -31,6 +31,11 @@ model User {
   authUserId      String                @unique
   name            String
   email           String                @unique
+  /// Nombre para ingresar al sistema, como lo escribió el dueño (specs/016).
+  username        String
+  /// Forma normalizada de `username` (minúsculas, sin espacios de más): sobre ella
+  /// se busca y se garantiza que sea único sin distinguir mayúsculas.
+  usernameKey     String                @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
@@ -123,6 +128,7 @@ enum AuditAction {
   ROLE_CREATED
   ROLE_UPDATED
   ROLE_DELETED
+  SYSTEM_RESET
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):

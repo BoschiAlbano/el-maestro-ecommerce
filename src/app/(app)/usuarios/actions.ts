@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOwner } from "@/lib/permissions";
 import { getCurrentUser } from "@/lib/current-user";
 import { logAudit } from "@/lib/audit";
+import { checkUsername } from "@/lib/username-check";
 
 export type ActionState = { error?: string };
 
@@ -33,6 +34,9 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
   }
   const { name, email, password, roleId } = parsed.data;
 
+  const usernameCheck = await checkUsername(String(formData.get("username") ?? ""));
+  if ("error" in usernameCheck) return { error: usernameCheck.error };
+
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) return { error: "El rol elegido no existe." };
 
@@ -51,19 +55,21 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
 
   try {
     await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { authUserId, name, email, roleId } });
+      const user = await tx.user.create({
+        data: { authUserId, name, email, username: usernameCheck.username, usernameKey: usernameCheck.usernameKey, roleId },
+      });
       await logAudit(tx, {
         userId: currentUser.id,
         action: "USER_CREATED",
         targetType: "User",
         targetId: user.id,
-        detail: { name, email, rol: role.name },
+        detail: { name, email, usuario: usernameCheck.username, rol: role.name },
       });
     });
   } catch {
     // No dejar un usuario de Supabase Auth huérfano si falla el guardado en Prisma.
     await admin.auth.admin.deleteUser(authUserId);
-    return { error: "No se pudo guardar el usuario (¿email duplicado?)." };
+    return { error: "No se pudo guardar el usuario (¿usuario o email duplicado?)." };
   }
 
   revalidatePath("/usuarios");
@@ -97,6 +103,9 @@ export async function updateUser(
 
   const target = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   if (!target) return { error: "El usuario no existe." };
+
+  const usernameCheck = await checkUsername(String(formData.get("username") ?? ""), userId);
+  if ("error" in usernameCheck) return { error: usernameCheck.error };
 
   const cambiaRol = roleId !== target.roleId;
   const cambiaEmail = email !== target.email.toLowerCase();
@@ -135,7 +144,10 @@ export async function updateUser(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: userId }, data: { name, email, roleId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { name, email, roleId, username: usernameCheck.username, usernameKey: usernameCheck.usernameKey },
+      });
       await logAudit(tx, {
         userId: currentUser.id,
         action: "USER_UPDATED",
@@ -146,6 +158,8 @@ export async function updateUser(
           nombreNuevo: name,
           emailViejo: target.email,
           emailNuevo: email,
+          usuarioViejo: target.username,
+          usuarioNuevo: usernameCheck.username,
           rolViejo: target.role.name,
           rolNuevo: newRole?.name ?? target.role.name,
         },
@@ -203,7 +217,7 @@ export async function resetUserPassword(
       targetType: "User",
       targetId: userId,
       // Nunca se guarda la contraseña, solo que se cambió.
-      detail: { name: target.name, email: target.email, motivo: "Cambio de contraseña" },
+      detail: { name: target.name, email: target.email, usuario: target.username, motivo: "Cambio de contraseña" },
     });
   });
 
@@ -238,7 +252,7 @@ export async function setUserActive(userId: string, active: boolean): Promise<Ac
       action: active ? "USER_ACTIVATED" : "USER_DEACTIVATED",
       targetType: "User",
       targetId: userId,
-      detail: { name: user.name, email: user.email },
+      detail: { name: user.name, email: user.email, usuario: user.username },
     });
   });
 

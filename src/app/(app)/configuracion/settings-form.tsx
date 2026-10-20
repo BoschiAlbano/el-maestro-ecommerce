@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { ResetSummary } from "@/lib/system-reset";
+import { ResetSystemTab } from "./reset-system-tab";
+
+type Settings = { razonSocial: string; textoTicketAdicional: string | null; stockMinimoDefault: number };
 
 type SettingsFormProps = {
-  settings: { razonSocial: string; textoTicketAdicional: string | null; stockMinimoDefault: number };
+  settings: Settings;
+  /** Solo el Dueño recibe el resumen y ve la pestaña "Sistema" (specs/017). */
+  resetSummary?: ResetSummary;
 };
 
 const initialState: ActionState = {};
@@ -22,7 +28,7 @@ function FormStatus({ state }: { state: ActionState }) {
   );
 }
 
-function TicketForm({ settings }: SettingsFormProps) {
+function TicketForm({ settings }: { settings: Settings }) {
   const [state, formAction, pending] = useActionState(updateTicketSettings, initialState);
 
   return (
@@ -47,7 +53,7 @@ function TicketForm({ settings }: SettingsFormProps) {
   );
 }
 
-function ArticleForm({ settings }: SettingsFormProps) {
+function ArticleForm({ settings }: { settings: Settings }) {
   const [state, formAction, pending] = useActionState(updateArticleSettings, initialState);
 
   return (
@@ -73,12 +79,13 @@ function ArticleForm({ settings }: SettingsFormProps) {
 }
 
 /** Configuración del sistema separada por tema; cada pestaña se guarda por su cuenta. */
-export function SettingsForm({ settings }: SettingsFormProps) {
+export function SettingsForm({ settings, resetSummary }: SettingsFormProps) {
   return (
     <Tabs defaultValue="ticket">
       <TabsList>
         <TabsTrigger value="ticket">Ticket</TabsTrigger>
         <TabsTrigger value="articulos">Artículos</TabsTrigger>
+        {resetSummary && <TabsTrigger value="sistema">Sistema</TabsTrigger>}
       </TabsList>
       <TabsContent value="ticket" className="pt-2">
         <TicketForm settings={settings} />
@@ -86,6 +93,11 @@ export function SettingsForm({ settings }: SettingsFormProps) {
       <TabsContent value="articulos" className="pt-2">
         <ArticleForm settings={settings} />
       </TabsContent>
+      {resetSummary && (
+        <TabsContent value="sistema" className="pt-2">
+          <ResetSystemTab summary={resetSummary} />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

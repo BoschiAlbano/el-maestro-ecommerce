@@ -36,7 +36,7 @@ export default async function UsuariosPage() {
         users={users.map((u) => ({
           id: u.id,
           name: u.name,
-          email: u.email,
+          username: u.username,
           roleName: u.role.name,
           active: u.active,
         }))}

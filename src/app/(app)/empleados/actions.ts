@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireOwner } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { logAudit } from "@/lib/audit";
+import { checkUsername } from "@/lib/username-check";
 
 export type ActionState = { error?: string };
 
@@ -62,6 +63,9 @@ export async function createEmployeeWithNewUser(
   const { name, email, password, roleId } = parsedUser.data;
   const { dni, phone, hireDate, shift } = parsedEmployee.data;
 
+  const usernameCheck = await checkUsername(String(formData.get("username") ?? ""));
+  if ("error" in usernameCheck) return { error: usernameCheck.error };
+
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) return { error: "El rol elegido no existe." };
 
@@ -87,7 +91,9 @@ export async function createEmployeeWithNewUser(
   let employeeId: string;
   try {
     employeeId = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { authUserId, name, email, roleId } });
+      const user = await tx.user.create({
+        data: { authUserId, name, email, username: usernameCheck.username, usernameKey: usernameCheck.usernameKey, roleId },
+      });
       const employee = await tx.employee.create({
         data: { userId: user.id, dni, phone, hireDate: new Date(hireDate), shift },
       });
@@ -96,14 +102,14 @@ export async function createEmployeeWithNewUser(
         action: "USER_CREATED",
         targetType: "User",
         targetId: user.id,
-        detail: { name, email, rol: role.name, dni },
+        detail: { name, email, usuario: usernameCheck.username, rol: role.name, dni },
       });
       return employee.id;
     });
   } catch {
     // No dejar un usuario de Supabase Auth huérfano si falla el guardado en Prisma.
     await admin.auth.admin.deleteUser(authUserId);
-    return { error: "No se pudo guardar el empleado (¿DNI o email duplicado?)." };
+    return { error: "No se pudo guardar el empleado (¿DNI, usuario o email duplicado?)." };
   }
 
   revalidatePath("/empleados");
@@ -215,7 +221,7 @@ export async function deactivateEmployee(employeeId: string): Promise<ActionStat
       action: "USER_DEACTIVATED",
       targetType: "User",
       targetId: employee.userId,
-      detail: { name: employee.user.name, email: employee.user.email, motivo: "Baja de empleado" },
+      detail: { name: employee.user.name, email: employee.user.email, usuario: employee.user.username, motivo: "Baja de empleado" },
     });
   });
 

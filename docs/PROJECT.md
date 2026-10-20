@@ -166,6 +166,8 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 013 | Notificaciones | 005, 007, 009 | Verificada |
 | 014 | Caja del día | 007, 008, 009 | En desarrollo |
 | 015 | Tienda online: ruta raíz y landing en blanco | 001, 002, 012 | Verificada |
+| 016 | Ingreso por usuario y contraseña | 001, 002, 003 | Verificada |
+| 017 | Reinicio del sistema | 002, 003 | En desarrollo |
 
 Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 
