@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "El Maestro Ecommerce",
     short_name: "El Maestro",
     description: "Stock, ventas, pedidos y caja del negocio.",
-    start_url: "/",
+    start_url: "/inicio",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#0f172a",

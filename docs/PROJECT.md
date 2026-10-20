@@ -90,7 +90,7 @@ Nada de lo siguiente se construye en esta etapa. Cualquier cambio posterior se c
 - Varios depósitos o varios puestos de caja.
 - Comisiones y liquidación de sueldos.
 - Notificaciones por WhatsApp, email o push.
-- Tienda online e integraciones con WhatsApp, redes sociales o medios de pago.
+- Tienda online e integraciones con WhatsApp, redes sociales o medios de pago. (La ruta `/` queda reservada para la tienda con una landing en blanco, spec 015; eso no es la tienda: catálogo público, carrito y pedidos de clientes siguen fuera de alcance hasta que se apruebe su spec.)
 - Impresión directa por comandos ESC/POS (se usa la impresión del navegador).
 
 ## 7. Requisitos no funcionales
@@ -165,6 +165,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Verificada |
 | 013 | Notificaciones | 005, 007, 009 | Verificada |
 | 014 | Caja del día | 007, 008, 009 | En desarrollo |
+| 015 | Tienda online: ruta raíz y landing en blanco | 001, 002, 012 | Verificada |
 
 Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 

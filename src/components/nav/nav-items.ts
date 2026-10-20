@@ -32,7 +32,7 @@ export type NavItem = {
 };
 
 export const navItems: NavItem[] = [
-  { href: "/", label: "Inicio", icon: Home, group: "principal", enabled: true },
+  { href: "/inicio", label: "Inicio", icon: Home, group: "principal", enabled: true },
   {
     href: "/ventas",
     label: "Ventas",

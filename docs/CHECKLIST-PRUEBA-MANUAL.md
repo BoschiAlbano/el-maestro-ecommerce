@@ -45,8 +45,9 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 - [ ] Entrar a http://localhost:3000 sin sesión → me lleva a `/login`.
 - [ ] El login muestra el logo, **El Maestro** y **Ecommerce**, y el formulario está centrado.
 - [ ] Email o contraseña incorrectos → mensaje de error claro, la pantalla no se rompe.
-- [ ] Entro como **Dueño** → llego al **Inicio**.
-- [ ] Con sesión iniciada, ir a `/login` → me redirige al Inicio.
+- [ ] Entro como **Dueño** → llego al **Inicio** (`/inicio`).
+- [ ] Con sesión iniciada, ir a `/login` → me redirige al Inicio (`/inicio`).
+- [ ] Con sesión iniciada, ir a `/` → me redirige al Inicio (`/inicio`). Sin sesión, `/` se ve en blanco, sin menú y sin pasar por el login (landing reservada para la tienda online, spec 015).
 - [ ] La pestaña del navegador muestra el **ícono del logo** (negro, sin fondo) y el título "El Maestro Ecommerce".
 - [ ] Menú lateral: arriba el logo con "El Maestro / Ecommerce"; secciones **Catálogo y stock** (Productos, Stock, Lista de viaje, Ingresos) y **Administración**; al pie **Cerrar sesión**.
 - [ ] El botón del menú (☰) colapsa el menú a solo íconos y los tooltips muestran el nombre.

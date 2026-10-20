@@ -3,7 +3,7 @@ import { buildBreadcrumbs } from "./breadcrumbs";
 
 describe("buildBreadcrumbs", () => {
   it("el inicio es solo la página actual", () => {
-    expect(buildBreadcrumbs("/")).toEqual([{ label: "Inicio" }]);
+    expect(buildBreadcrumbs("/inicio")).toEqual([{ label: "Inicio" }]);
   });
 
   it("una sección de primer nivel", () => {

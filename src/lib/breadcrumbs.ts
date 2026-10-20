@@ -6,6 +6,7 @@ export type Crumb = {
 
 /** Secciones del primer nivel de la URL. */
 const SECTIONS: Record<string, string> = {
+  inicio: "Inicio",
   ventas: "Ventas",
   pedidos: "Pedidos",
   caja: "Caja",
