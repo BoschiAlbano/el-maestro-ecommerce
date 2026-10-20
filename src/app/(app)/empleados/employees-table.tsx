@@ -1,10 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, MoreHorizontal, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { deactivateEmployee } from "./actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,15 +36,18 @@ export type EmployeeRow = {
 /** Lista de empleados con un menú de acciones por fila: ver el detalle o dar de baja (specs/010). */
 export function EmployeesTable({ employees, emptyMessage }: { employees: EmployeeRow[]; emptyMessage: string }) {
   const [pending, startTransition] = useTransition();
+  const [deactivateTarget, setDeactivateTarget] = useState<EmployeeRow | null>(null);
 
   function deactivate(employee: EmployeeRow) {
     startTransition(async () => {
       const result = await deactivateEmployee(employee.id);
       if (result.error) toast.error(result.error);
+      setDeactivateTarget(null);
     });
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -78,7 +82,7 @@ export function EmployeesTable({ employees, emptyMessage }: { employees: Employe
                     Ver detalles
                   </DropdownMenuItem>
                   {employee.canDeactivate && (
-                    <DropdownMenuItem variant="destructive" disabled={pending} onClick={() => deactivate(employee)}>
+                    <DropdownMenuItem variant="destructive" onClick={() => setDeactivateTarget(employee)}>
                       <UserX />
                       Dar de baja
                     </DropdownMenuItem>
@@ -97,5 +101,18 @@ export function EmployeesTable({ employees, emptyMessage }: { employees: Employe
         )}
       </TableBody>
     </Table>
+
+    <ConfirmDialog
+      open={deactivateTarget !== null}
+      onOpenChange={(open) => {
+        if (!open) setDeactivateTarget(null);
+      }}
+      title="¿Dar de baja al empleado?"
+      description={`${deactivateTarget?.name ?? "El empleado"} no va a poder volver a iniciar sesión, pero se conserva su historial.`}
+      confirmLabel="Dar de baja"
+      pending={pending}
+      onConfirm={() => deactivateTarget && deactivate(deactivateTarget)}
+    />
+    </>
   );
 }

@@ -21,7 +21,7 @@ No hay campo de stock en `Product` (constitución regla 7 y `spec.md` sección 5
 | `/productos/importar` | Importación masiva (subir, previsualizar errores, confirmar) | Permiso "crear" en Catálogo |
 | `/productos/etiquetas` | Elegir productos e imprimir etiquetas | Permiso "exportar" en Catálogo |
 | `/marcas` | Lista y alta/edición de marcas | Permiso "editar" en Catálogo |
-| `/rubros` | Lista y alta/edición de rubros y subrubros | Permiso "editar" en Catálogo |
+| `/rubros` | Misma interfaz que `/marcas` (alta arriba, tabla con Guardar/Borrar por fila). Los subrubros se listan indentados bajo su rubro y se agregan con el botón "Subrubro" de la fila del rubro, que abre un modal *(cambio 2026-10-20)* | Permiso "editar" en Catálogo |
 
 ## 3. Lógica de servidor
 

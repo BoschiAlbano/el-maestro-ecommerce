@@ -2,11 +2,10 @@ import { notFound } from "next/navigation";
 import { isOwner } from "@/lib/permissions";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditUserForm } from "./edit-user-form";
 import { ResetPasswordForm } from "./reset-password-form";
-import { setUserActive } from "../actions";
+import { ToggleActiveButton } from "./toggle-active-button";
 
 export default async function EditarUsuarioPage({
   params,
@@ -31,14 +30,7 @@ export default async function EditarUsuarioPage({
 
   if (!user) notFound();
 
-  const userId = user.id;
-  const isSelf = userId === currentUser.id;
-  const nextActive = !user.active;
-
-  async function toggleActive() {
-    "use server";
-    await setUserActive(userId, nextActive);
-  }
+  const isSelf = user.id === currentUser.id;
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,11 +71,7 @@ export default async function EditarUsuarioPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={toggleActive}>
-                <Button type="submit" variant={user.active ? "destructive" : "default"} disabled={isSelf}>
-                  {user.active ? "Desactivar usuario" : "Reactivar usuario"}
-                </Button>
-              </form>
+              <ToggleActiveButton userId={user.id} userName={user.name} active={user.active} disabled={isSelf} />
               {isSelf && (
                 <p className="mt-2 text-sm text-muted-foreground">No podés desactivarte a vos mismo.</p>
               )}

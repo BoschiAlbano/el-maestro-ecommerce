@@ -1,10 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, MoreHorizontal, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { setUserActive } from "./actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,15 +34,18 @@ export type UserRow = {
 /** Lista de usuarios con un menú de acciones por fila: ver el detalle o desactivar/reactivar (specs/002). */
 export function UsersTable({ users, currentUserId }: { users: UserRow[]; currentUserId: string }) {
   const [pending, startTransition] = useTransition();
+  const [deactivateTarget, setDeactivateTarget] = useState<UserRow | null>(null);
 
   function toggleActive(user: UserRow) {
     startTransition(async () => {
       const result = await setUserActive(user.id, !user.active);
       if (result.error) toast.error(result.error);
+      setDeactivateTarget(null);
     });
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -79,7 +83,7 @@ export function UsersTable({ users, currentUserId }: { users: UserRow[]; current
                     <DropdownMenuItem
                       variant="destructive"
                       disabled={pending || user.id === currentUserId}
-                      onClick={() => toggleActive(user)}
+                      onClick={() => setDeactivateTarget(user)}
                     >
                       <UserX />
                       Desactivar
@@ -97,5 +101,18 @@ export function UsersTable({ users, currentUserId }: { users: UserRow[]; current
         ))}
       </TableBody>
     </Table>
+
+    <ConfirmDialog
+      open={deactivateTarget !== null}
+      onOpenChange={(open) => {
+        if (!open) setDeactivateTarget(null);
+      }}
+      title="¿Desactivar usuario?"
+      description={`${deactivateTarget?.name ?? "El usuario"} no va a poder iniciar sesión. Conserva su historial y lo podés reactivar cuando quieras.`}
+      confirmLabel="Desactivar"
+      pending={pending}
+      onConfirm={() => deactivateTarget && toggleActive(deactivateTarget)}
+    />
+    </>
   );
 }
