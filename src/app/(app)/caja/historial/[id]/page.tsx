@@ -11,10 +11,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { summarizeShift } from "@/lib/cash-shift";
+import { CashBreakdown } from "@/components/cash-breakdown";
+import { Panel, StatCard } from "@/components/stat-card";
 import { PrintButton } from "./print-button";
 
 const TYPE_LABELS: Record<string, string> = { INGRESO: "Ingreso", EGRESO: "Egreso" };
 const METHOD_LABELS: Record<string, string> = { EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia" };
+
+function formatMoney(n: number) {
+  return `$${Math.round(n).toLocaleString("es-AR")}`;
+}
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("es-AR", {
@@ -43,6 +50,10 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
   if (!shift || !shift.closedAt) notFound();
 
   const expected = shift.countedCash!.toNumber() - (shift.difference?.toNumber() ?? 0);
+  const summary = summarizeShift(
+    shift.openingAmount.toNumber(),
+    shift.movements.map((m) => ({ type: m.type, amount: m.amount.toNumber(), paymentMethod: m.paymentMethod })),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -83,6 +94,34 @@ export default async function DetalleCajaPage({ params }: { params: Promise<{ id
           {shift.differenceReason}
         </p>
       )}
+
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard
+          tone="emphasis"
+          label="Efectivo esperado"
+          value={formatMoney(summary.expectedCash)}
+          hint="Inicial + neto en efectivo"
+        />
+        <StatCard label="Entradas" value={formatMoney(summary.ingresos)} hint="Total que entró en el turno" />
+        <StatCard
+          tone={summary.egresos > 0 ? "negative" : undefined}
+          label="Salidas"
+          value={formatMoney(summary.egresos)}
+          hint="Total que salió en el turno"
+        />
+        <StatCard
+          label="Total del turno"
+          value={formatMoney(summary.ingresos - summary.egresos)}
+          hint="Entradas menos salidas"
+        />
+      </section>
+
+      <Panel
+        title="Entradas y salidas"
+        description={`Por medio de pago. El efectivo esperado es el inicial (${formatMoney(shift.openingAmount.toNumber())}) más el neto en efectivo; las transferencias no lo cambian.`}
+      >
+        <CashBreakdown summary={summary} />
+      </Panel>
 
       <Table>
         <TableHeader>

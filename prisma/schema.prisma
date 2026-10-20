@@ -109,6 +109,9 @@ model Setting {
   razonSocial          String   @default("")
   textoTicketAdicional String?
   stockMinimoDefault   Int      @default(5)
+  /// Productos que estaban bajo el mínimo cuando alguien marcó leído el aviso de
+  /// stock bajo (specs/013). El aviso reaparece si queda bajo algún producto que no figure acá.
+  stockAlertDismissedIds String[] @default([])
   updatedAt            DateTime @updatedAt
 
   @@map("settings")

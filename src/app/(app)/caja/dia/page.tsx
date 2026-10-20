@@ -10,6 +10,7 @@ import { computeExpectedCash, summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Panel, StatCard } from "@/components/stat-card";
+import { CashBreakdown } from "@/components/cash-breakdown";
 import { TablePagination, parsePage } from "@/components/table-pagination";
 import {
   Table,
@@ -281,45 +282,32 @@ export default async function CajaDelDiaPage({
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard label="Entradas" value={formatMoney(day.ingresos)} hint="Total que entró en el día" />
             <StatCard
-              label="Efectivo neto del día"
-              value={formatMoney(day.efectivo.neto)}
-              hint="Sin contar los montos iniciales"
+              tone={day.egresos > 0 ? "negative" : undefined}
+              label="Salidas"
+              value={formatMoney(day.egresos)}
+              hint="Total que salió en el día"
             />
             <StatCard
-              label="Transferencias del día"
-              value={formatMoney(day.transferencia.neto)}
-              hint="No cambian el efectivo"
+              tone="emphasis"
+              label="Total del día"
+              value={formatMoney(day.ingresos - day.egresos)}
+              hint="Entradas menos salidas"
             />
             <StatCard
               label="Ventas del día"
               value={formatMoney(sales.total)}
               hint={`${sales.count} ${sales.count === 1 ? "venta" : "ventas"}${sales.voidedCount ? ` · ${sales.voidedCount} anulada${sales.voidedCount === 1 ? "" : "s"}` : ""}`}
             />
-            <StatCard
-              label="Ingresos − egresos"
-              value={formatMoney(day.ingresos - day.egresos)}
-              hint={`Ingresos ${formatMoney(day.ingresos)} · Egresos ${formatMoney(day.egresos)}`}
-            />
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-3">
-            <Panel title="Efectivo" description="Todos los turnos del día">
-              <TotalRow label="Ingresos" value={formatMoney(day.efectivo.ingresos)} />
-              <TotalRow label="Egresos" value={`−${formatMoney(day.efectivo.egresos)}`} negative={day.efectivo.egresos > 0} />
-              <div className="my-1 border-t" />
-              <TotalRow label="Neto en efectivo" value={formatMoney(day.efectivo.neto)} strong />
-            </Panel>
-
-            <Panel title="Transferencias" description="Todos los turnos del día">
-              <TotalRow label="Ingresos" value={formatMoney(day.transferencia.ingresos)} />
-              <TotalRow
-                label="Egresos"
-                value={`−${formatMoney(day.transferencia.egresos)}`}
-                negative={day.transferencia.egresos > 0}
-              />
-              <div className="my-1 border-t" />
-              <TotalRow label="Neto por transferencia" value={formatMoney(day.transferencia.neto)} strong />
+          <section className="grid gap-4 lg:grid-cols-2">
+            <Panel
+              title="Entradas y salidas"
+              description="Todos los turnos del día, por medio de pago. Sin contar los montos iniciales."
+            >
+              <CashBreakdown summary={day} />
             </Panel>
 
             <Panel title="Ventas" description="Sin contar las anuladas">

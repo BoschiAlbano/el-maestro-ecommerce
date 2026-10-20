@@ -12,6 +12,7 @@ import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 import { computeDepositApplication, validateOrderItemQuantity } from "@/lib/order";
 import { notifyPedidoNuevo } from "@/lib/notifications";
+import type { DepositTicketInput } from "@/lib/ticket-lines";
 
 export type ActionState = { error?: string };
 export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number; stock: number };
@@ -309,21 +310,26 @@ export async function deliverOrderItems(
       });
     }
 
+    const updatedItems = await tx.orderItem.findMany({ where: { orderId: order.id } });
+    const stillPending = updatedItems.some((i) => i.quantityDelivered < i.quantityOrdered);
+
+    // El concepto habla del pedido y no de una "venta" suelta: es el cobro de una entrega (specs/009).
+    const concept = stillPending
+      ? `Entrega parcial pedido de ${order.customerName} (ticket #${created.ticketNumber})`
+      : `Pago total pedido de ${order.customerName} (ticket #${created.ticketNumber})`;
+
     for (const payment of parsedPayments.data) {
       await registerCashMovement(tx, {
         shiftId: shift.id,
         type: "INGRESO",
         amount: payment.amount,
-        concept: `Venta #${created.ticketNumber}`,
+        concept,
         paymentMethod: payment.method,
         transferReference: payment.method === "TRANSFERENCIA" ? payment.transferReference : undefined,
         userId: currentUser.id,
         saleId: created.id,
       });
     }
-
-    const updatedItems = await tx.orderItem.findMany({ where: { orderId: order.id } });
-    const stillPending = updatedItems.some((i) => i.quantityDelivered < i.quantityOrdered);
 
     await tx.order.update({
       where: { id: order.id },
@@ -401,4 +407,55 @@ export async function cancelOrder(orderId: string, reason: string): Promise<Acti
   revalidatePath("/pedidos");
   revalidatePath("/caja");
   return {};
+}
+
+/** Datos del ticket de la seña de un pedido, para mostrarlo en la ventana modal (specs/009). */
+export async function getDepositTicketData(orderId: string): Promise<DepositTicketInput | null> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.PEDIDOS, "ver");
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { user: true, items: { include: { product: true } } },
+  });
+  if (!order || order.depositAmount.toNumber() <= 0) return null;
+
+  // Quien cobró la seña es el usuario del movimiento de caja que la registró (el pedido solo guarda quién lo creó).
+  const depositMovement = await prisma.cashMovement.findFirst({
+    where: { orderId: order.id, type: "INGRESO", saleId: null },
+    orderBy: { createdAt: "asc" },
+    include: { user: true },
+  });
+
+  const settings = await prisma.setting.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
+
+  const items = order.items.map((item) => ({
+    id: item.id,
+    quantity: item.quantityOrdered,
+    name: item.product.name,
+    subtotal: item.quantityOrdered * item.product.salePrice.toNumber(),
+  }));
+  const orderTotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const deposit = order.depositAmount.toNumber();
+
+  return {
+    razonSocial: settings.razonSocial || null,
+    extraText: settings.textoTicketAdicional || null,
+    customerName: order.customerName,
+    when: new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Argentina/Tucuman",
+    }).format(order.depositPaidAt ?? order.createdAt),
+    employee: (depositMovement?.user ?? order.user).name,
+    methodLabel: order.depositPaymentMethod === "TRANSFERENCIA" ? "Transferencia" : "Efectivo",
+    items,
+    orderTotal,
+    deposit,
+    remaining: Math.max(0, orderTotal - deposit),
+  };
 }

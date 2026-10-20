@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Banknote, HandCoins, Landmark } from "lucide-react";
 import { toast } from "sonner";
 import { payDeposit } from "../actions";
@@ -21,6 +22,7 @@ type Method = "EFECTIVO" | "TRANSFERENCIA";
 
 /** Cobro de la seña de un pedido en una ventana modal (specs/009, RF-3 y RF-10). */
 export function DepositDialog({ orderId }: { orderId: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("EFECTIVO");
@@ -55,6 +57,7 @@ export function DepositDialog({ orderId }: { orderId: string }) {
       }
       toast.success("Seña cobrada.");
       setOpen(false);
+      router.push(`/pedidos/${orderId}?ticket=sena`);
     });
   }
 

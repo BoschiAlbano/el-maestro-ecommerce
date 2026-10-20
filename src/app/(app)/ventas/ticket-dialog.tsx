@@ -56,13 +56,18 @@ export function printTicket(lines: string[]) {
   document.body.appendChild(iframe);
 }
 
-/** El ticket tal como sale en papel: texto monoespaciado alineado con espacios (`buildTicketLines`). */
-export function TicketPaper({ data }: { data: TicketData }) {
+/** Líneas de ticket tal como salen en papel: texto monoespaciado alineado con espacios. */
+export function TicketLinesPaper({ lines }: { lines: string[] }) {
   return (
     <div className="h-fit bg-white p-3 text-black">
-      <pre style={TICKET_STYLE}>{buildTicketLines(data).join("\n")}</pre>
+      <pre style={TICKET_STYLE}>{lines.join("\n")}</pre>
     </div>
   );
+}
+
+/** El ticket de una venta tal como sale en papel (`buildTicketLines`). */
+export function TicketPaper({ data }: { data: TicketData }) {
+  return <TicketLinesPaper lines={buildTicketLines(data)} />;
 }
 
 /**

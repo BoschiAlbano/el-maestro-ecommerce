@@ -76,6 +76,9 @@ Marca de prueba: **PruebaMarca** · Rubro de prueba: **PruebaRubro**.
 - [ ] **Configuración**: cargo razón social "**El Maestro Ecommerce**" y texto adicional del ticket "**Gracias por su compra**" → guarda.
 - [ ] **Configuración → Auditoría**: aparecen las acciones de las secciones anteriores (rol creado, usuario creado/desactivado…).
 - [ ] La auditoría se puede filtrar por fecha, usuario y acción, y no tiene ningún botón para editar o borrar.
+- [ ] *(Correcciones 2026-10-20, pruebas rápidas)* **Pedidos**: cobrar una seña abre un ticket con lo abonado, el total y lo que falta pagar, y se puede imprimir; el botón **Ticket de seña** del pedido lo vuelve a abrir. Al entregar lo último del pedido el ticket **queda abierto** para imprimirlo. En **Caja**, el pago de esa entrega dice "Pago total pedido de <cliente> (ticket #N)" y no "Venta #N".
+- [ ] **Campanita**: con productos bajo el mínimo aparece el aviso de stock bajo con **Marcar leído**; al marcarlo desaparece y no vuelve hasta que otro producto quede bajo el mínimo.
+- [ ] **Caja** y **Caja del día**: arriba se ven Entradas, Salidas y Total, y una tabla con Efectivo / Transferencia / Total.
 - [ ] **Configuración → Sistema** (spec 017): solo el Dueño ve la pestaña; con otro rol no aparece.
 - [ ] El botón "Reiniciar el sistema" queda deshabilitado hasta escribir la contraseña **y** la frase exacta; con la frase en minúsculas sigue deshabilitado.
 - [ ] Con la contraseña incorrecta aparece "La contraseña es incorrecta. No se borró nada." y los datos siguen ahí.

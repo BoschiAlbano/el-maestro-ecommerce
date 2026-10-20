@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission, type UserLike } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { loadTravelList } from "@/lib/home-data";
+import { isStockAlertActive, stillDismissed } from "@/lib/stock-alert";
 
 export type NotificationItem = {
   id: string;
@@ -37,7 +38,17 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
         });
 
   const travelList = await loadTravelList(currentUser);
-  const stockBajo = (travelList?.length ?? 0) > 0;
+  const lowIds = (travelList ?? []).map((item) => item.id);
+
+  // Lo que se marcó como leído se poda a los productos que siguen bajo el mínimo:
+  // uno repuesto que vuelve a bajar cuenta como nuevo y reaviva el aviso.
+  const settings = await prisma.setting.findUnique({ where: { id: "singleton" } });
+  const dismissed = settings?.stockAlertDismissedIds ?? [];
+  const pruned = stillDismissed(lowIds, dismissed);
+  if (settings && pruned.length !== dismissed.length) {
+    await prisma.setting.update({ where: { id: "singleton" }, data: { stockAlertDismissedIds: pruned } });
+  }
+  const stockBajo = isStockAlertActive(lowIds, pruned);
 
   return {
     items,
@@ -57,5 +68,22 @@ export async function markNotificationRead(id: string, currentUser: UserLike): P
   if (!notification.readAt) {
     await prisma.notification.update({ where: { id }, data: { readAt: new Date() } });
   }
+  return {};
+}
+
+/**
+ * Marca como leído el aviso de stock bajo: guarda qué productos estaban bajo el
+ * mínimo. Reaparece solo si después queda bajo algún producto que no estaba.
+ * Es global, no por usuario (specs/013, igual que los otros avisos).
+ */
+export async function dismissStockAlert(currentUser: UserLike): Promise<{ error?: string }> {
+  const travelList = await loadTravelList(currentUser);
+  if (travelList === null) return { error: "No tenés permiso para esto." };
+
+  await prisma.setting.upsert({
+    where: { id: "singleton" },
+    update: { stockAlertDismissedIds: travelList.map((item) => item.id) },
+    create: { id: "singleton", stockAlertDismissedIds: travelList.map((item) => item.id) },
+  });
   return {};
 }

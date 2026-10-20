@@ -33,7 +33,8 @@ Avisar en pantalla, desde cualquier parte del sistema, lo que requiere atención
 
 - **RF-1.** El sistema genera un aviso de "pedido nuevo" cada vez que se crea un pedido (spec 009).
 - **RF-2.** El sistema genera un aviso de "diferencia de caja" cada vez que se cierra un turno con una diferencia distinta de cero (spec 007).
-- **RF-3.** El sistema muestra un aviso de "stock bajo" mientras haya al menos un producto con su disponible real por debajo del mínimo (mismo cálculo que la lista de viaje, spec 012) — a diferencia de los otros dos, no es un evento puntual: se actualiza solo a medida que cambia el stock, y no tiene estado de leído.
+- **RF-3.** El sistema muestra un aviso de "stock bajo" mientras haya al menos un producto con su disponible real por debajo del mínimo (mismo cálculo que la lista de viaje, spec 012) — a diferencia de los otros dos, no es un evento puntual: se actualiza solo a medida que cambia el stock. *(Cambio 2026-10-20: ahora también se puede marcar como leído, ver RF-4b.)*
+- **RF-4b.** *(Agregado 2026-10-20.)* El aviso de stock bajo también se puede marcar como leído. Se guardan los productos que estaban por debajo del mínimo en ese momento; el aviso **reaparece solo si queda bajo algún producto que no estaba**. Un producto que se repone y vuelve a bajar cuenta como nuevo. Es global, como los otros avisos.
 - **RF-4.** Los avisos de pedido nuevo y de diferencia de caja se pueden marcar como leídos; al marcarlos, dejan de aparecer en la lista y de contar en la campanita.
 - **RF-5.** Una campanita, visible desde cualquier pantalla del sistema (no solo el inicio), muestra un número con la cantidad de avisos sin leer y, al abrirla, la lista con el detalle de cada uno.
 - **RF-6.** La campanita se actualiza sola cada 60 segundos, sin que el usuario tenga que recargar la página.
@@ -43,7 +44,7 @@ Avisar en pantalla, desde cualquier parte del sistema, lo que requiere atención
 
 - El número de la campanita cuenta cada aviso de pedido nuevo o diferencia de caja sin leer, más 1 si hay al menos un producto por debajo del stock mínimo (no se cuenta producto por producto, para no mostrar un número exagerado que no sea útil).
 - Marcar un aviso como leído es una acción global, no por usuario — el equipo es chico y maneja una sola caja; una vez que alguien lo marca, queda leído para todos.
-- El aviso de stock bajo nunca se "marca como leído": desaparece solo cuando deja de haber productos por debajo del mínimo.
+- El aviso de stock bajo se puede marcar como leído (RF-4b) y desaparece solo cuando deja de haber productos por debajo del mínimo. *(Cambio 2026-10-20: antes nunca se podía marcar y no había forma de quitarlo.)*
 - No hay un historial de avisos ya leídos en esta spec.
 
 ## 6. Permisos

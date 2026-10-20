@@ -1,4 +1,7 @@
+import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Receipt } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
@@ -12,6 +15,9 @@ import { CancelOrderDialog } from "./cancel-order-dialog";
 import { QuantityStepper } from "./quantity-stepper";
 import { RemoveItemButton } from "./remove-item-button";
 import { TicketButton } from "../../ventas/ticket-button";
+import { OrderTicketHost } from "./order-tickets";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -103,6 +109,9 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="flex flex-col gap-6">
+      <Suspense>
+        <OrderTicketHost orderId={order.id} />
+      </Suspense>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
@@ -116,8 +125,18 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
             {formatDateTime(order.createdAt)}
           </p>
         </div>
-        {(canDeliver || canPayDeposit || canCancel) && (
+        {(canDeliver || canPayDeposit || canCancel || depositAmount > 0) && (
           <div className="flex flex-wrap gap-2">
+            {depositAmount > 0 && (
+              <Link
+                href={`/pedidos/${order.id}?ticket=sena`}
+                scroll={false}
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                <Receipt data-icon="inline-start" />
+                Ticket de seña
+              </Link>
+            )}
             {canDeliver && (
               <DeliverDialog orderId={order.id} pendingItems={pendingItems} remainingDeposit={remainingDeposit} />
             )}

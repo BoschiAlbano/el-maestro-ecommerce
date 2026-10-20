@@ -6,7 +6,6 @@ import { Minus, PackageCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { deliverOrderItems } from "../actions";
 import { PaymentDialog, type SalePayment } from "../../ventas/payment-dialog";
-import { TicketDialog } from "../../ventas/ticket-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,7 +41,6 @@ export function DeliverDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [ticketSaleId, setTicketSaleId] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [delivering, startDeliver] = useTransition();
 
@@ -69,7 +67,9 @@ export function DeliverDialog({
       setPaying(false);
       setOpen(false);
       setQuantities({});
-      setTicketSaleId(result.saleId);
+      // El ticket se abre desde la URL: al entregar lo último del pedido este
+      // componente deja de existir y un modal propio se cerraría solo.
+      router.push(`/pedidos/${orderId}?venta=${result.saleId}`);
     });
   }
 
@@ -196,14 +196,6 @@ export function DeliverDialog({
         totalLabel="Resto a cobrar"
         confirmLabel="Confirmar entrega"
         confirmingLabel="Entregando..."
-      />
-
-      <TicketDialog
-        saleId={ticketSaleId}
-        onClose={() => {
-          setTicketSaleId(null);
-          router.refresh();
-        }}
       />
     </>
   );

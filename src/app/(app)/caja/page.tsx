@@ -8,6 +8,7 @@ import { summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Panel, StatCard } from "@/components/stat-card";
+import { CashBreakdown } from "@/components/cash-breakdown";
 import { cn } from "@/lib/utils";
 import { OpenShiftForm } from "./open-shift-form";
 import { MovementDialog } from "./movement-dialog";
@@ -133,32 +134,35 @@ export default async function CajaPage() {
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          label="Efectivo esperado"
+          tone="emphasis"
+          label="Efectivo en caja"
           value={formatMoney(summary.expectedCash)}
-          hint={`Inicial ${formatMoney(openingAmount)} + neto en efectivo`}
+          hint="Lo que debería haber ahora"
         />
+        <StatCard label="Entradas" value={formatMoney(summary.ingresos)} hint="Total que entró en el turno" />
         <StatCard
-          label="Ingresos del turno"
-          value={formatMoney(summary.ingresos)}
-          hint={`Efectivo ${formatMoney(summary.efectivo.ingresos)} · Transf. ${formatMoney(summary.transferencia.ingresos)}`}
-        />
-        <StatCard
-          label="Egresos del turno"
+          tone={summary.egresos > 0 ? "negative" : undefined}
+          label="Salidas"
           value={formatMoney(summary.egresos)}
-          hint={`Efectivo ${formatMoney(summary.efectivo.egresos)} · Transf. ${formatMoney(summary.transferencia.egresos)}`}
+          hint="Total que salió en el turno"
         />
         <StatCard
-          label="Transferencias del turno"
-          value={formatMoney(summary.transferencia.neto)}
-          hint="No cambian el efectivo esperado"
+          label="Total del turno"
+          value={formatMoney(summary.ingresos - summary.egresos)}
+          hint="Entradas menos salidas"
         />
       </section>
+
+      <Panel
+        title="Entradas y salidas"
+        description={`Por medio de pago. El efectivo en caja es el inicial (${formatMoney(openingAmount)}) más el neto en efectivo; las transferencias no lo cambian.`}
+      >
+        <CashBreakdown summary={summary} />
+      </Panel>
 
       <Panel title="Movimientos del turno" description="Todo lo que entró y salió desde que se abrió la caja">
         <MovementsTabs
           movements={movements}
-          summary={summary}
-          openingAmount={openingAmount}
           canViewSales={canViewSales}
           canReprint={canReprint}
         />

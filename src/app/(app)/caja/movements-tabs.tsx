@@ -23,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ShiftSummary } from "@/lib/cash-shift";
 
 export type MovementRow = {
   id: string;
@@ -141,17 +140,13 @@ function MovementsTable({
   );
 }
 
-/** Movimientos del turno en pestañas: todos, ingresos, egresos y resumen por medio de pago (specs/007, RF-10). */
+/** Movimientos del turno en pestañas: todos, ingresos y egresos (specs/007, RF-10). El resumen por medio de pago está arriba, en `CashBreakdown`. */
 export function MovementsTabs({
   movements,
-  summary,
-  openingAmount,
   canViewSales,
   canReprint,
 }: {
   movements: MovementRow[];
-  summary: ShiftSummary;
-  openingAmount: number;
   canViewSales: boolean;
   canReprint: boolean;
 }) {
@@ -178,7 +173,6 @@ export function MovementsTabs({
         <TabsTrigger value="todos">Todos ({movements.length})</TabsTrigger>
         <TabsTrigger value="ingresos">Ingresos ({ingresos.length})</TabsTrigger>
         <TabsTrigger value="egresos">Egresos ({egresos.length})</TabsTrigger>
-        <TabsTrigger value="medios">Por medio de pago</TabsTrigger>
       </TabsList>
 
       <TabsContent value="todos">
@@ -189,46 +183,6 @@ export function MovementsTabs({
       </TabsContent>
       <TabsContent value="egresos">
         <MovementsTable rows={egresos} emptyMessage="Todavía no hay egresos en este turno." actions={actions} />
-      </TabsContent>
-      <TabsContent value="medios" className="flex flex-col gap-3">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Medio de pago</TableHead>
-              <TableHead className="text-right">Ingresos</TableHead>
-              <TableHead className="text-right">Egresos</TableHead>
-              <TableHead className="text-right">Neto</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(
-              [
-                ["Efectivo", summary.efectivo],
-                ["Transferencia", summary.transferencia],
-              ] as const
-            ).map(([label, breakdown]) => (
-              <TableRow key={label}>
-                <TableCell>{label}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatMoney(breakdown.ingresos)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatMoney(breakdown.egresos)}</TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{formatMoney(breakdown.neto)}</TableCell>
-              </TableRow>
-            ))}
-            <TableRow>
-              <TableCell className="font-medium">Total</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">{formatMoney(summary.ingresos)}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">{formatMoney(summary.egresos)}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">
-                {formatMoney(summary.ingresos - summary.egresos)}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-        <p className="text-sm text-muted-foreground">
-          Efectivo esperado = monto inicial ({formatMoney(openingAmount)}) + neto en efectivo (
-          {formatMoney(summary.efectivo.neto)}) = <strong>{formatMoney(summary.expectedCash)}</strong>. Las
-          transferencias no cambian el efectivo de la caja.
-        </p>
       </TabsContent>
       <TicketDialog saleId={ticketSaleId} onClose={() => setTicketSaleId(null)} />
     </Tabs>

@@ -1,7 +1,12 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/current-user";
-import { loadNotificationsSummary, markNotificationRead, type NotificationsSummary } from "@/lib/notifications-data";
+import {
+  dismissStockAlert,
+  loadNotificationsSummary,
+  markNotificationRead,
+  type NotificationsSummary,
+} from "@/lib/notifications-data";
 
 const EMPTY_SUMMARY: NotificationsSummary = { items: [], stockBajo: false, unreadCount: 0 };
 
@@ -15,4 +20,10 @@ export async function markNotificationReadAction(id: string): Promise<{ error?: 
   const currentUser = await getCurrentUser();
   if (!currentUser) return { error: "No tenés permiso para esto." };
   return markNotificationRead(id, currentUser);
+}
+
+export async function dismissStockAlertAction(): Promise<{ error?: string }> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { error: "No tenés permiso para esto." };
+  return dismissStockAlert(currentUser);
 }
