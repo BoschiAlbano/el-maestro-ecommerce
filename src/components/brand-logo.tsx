@@ -7,7 +7,7 @@ export function BrandLogo({ className }: { className?: string }) {
     <Image
       src="/logo.svg"
       alt="Logo de El Maestro"
-      width={11366}
+      width={9229}
       height={13600}
       unoptimized
       priority

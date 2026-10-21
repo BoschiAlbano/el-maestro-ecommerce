@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Reservada para la tienda online (specs/015). Mientras tanto muestra un aviso
 // de "en construcción" y queda fuera de los buscadores. Solo consulta la sesión de Supabase Auth, nunca
@@ -28,6 +31,9 @@ export default async function LandingPage() {
         Estamos preparando nuestra tienda. Muy pronto vas a poder comprar
         desde acá.
       </p>
+      <Link href="/login" className={cn(buttonVariants(), "mt-2")}>
+        Iniciar sesión
+      </Link>
     </main>
   );
 }

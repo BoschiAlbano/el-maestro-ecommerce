@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-const LOGO_RATIO = 11366 / 13600;
+const LOGO_RATIO = 9229 / 13600;
 // El mismo SVG recortado que usa la pestaña del navegador (src/app/icon.svg).
 const logoSvg = readFileSync(join(process.cwd(), "src", "app", "icon.svg"), "utf8");
 
