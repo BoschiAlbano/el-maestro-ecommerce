@@ -13,29 +13,40 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import { DeleteRoleButton } from "./delete-role-button";
 
-export default async function RolesPage() {
+const DEFAULT_PAGE_SIZE = 20;
+
+export default async function RolesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; porPagina?: string }> }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !isOwner(currentUser)) {
     return <p className="text-sm text-muted-foreground">Esta sección es solo para el Dueño.</p>;
   }
 
+  const { pagina } = await searchParams;
+  const total = await prisma.role.count();
+  const page = Math.min(parsePage(pagina), Math.max(1, Math.ceil(total / PAGE_SIZE)));
+
   const roles = await prisma.role.findMany({
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Roles</h1>
         <Link href="/roles/nuevo" className={cn(buttonVariants())}>
           Nuevo rol
         </Link>
       </div>
 
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -67,6 +78,14 @@ export default async function RolesPage() {
           ))}
         </TableBody>
       </Table>
+      </div>
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => (p > 1 ? `/roles?pagina=${p}` : "/roles")}
+      />
     </div>
   );
 }

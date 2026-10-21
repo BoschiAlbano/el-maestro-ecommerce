@@ -5,12 +5,14 @@ import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
 import { CatalogTabs } from "@/components/catalog-tabs";
-import { buttonVariants, Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PageActions } from "@/components/page-actions";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Select,
   SelectContent,
@@ -27,13 +29,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 export default async function ProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; brandId?: string; rubroId?: string; pagina?: string }>;
+  searchParams: Promise<{ q?: string; brandId?: string; rubroId?: string; pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CATALOGO, "ver")) {
@@ -78,29 +81,33 @@ export default async function ProductosPage({
   const rubroOptions = buildRubroOptions(topLevelRubros);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
       <CatalogTabs />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Productos</h1>
-        <div className="flex gap-2">
-          <Link href="/productos/etiquetas" className={cn(buttonVariants({ variant: "outline" }))}>
-            Etiquetas
-          </Link>
-          <Link href="/productos/importar" className={cn(buttonVariants({ variant: "outline" }))}>
-            Importar
-          </Link>
-          <Link href="/productos/nuevo" className={cn(buttonVariants())}>
-            Nuevo producto
-          </Link>
-        </div>
+        <PageActions
+          primary={
+            <Link href="/productos/nuevo" className={cn(buttonVariants())}>
+              Nuevo producto
+            </Link>
+          }
+          secondary={[
+            { href: "/productos/etiquetas", label: "Etiquetas" },
+            { href: "/productos/importar", label: "Importar" },
+          ]}
+        />
       </div>
 
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterForm
+        activeCount={(brandId && brandId !== "__all__" ? 1 : 0) + (rubroId && rubroId !== "__all__" ? 1 : 0)}
+        search={
         <div className="flex flex-col gap-2">
           <Label htmlFor="q">Nombre o código</Label>
-          <Input id="q" name="q" defaultValue={q} className="w-56" />
+          <Input id="q" name="q" defaultValue={q} className="w-full sm:w-56" />
         </div>
+        }
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="brandId">Marca</Label>
           <Select
@@ -108,7 +115,7 @@ export default async function ProductosPage({
             defaultValue={brandId ?? "__all__"}
             items={{ __all__: "Todas", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
           >
-            <SelectTrigger id="brandId" className="w-48">
+            <SelectTrigger id="brandId" className="w-full sm:w-48">
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
             <SelectContent>
@@ -128,7 +135,7 @@ export default async function ProductosPage({
             defaultValue={rubroId ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
           >
-            <SelectTrigger id="rubroId" className="w-56">
+            <SelectTrigger id="rubroId" className="w-full sm:w-56">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -140,10 +147,10 @@ export default async function ProductosPage({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        </div>      </FilterForm>
 
+      {/* flex-1: la tabla ocupa el alto sobrante y la paginación queda siempre al pie. */}
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -192,6 +199,7 @@ export default async function ProductosPage({
           )}
         </TableBody>
       </Table>
+      </div>
 
       <TablePagination
         page={page}

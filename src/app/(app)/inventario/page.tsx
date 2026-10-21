@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
 import { computeCommittedQuantities } from "@/lib/order";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
@@ -17,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -25,6 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+const DEFAULT_PAGE_SIZE = 20;
 
 const ESTADOS: { value: string; label: string }[] = [
   { value: "__all__", label: "Todos" },
@@ -35,15 +39,16 @@ const ESTADOS: { value: string; label: string }[] = [
 export default async function InventarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; rubroId?: string; estado?: string }>;
+  searchParams: Promise<{ q?: string; rubroId?: string; estado?: string; pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.INVENTARIO, "ver")) {
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver el inventario.</p>;
   }
 
-  const { q, rubroId, estado } = await searchParams;
+  const { q, rubroId, estado, pagina } = await searchParams;
 
   const where: Prisma.ProductWhereInput = { active: true };
   if (q) {
@@ -80,22 +85,32 @@ export default async function InventarioPage({
   const products =
     estado === "bajo" ? allMatching.filter((p) => p.currentStock <= p.minStock) : allMatching;
 
+  // Si la URL pide una página que no existe, se muestra la última.
+  const total = products.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pagina), totalPages);
+  const pageProducts = products.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const rubroOptions = buildRubroOptions(topLevelRubros);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Stock</h1>
         <Link href="/inventario/conteo" className={cn(buttonVariants())}>
           Conteo físico
         </Link>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterForm
+        activeCount={(rubroId && rubroId !== "__all__" ? 1 : 0) + (estado && estado !== "__all__" ? 1 : 0)}
+        search={
         <div className="flex flex-col gap-2">
           <Label htmlFor="q">Nombre o código</Label>
-          <Input id="q" name="q" defaultValue={q} className="w-56" />
+          <Input id="q" name="q" defaultValue={q} className="w-full sm:w-56" />
         </div>
+        }
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="rubroId">Rubro</Label>
           <Select
@@ -103,7 +118,7 @@ export default async function InventarioPage({
             defaultValue={rubroId ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
           >
-            <SelectTrigger id="rubroId" className="w-56">
+            <SelectTrigger id="rubroId" className="w-full sm:w-56">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -123,7 +138,7 @@ export default async function InventarioPage({
             defaultValue={estado ?? "__all__"}
             items={Object.fromEntries(ESTADOS.map((e) => [e.value, e.label]))}
           >
-            <SelectTrigger id="estado" className="w-40">
+            <SelectTrigger id="estado" className="w-full sm:w-40">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -134,10 +149,9 @@ export default async function InventarioPage({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        </div>      </FilterForm>
 
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -150,7 +164,7 @@ export default async function InventarioPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => {
+          {pageProducts.map((product) => {
             const bajoStock = product.currentStock <= product.minStock;
             const negativo = product.currentStock < 0;
             return (
@@ -188,6 +202,22 @@ export default async function InventarioPage({
           )}
         </TableBody>
       </Table>
+      </div>
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        buildHref={(p) => {
+          const query = new URLSearchParams();
+          if (q) query.set("q", q);
+          if (rubroId && rubroId !== "__all__") query.set("rubroId", rubroId);
+          if (estado && estado !== "__all__") query.set("estado", estado);
+          if (p > 1) query.set("pagina", String(p));
+          const qs = query.toString();
+          return qs ? `/inventario?${qs}` : "/inventario";
+        }}
+      />
     </div>
   );
 }

@@ -130,7 +130,7 @@ export function SaleForm() {
 
   return (
     <>
-      <div className="grid gap-4 pb-24 lg:grid-cols-[1fr_20rem] lg:pb-0">
+      <div className="grid gap-4 pb-24 lg:flex-1 lg:grid-cols-[1fr_20rem] lg:pb-0">
         <div className="flex flex-col gap-4">
           {/* El Panel deja de recortar (overflow-visible) para que los resultados floten sobre el carrito en vez de empujarlo. */}
           <Panel
@@ -207,9 +207,9 @@ export function SaleForm() {
             </div>
           </Panel>
 
-          <Panel title={`Carrito${units > 0 ? ` (${units})` : ""}`}>
+          <Panel title={`Carrito${units > 0 ? ` (${units})` : ""}`} className="flex-1" contentClassName="flex flex-1 flex-col">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center text-muted-foreground">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center text-muted-foreground">
                 <ShoppingCart className="size-8" aria-hidden />
                 <p className="text-sm">Todavía no agregaste productos.</p>
                 <p className="text-xs">Buscá un producto o escaneá su código para empezar.</p>

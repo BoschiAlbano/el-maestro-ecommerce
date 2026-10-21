@@ -20,7 +20,7 @@ export default async function ImportarProductosPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Importar productos</h1>
         <Link href="/productos/importar/plantilla" className="text-sm underline">
           Descargar plantilla

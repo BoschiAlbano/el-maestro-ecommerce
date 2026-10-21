@@ -21,7 +21,7 @@ export function SectionTabs({ tabs, defaultValue }: { tabs: SectionTab[]; defaul
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <Tabs value={current} onValueChange={(value) => setCurrent(String(value))} className="print:hidden">
         <TabsList>
           {tabs.map((tab) => (
@@ -36,7 +36,7 @@ export function SectionTabs({ tabs, defaultValue }: { tabs: SectionTab[]; defaul
           key={tab.value}
           role="tabpanel"
           aria-label={tab.label}
-          className={cn("flex flex-col gap-4", tab.value !== current && "hidden print:flex")}
+          className={cn("flex flex-1 flex-col gap-4", tab.value !== current && "hidden print:flex")}
         >
           {tab.content}
         </div>

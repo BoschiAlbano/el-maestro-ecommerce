@@ -3,7 +3,9 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { PageActions } from "@/components/page-actions";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
@@ -13,10 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import { OrdersTable, type OrderRow } from "./orders-table";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 const ESTADOS: { value: string; label: string }[] = [
   { value: "PENDIENTE", label: "Pendientes" },
@@ -28,8 +30,9 @@ const ESTADOS: { value: string; label: string }[] = [
 export default async function PedidosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string; pagina?: string }>;
+  searchParams: Promise<{ estado?: string; pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.PEDIDOS, "ver")) {
@@ -77,24 +80,24 @@ export default async function PedidosPage({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Pedidos</h1>
-        <div className="flex gap-2">
-          {puedeExportar && (
-            <Link href="/pedidos/exportar" className={cn(buttonVariants({ variant: "outline" }))}>
-              Exportar
-            </Link>
-          )}
-          {puedeCrear && (
-            <Link href="/pedidos/nuevo" className={cn(buttonVariants())}>
-              Nuevo pedido
-            </Link>
-          )}
-        </div>
+        <PageActions
+          secondary={puedeExportar ? [{ label: "Exportar", href: "/pedidos/exportar" }] : []}
+          primary={
+            puedeCrear && (
+              <Link href="/pedidos/nuevo" className={cn(buttonVariants())}>
+                Nuevo pedido
+              </Link>
+            )
+          }
+        />
       </div>
 
-      <form className="flex items-end gap-3">
+      <FilterForm
+        activeCount={0}
+        search={
         <div className="flex flex-col gap-2">
           <Label htmlFor="estado">Estado</Label>
           <Select
@@ -102,7 +105,7 @@ export default async function PedidosPage({
             defaultValue={estado}
             items={Object.fromEntries(ESTADOS.map((e) => [e.value, e.label]))}
           >
-            <SelectTrigger id="estado" className="w-40">
+            <SelectTrigger id="estado" className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -114,13 +117,17 @@ export default async function PedidosPage({
             </SelectContent>
           </Select>
         </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        }
+      />
+
+      <div className="flex-1">
 
       <OrdersTable
         orders={rows}
         emptyMessage={estado === "PENDIENTE" ? "No hay pedidos pendientes." : "No hay pedidos para este filtro."}
       />
+
+      </div>
 
       <TablePagination
         page={page}

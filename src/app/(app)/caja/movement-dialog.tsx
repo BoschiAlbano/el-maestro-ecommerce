@@ -43,9 +43,23 @@ const COPY: Record<MovementType, { button: string; description: string; placehol
 };
 
 /** Alta de un movimiento manual de caja en una ventana modal (specs/007, RF-2 y RF-10). */
-export function MovementDialog({ type }: { type: MovementType }) {
+export function MovementDialog({
+  type,
+  open: controlledOpen,
+  onOpenChange,
+  showTrigger = true,
+}: {
+  type: MovementType;
+  /** Para abrirlo desde afuera (por ejemplo, desde un menú): se pasa `open` y `onOpenChange`. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** `false` oculta el botón propio cuando lo abre otro control. */
+  showTrigger?: boolean;
+}) {
   const copy = COPY[type];
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -77,10 +91,12 @@ export function MovementDialog({ type }: { type: MovementType }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" />}>
-        <Icon data-icon="inline-start" />
-        {copy.button}
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger render={<Button variant="outline" />}>
+          <Icon data-icon="inline-start" />
+          {copy.button}
+        </DialogTrigger>
+      )}
       <DialogContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <DialogHeader>

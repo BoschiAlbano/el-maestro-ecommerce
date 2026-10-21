@@ -30,11 +30,13 @@ export function Panel({
   title,
   description,
   className,
+  contentClassName,
   children,
 }: {
   title: string;
   description?: string;
   className?: string;
+  contentClassName?: string;
   children: ReactNode;
 }) {
   return (
@@ -43,7 +45,7 @@ export function Panel({
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={contentClassName}>{children}</CardContent>
     </Card>
   );
 }

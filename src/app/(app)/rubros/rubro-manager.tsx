@@ -157,7 +157,7 @@ export function RubroManager({ rubros }: { rubros: RubroNode[] }) {
   const [addTo, setAddTo] = useState<RubroItem | null>(null);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-6">
       <form action={formAction} className="flex max-w-sm items-end gap-2">
         <Input name="name" placeholder="Nombre del rubro" required />
         <Button type="submit" disabled={pending}>
@@ -166,6 +166,7 @@ export function RubroManager({ rubros }: { rubros: RubroNode[] }) {
       </form>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -192,6 +193,7 @@ export function RubroManager({ rubros }: { rubros: RubroNode[] }) {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <SubrubroDialog parent={addTo} onClose={() => setAddTo(null)} />
     </div>

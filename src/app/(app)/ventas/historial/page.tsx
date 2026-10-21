@@ -8,10 +8,10 @@ import { SALES_PERIOD_LABELS, parseSalesPeriod, salesPeriodRange, type SalesPeri
 import { buttonVariants } from "@/components/ui/button";
 import { Panel } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import { SaleHistoryTabs, type SaleRow, type SaleView } from "./sale-history-tabs";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 const VIEWS: SaleView[] = ["todas", "activas", "anuladas"];
 
@@ -33,8 +33,9 @@ function formatDateTime(date: Date) {
 export default async function HistorialVentasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string; vista?: string; pagina?: string }>;
+  searchParams: Promise<{ periodo?: string; vista?: string; pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.VENTAS, "ver")) {
@@ -101,7 +102,7 @@ export default async function HistorialVentasPage({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Historial de ventas</h1>
         {puedeVender && (
@@ -141,8 +142,13 @@ export default async function HistorialVentasPage({
         })}
       </nav>
 
-      <Panel title={SALES_PERIOD_LABELS[period]} description={PERIOD_DESCRIPTIONS[period]}>
-        <div className="flex flex-col gap-4">
+      <Panel
+        title={SALES_PERIOD_LABELS[period]}
+        description={PERIOD_DESCRIPTIONS[period]}
+        className="flex-1"
+        contentClassName="flex flex-1 flex-col"
+      >
+        <div className="flex flex-1 flex-col gap-4">
           <SaleHistoryTabs
             sales={rows}
             showShift={period !== "turno"}
@@ -150,7 +156,9 @@ export default async function HistorialVentasPage({
             counts={counts}
             hrefs={{ todas: viewHref("todas"), activas: viewHref("activas"), anuladas: viewHref("anuladas") }}
           />
+          <div className="mt-auto">
           <TablePagination page={page} pageSize={PAGE_SIZE} total={total} buildHref={(p) => viewHref(view, p)} />
+          </div>
         </div>
       </Panel>
     </div>

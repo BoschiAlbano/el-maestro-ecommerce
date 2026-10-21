@@ -5,7 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -15,13 +15,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 export default async function IngresosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string }>;
+  searchParams: Promise<{ pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.INGRESO_MERCADERIA, "ver")) {
@@ -42,13 +43,15 @@ export default async function IngresosPage({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Ingresos de mercadería</h1>
         <Link href="/ingresos/nuevo" className={cn(buttonVariants())}>
           Nuevo ingreso
         </Link>
       </div>
+
+      <div className="flex-1">
 
       <Table>
         <TableHeader>
@@ -92,6 +95,7 @@ export default async function IngresosPage({
           )}
         </TableBody>
       </Table>
+      </div>
 
       <TablePagination
         page={page}

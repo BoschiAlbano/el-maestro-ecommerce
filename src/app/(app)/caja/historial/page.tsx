@@ -5,7 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -15,13 +15,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 export default async function HistorialCajaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string }>;
+  searchParams: Promise<{ pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CAJA, "ver")) {
@@ -44,8 +45,9 @@ export default async function HistorialCajaPage({
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
       <h1 className="text-lg font-semibold">Historial de caja</h1>
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -99,6 +101,7 @@ export default async function HistorialCajaPage({
           )}
         </TableBody>
       </Table>
+      </div>
       <TablePagination
         page={page}
         pageSize={PAGE_SIZE}

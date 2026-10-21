@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio, type Prisma } from "@/generated/prisma/client";
@@ -12,7 +11,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Panel } from "@/components/stat-card";
 import { CashSummaryCards } from "@/components/cash-cards";
 import { SectionTabs } from "@/components/section-tabs";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { PageActions } from "@/components/page-actions";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Table,
   TableBody,
@@ -23,9 +23,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { DayPicker } from "./day-picker";
-import { PrintButton } from "./print-button";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 type MovementRow = Prisma.CashMovementGetPayload<{ include: { user: true; shift: { include: { openedByUser: true } } } }>;
 
@@ -115,8 +114,9 @@ function MovementsTable({ rows, canViewSales }: { rows: MovementRow[]; canViewSa
 export default async function CajaDelDiaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fecha?: string; pagina?: string; vista?: string }>;
+  searchParams: Promise<{ fecha?: string; pagina?: string; porPagina?: string; vista?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CAJA, "ver")) {
@@ -171,7 +171,7 @@ export default async function CajaDelDiaPage({
   const hasActivity = dayMovements.length > 0 || daySales.length > 0 || shifts.length > 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-lg font-semibold">Caja del día</h1>
@@ -182,11 +182,12 @@ export default async function CajaDelDiaPage({
         </div>
         <div className="flex flex-wrap items-end gap-2 print:hidden">
           <DayPicker dateKey={dateKey} todayKey={todayKey} />
-          <PrintButton />
-          <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-            <History data-icon="inline-start" />
-            Historial
-          </Link>
+          <PageActions
+            secondary={[
+              { label: "Imprimir", icon: "print", print: true },
+              { label: "Historial", icon: "history", href: "/caja/historial" },
+            ]}
+          />
         </div>
       </div>
 
@@ -215,15 +216,20 @@ export default async function CajaDelDiaPage({
                 label: `Movimientos (${dayMovements.length})`,
                 content: (
 
-          <Panel title="Movimientos del día" description="De todos los turnos, del más reciente al más antiguo">
-            <div className="flex flex-col gap-4">
+          <Panel
+            title="Movimientos del día"
+            description="De todos los turnos, del más reciente al más antiguo"
+            className="flex-1"
+            contentClassName="flex flex-1 flex-col"
+          >
+            <div className="flex flex-1 flex-col gap-4">
               <div className="print:hidden">
                 <MovementsTable rows={pageMovements} canViewSales={canViewSales} />
               </div>
               <div className="hidden print:block">
                 <MovementsTable rows={dayMovements} canViewSales={canViewSales} />
               </div>
-              <div className="print:hidden">
+              <div className="mt-auto print:hidden">
               <TablePagination
                 page={page}
                 pageSize={PAGE_SIZE}

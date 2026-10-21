@@ -11,9 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import {
   Select,
   SelectContent,
@@ -44,13 +44,14 @@ function formatDetail(detail: Prisma.JsonValue): string {
     .join(" · ");
 }
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 export default async function AuditoriaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ desde?: string; hasta?: string; userId?: string; action?: string; pagina?: string }>;
+  searchParams: Promise<{ desde?: string; hasta?: string; userId?: string; action?: string; pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CONFIGURACION, "ver")) {
@@ -87,18 +88,25 @@ export default async function AuditoriaPage({
   ]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-4">
       <h1 className="text-lg font-semibold">Auditoría</h1>
 
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterForm
+        toggleBelow
+        activeCount={(userId && userId !== "__all__" ? 1 : 0) + (action && action !== "__all__" ? 1 : 0)}
+        search={
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
         <div className="flex flex-col gap-2">
           <Label htmlFor="desde">Desde</Label>
-          <Input id="desde" name="desde" type="date" defaultValue={desde} />
+          <Input id="desde" name="desde" type="date" defaultValue={desde} className="w-full" />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="hasta">Hasta</Label>
-          <Input id="hasta" name="hasta" type="date" defaultValue={hasta} />
+          <Input id="hasta" name="hasta" type="date" defaultValue={hasta} className="w-full" />
         </div>
+          </div>
+        }
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="userId">Usuario</Label>
           <Select
@@ -106,7 +114,7 @@ export default async function AuditoriaPage({
             defaultValue={userId ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(users.map((u) => [u.id, u.name])) }}
           >
-            <SelectTrigger id="userId" className="w-48">
+            <SelectTrigger id="userId" className="w-full sm:w-48">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -126,7 +134,7 @@ export default async function AuditoriaPage({
             defaultValue={action ?? "__all__"}
             items={{ __all__: "Todas", ...Object.fromEntries(ACCIONES.map((a) => [a.value, a.label])) }}
           >
-            <SelectTrigger id="action" className="w-56">
+            <SelectTrigger id="action" className="w-full sm:w-56">
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
             <SelectContent>
@@ -138,9 +146,9 @@ export default async function AuditoriaPage({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        </div>      </FilterForm>
+
+      <div className="flex-1">
 
       <Table>
         <TableHeader>
@@ -177,6 +185,7 @@ export default async function AuditoriaPage({
           )}
         </TableBody>
       </Table>
+      </div>
 
       <TablePagination
         page={page}

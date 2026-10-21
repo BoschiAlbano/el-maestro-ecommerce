@@ -1,19 +1,17 @@
-import Link from "next/link";
-import { CalendarDays, History } from "lucide-react";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { summarizeShift } from "@/lib/cash-shift";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { PageActions } from "@/components/page-actions";
 import { Panel } from "@/components/stat-card";
 import { CashSummaryCards } from "@/components/cash-cards";
 import { collectedBySales, summarizeSales } from "@/lib/cash-day";
-import { cn } from "@/lib/utils";
 import { OpenShiftForm } from "./open-shift-form";
 import { MovementDialog } from "./movement-dialog";
 import { CloseShiftDialog } from "./close-shift-dialog";
+import { CajaMobileMenu } from "./mobile-menu";
 import { MovementsTabs, type MovementRow } from "./movements-tabs";
 
 function formatMoney(n: number) {
@@ -26,16 +24,12 @@ function formatDate(date: Date, options: Intl.DateTimeFormatOptions) {
 
 function HistoryLink() {
   return (
-    <>
-      <Link href="/caja/dia" className={cn(buttonVariants({ variant: "outline" }))}>
-        <CalendarDays data-icon="inline-start" />
-        Caja del día
-      </Link>
-      <Link href="/caja/historial" className={cn(buttonVariants({ variant: "outline" }))}>
-        <History data-icon="inline-start" />
-        Historial
-      </Link>
-    </>
+    <PageActions
+      secondary={[
+        { label: "Caja del día", icon: "calendar", href: "/caja/dia" },
+        { label: "Historial", icon: "history", href: "/caja/historial" },
+      ]}
+    />
   );
 }
 
@@ -134,13 +128,16 @@ export default async function CajaPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {puedeAbrir && (
-            <>
+            <div className="hidden gap-2 sm:flex">
               <MovementDialog type="INGRESO" />
               <MovementDialog type="EGRESO" />
-            </>
+            </div>
           )}
           {puedeCerrar && <CloseShiftDialog />}
-          <HistoryLink />
+          <div className="hidden sm:block">
+            <HistoryLink />
+          </div>
+          <CajaMobileMenu canRegister={puedeAbrir} />
         </div>
       </div>
 

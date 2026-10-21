@@ -1,15 +1,13 @@
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
 import { loadTravelList } from "@/lib/home-data";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { CopyListButton } from "./copy-list-button";
+import { PageActions } from "@/components/page-actions";
 import {
   Select,
   SelectContent,
@@ -59,24 +57,31 @@ export default async function ListaDeViajePage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Lista de viaje</h1>
-        <div className="flex gap-2">
-          <CopyListButton items={items} />
-          <Link
-            href={`/lista-de-viaje/exportar${queryString ? `?${queryString}` : ""}`}
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Exportar Excel
-          </Link>
-        </div>
+        <PageActions
+          secondary={[
+            {
+              label: "Copiar lista",
+              copyText:
+                items.length === 0
+                  ? "No hay nada para comprar: ningún producto está por debajo del stock que necesitás."
+                  : items.map((item) => `${item.suggested} x ${item.name}`).join("\n"),
+            },
+            { label: "Exportar Excel", href: `/lista-de-viaje/exportar${queryString ? `?${queryString}` : ""}` },
+          ]}
+        />
       </div>
 
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterForm
+        activeCount={(brandParam ? 1 : 0) + (rubroParam ? 1 : 0)}
+        search={
         <div className="flex flex-col gap-2">
           <Label htmlFor="q">Nombre o código</Label>
-          <Input id="q" name="q" defaultValue={query} className="w-56" />
+          <Input id="q" name="q" defaultValue={query} className="w-full sm:w-56" />
         </div>
+        }
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="brandId">Marca</Label>
           <Select
@@ -84,7 +89,7 @@ export default async function ListaDeViajePage({
             defaultValue={brandParam ?? "__all__"}
             items={{ __all__: "Todas", ...Object.fromEntries(brands.map((b) => [b.id, b.name])) }}
           >
-            <SelectTrigger id="brandId" className="w-48">
+            <SelectTrigger id="brandId" className="w-full sm:w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +109,7 @@ export default async function ListaDeViajePage({
             defaultValue={rubroParam ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(rubroOptions.map((r) => [r.id, r.label])) }}
           >
-            <SelectTrigger id="rubroId" className="w-56">
+            <SelectTrigger id="rubroId" className="w-full sm:w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -116,9 +121,7 @@ export default async function ListaDeViajePage({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        </div>      </FilterForm>
 
       <Table>
         <TableHeader>

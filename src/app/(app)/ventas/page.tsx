@@ -22,7 +22,7 @@ export default async function VentasPage() {
   const puedeVerHistorial = hasPermission(currentUser, ModuloNegocio.VENTAS, "ver");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:min-h-[calc(100svh-5.5rem)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold">Ventas</h1>

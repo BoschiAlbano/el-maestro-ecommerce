@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdjustStockForm } from "../adjust-stock-form";
-import { TablePagination, parsePage } from "@/components/table-pagination";
+import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 
 const TYPE_LABELS: Record<string, string> = {
   INGRESO: "Ingreso",
@@ -21,15 +21,16 @@ const TYPE_LABELS: Record<string, string> = {
   MERMA: "Merma",
 };
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 export default async function InventarioProductoPage({
   params,
   searchParams,
 }: {
   params: Promise<{ productId: string }>;
-  searchParams: Promise<{ pagina?: string }>;
+  searchParams: Promise<{ pagina?: string; porPagina?: string }>;
 }) {
+  const PAGE_SIZE = parsePageSize((await searchParams).porPagina, DEFAULT_PAGE_SIZE);
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.INVENTARIO, "ver")) {
@@ -59,7 +60,7 @@ export default async function InventarioProductoPage({
     hasSpecialPermission(currentUser, "ajustarStock");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-h-[calc(100svh-5.5rem)] flex-col gap-6">
       <div>
         <h1 className="text-lg font-semibold">{product.name}</h1>
         <p className="text-sm text-muted-foreground">Stock actual: {product.currentStock}</p>
@@ -73,7 +74,7 @@ export default async function InventarioProductoPage({
         </p>
       )}
 
-      <div>
+      <div className="flex flex-1 flex-col">
         <h2 className="mb-2 text-sm font-semibold">Historial de movimientos</h2>
         <Table>
           <TableHeader>
@@ -112,7 +113,7 @@ export default async function InventarioProductoPage({
             )}
           </TableBody>
         </Table>
-        <div className="mt-4">
+        <div className="mt-auto pt-4">
           <TablePagination
             page={page}
             pageSize={PAGE_SIZE}

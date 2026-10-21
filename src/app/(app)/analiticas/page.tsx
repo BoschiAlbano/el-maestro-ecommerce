@@ -1,14 +1,13 @@
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseAnalyticsFilters, type AnalyticsSearchParams } from "@/lib/analytics";
 import { loadAnalyticsData } from "@/lib/analytics-data";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageActions } from "@/components/page-actions";
+import { FilterForm } from "@/components/filter-form";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { Panel, StatCard } from "@/components/stat-card";
 import { PaymentMethodsChart } from "@/components/analytics/payment-methods-chart";
 import { TopProductsChart } from "@/components/analytics/top-products-chart";
@@ -64,35 +63,35 @@ export default async function AnaliticasPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">Analíticas</h1>
         {puedeExportar && (
-          <div className="flex gap-2">
-            <Link
-              href={`/analiticas/exportar/excel${queryString ? `?${queryString}` : ""}`}
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              Exportar Excel
-            </Link>
-            <Link
-              href={`/analiticas/exportar/pdf${queryString ? `?${queryString}` : ""}`}
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              Exportar PDF
-            </Link>
-          </div>
+          <PageActions
+            menuLabel="Exportar"
+            secondary={[
+              { label: "Exportar Excel", href: `/analiticas/exportar/excel${queryString ? `?${queryString}` : ""}` },
+              { label: "Exportar PDF", href: `/analiticas/exportar/pdf${queryString ? `?${queryString}` : ""}` },
+            ]}
+          />
         )}
       </div>
 
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterForm
+        toggleBelow
+        activeCount={(rawParams.empleado && rawParams.empleado !== "__all__" ? 1 : 0) + (rawParams.medioPago && rawParams.medioPago !== "__all__" ? 1 : 0)}
+        search={
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
         <div className="flex flex-col gap-2">
           <Label htmlFor="desde">Desde</Label>
-          <Input id="desde" name="desde" type="date" defaultValue={desdeDefault} className="w-40" />
+          <Input id="desde" name="desde" type="date" defaultValue={desdeDefault} className="w-full sm:w-40" />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="hasta">Hasta</Label>
-          <Input id="hasta" name="hasta" type="date" defaultValue={hastaDefault} className="w-40" />
+          <Input id="hasta" name="hasta" type="date" defaultValue={hastaDefault} className="w-full sm:w-40" />
         </div>
+          </div>
+        }
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="empleado">Empleado</Label>
           <Select
@@ -100,7 +99,7 @@ export default async function AnaliticasPage({
             defaultValue={rawParams.empleado ?? "__all__"}
             items={{ __all__: "Todos", ...Object.fromEntries(employees.map((e) => [e.id, e.name])) }}
           >
-            <SelectTrigger id="empleado" className="w-44">
+            <SelectTrigger id="empleado" className="w-full sm:w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -120,7 +119,7 @@ export default async function AnaliticasPage({
             defaultValue={rawParams.medioPago ?? "__all__"}
             items={{ __all__: "Todos", EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia" }}
           >
-            <SelectTrigger id="medioPago" className="w-40">
+            <SelectTrigger id="medioPago" className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -129,9 +128,7 @@ export default async function AnaliticasPage({
               <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <Button type="submit">Filtrar</Button>
-      </form>
+        </div>      </FilterForm>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard

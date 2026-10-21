@@ -21,7 +21,7 @@ export function AppShell({ children, headerEnd, user }: AppShellProps) {
       <div className="print:hidden">
         <AppSidebar user={user} />
       </div>
-      <SidebarInset className="print:m-0 print:shadow-none">
+      <SidebarInset className="min-w-0 print:m-0 print:shadow-none">
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4 print:hidden">
           <div className="flex items-center gap-2">
             <SidebarTrigger />

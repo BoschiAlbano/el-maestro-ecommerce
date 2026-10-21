@@ -2,7 +2,8 @@ import { renderAppIcon } from "@/lib/app-icon";
 
 export const dynamic = "force-static";
 
-// Logo blanco sin fondo: la barra de la PWA instalada es oscura (theme_color).
+// Logo negro sobre fondo blanco: se ve bien en el escritorio (claro) y en la
+// barra oscura de la PWA instalada (theme_color).
 export function GET() {
-  return renderAppIcon(192, { logoColor: "#ffffff" });
+  return renderAppIcon(192, { background: "#ffffff", logoScale: 0.8 });
 }

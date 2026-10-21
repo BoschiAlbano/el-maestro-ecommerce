@@ -70,7 +70,7 @@ export function BrandManager({ brands }: { brands: Brand[] }) {
   const [state, formAction, pending] = useActionState(createBrand, initialState);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-6">
       <form action={formAction} className="flex max-w-sm items-end gap-2">
         <Input name="name" placeholder="Nombre de la marca" required />
         <Button type="submit" disabled={pending}>
@@ -79,6 +79,7 @@ export function BrandManager({ brands }: { brands: Brand[] }) {
       </form>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
+      <div className="flex-1">
       <Table>
         <TableHeader>
           <TableRow>
@@ -99,6 +100,7 @@ export function BrandManager({ brands }: { brands: Brand[] }) {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
