@@ -143,6 +143,8 @@ Precios consultados el 14/10/2026, en USD y sin impuestos. Verificar antes de co
 | Hosting | Vercel Pro | 20 USD por mes por usuario desarrollador | El plan Hobby se limita a uso personal no comercial. |
 | Dominio propio | Opcional | A cotizar | |
 
+> Mientras se use el plan gratuito de Supabase, la spec 018 agrega un cron diario de Vercel que consulta la base para que no se pause por inactividad. Es un paliativo: no reemplaza al plan Pro.
+
 Fuentes: <https://supabase.com/pricing>, <https://vercel.com/pricing>, <https://vercel.com/docs/plans/hobby>.
 
 ## 11. Hoja de ruta de specs
@@ -168,6 +170,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 015 | Tienda online: ruta raíz y landing en blanco | 001, 002, 012 | Verificada |
 | 016 | Ingreso por usuario y contraseña | 001, 002, 003 | Verificada |
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
+| 018 | Keep-alive de la base de datos | 001 | En desarrollo |
 
 Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 
