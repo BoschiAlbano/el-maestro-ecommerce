@@ -19,6 +19,28 @@ export async function notifyPedidoNuevo(orderId: string, customerName: string) {
   });
 }
 
+/**
+ * La conexión con Mercado Libre se cayó de forma definitiva y hay que volver
+ * a conectar (specs/019, RF-5). No se repite mientras haya uno sin leer: la
+ * renovación puede fallar muchas veces seguidas antes de que alguien lo vea.
+ */
+export async function notifyMlReconexion() {
+  const open = await prisma.notification.findFirst({
+    where: { type: "ML_RECONEXION", readAt: null },
+    select: { id: true },
+  });
+  if (open) return;
+
+  await prisma.notification.create({
+    data: {
+      type: "ML_RECONEXION",
+      message: "Se perdió la conexión con Mercado Libre. Hay que volver a conectar la cuenta.",
+      targetType: "MercadoLibreConnection",
+      targetId: "singleton",
+    },
+  });
+}
+
 export async function notifyDiferenciaCaja(shiftId: string, difference: number) {
   await prisma.notification.create({
     data: {

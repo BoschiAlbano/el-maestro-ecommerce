@@ -77,7 +77,13 @@ export function NotificationsBell() {
           )}
           {summary.items.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-2 text-sm">
-              <span>{item.message}</span>
+              {item.href ? (
+                <Link href={item.href} className="text-primary underline">
+                  {item.message}
+                </Link>
+              ) : (
+                <span>{item.message}</span>
+              )}
               <Button
                 type="button"
                 variant="ghost"

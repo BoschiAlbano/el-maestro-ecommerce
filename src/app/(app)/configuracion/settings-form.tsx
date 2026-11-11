@@ -7,14 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ResetSummary } from "@/lib/system-reset";
+import type { MlConnectionView } from "@/lib/mercadolibre/connection";
+import type { MlConnectResult } from "@/lib/mercadolibre/connection-result";
 import { ResetSystemTab } from "./reset-system-tab";
+import { MercadoLibreTab } from "./mercadolibre-tab";
 
 type Settings = { razonSocial: string; textoTicketAdicional: string | null; stockMinimoDefault: number };
 
 type SettingsFormProps = {
   settings: Settings;
+  /** Con permiso "editar": ve y guarda Ticket y Artículos. */
+  canEdit: boolean;
   /** Solo el Dueño recibe el resumen y ve la pestaña "Sistema" (specs/017). */
   resetSummary?: ResetSummary;
+  /** Pestaña "Mercado Libre" (specs/019): la ve quien tiene permiso "ver". */
+  mercadoLibre: { view: MlConnectionView; isOwner: boolean; result: MlConnectResult | null };
+  /** Pestaña con la que abre, si la dirección la pide y el usuario la puede ver. */
+  initialTab?: string;
 };
 
 const initialState: ActionState = {};
@@ -79,19 +88,34 @@ function ArticleForm({ settings }: { settings: Settings }) {
 }
 
 /** Configuración del sistema separada por tema; cada pestaña se guarda por su cuenta. */
-export function SettingsForm({ settings, resetSummary }: SettingsFormProps) {
+export function SettingsForm({ settings, canEdit, resetSummary, mercadoLibre, initialTab }: SettingsFormProps) {
+  const tabs = [
+    ...(canEdit ? ["ticket", "articulos"] : []),
+    "mercadolibre",
+    ...(resetSummary ? ["sistema"] : []),
+  ];
+  const defaultTab = initialTab && tabs.includes(initialTab) ? initialTab : tabs[0];
+
   return (
-    <Tabs defaultValue="ticket">
+    <Tabs defaultValue={defaultTab}>
       <TabsList>
-        <TabsTrigger value="ticket">Ticket</TabsTrigger>
-        <TabsTrigger value="articulos">Artículos</TabsTrigger>
+        {canEdit && <TabsTrigger value="ticket">Ticket</TabsTrigger>}
+        {canEdit && <TabsTrigger value="articulos">Artículos</TabsTrigger>}
+        <TabsTrigger value="mercadolibre">Mercado Libre</TabsTrigger>
         {resetSummary && <TabsTrigger value="sistema">Sistema</TabsTrigger>}
       </TabsList>
-      <TabsContent value="ticket" className="pt-2">
-        <TicketForm settings={settings} />
-      </TabsContent>
-      <TabsContent value="articulos" className="pt-2">
-        <ArticleForm settings={settings} />
+      {canEdit && (
+        <TabsContent value="ticket" className="pt-2">
+          <TicketForm settings={settings} />
+        </TabsContent>
+      )}
+      {canEdit && (
+        <TabsContent value="articulos" className="pt-2">
+          <ArticleForm settings={settings} />
+        </TabsContent>
+      )}
+      <TabsContent value="mercadolibre" className="pt-2">
+        <MercadoLibreTab {...mercadoLibre} canEdit={canEdit} />
       </TabsContent>
       {resetSummary && (
         <TabsContent value="sistema" className="pt-2">

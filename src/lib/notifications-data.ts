@@ -1,15 +1,18 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { hasPermission, type UserLike } from "@/lib/permissions";
-import { ModuloNegocio } from "@/generated/prisma/client";
+import { type UserLike } from "@/lib/permissions";
+import type { NotificationType } from "@/generated/prisma/client";
 import { loadTravelList } from "@/lib/home-data";
 import { isStockAlertActive, stillDismissed } from "@/lib/stock-alert";
+import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
 
 export type NotificationItem = {
   id: string;
-  type: "PEDIDO_NUEVO" | "DIFERENCIA_CAJA";
+  type: NotificationType;
   message: string;
   createdAt: Date;
+  /** A dónde lleva el aviso al tocarlo; sin valor, es solo texto. */
+  href?: string;
 };
 
 export type NotificationsSummary = {
@@ -24,11 +27,9 @@ export type NotificationsSummary = {
  * no se persiste: reusa `loadTravelList` (spec 012) tal cual.
  */
 export async function loadNotificationsSummary(currentUser: UserLike): Promise<NotificationsSummary> {
-  const visibleTypes: ("PEDIDO_NUEVO" | "DIFERENCIA_CAJA")[] = [];
-  if (hasPermission(currentUser, ModuloNegocio.PEDIDOS, "ver")) visibleTypes.push("PEDIDO_NUEVO");
-  if (hasPermission(currentUser, ModuloNegocio.CAJA, "ver")) visibleTypes.push("DIFERENCIA_CAJA");
+  const visibleTypes = visibleNotificationTypes(currentUser);
 
-  const items =
+  const rows =
     visibleTypes.length === 0
       ? []
       : await prisma.notification.findMany({
@@ -36,6 +37,7 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
           select: { id: true, type: true, message: true, createdAt: true },
           orderBy: { createdAt: "desc" },
         });
+  const items: NotificationItem[] = rows.map((row) => ({ ...row, href: NOTIFICATION_HREF[row.type] }));
 
   const travelList = await loadTravelList(currentUser);
   const lowIds = (travelList ?? []).map((item) => item.id);
@@ -61,9 +63,7 @@ export async function markNotificationRead(id: string, currentUser: UserLike): P
   const notification = await prisma.notification.findUnique({ where: { id } });
   if (!notification) return { error: "El aviso no existe." };
 
-  const requiredModule: ModuloNegocio =
-    notification.type === "PEDIDO_NUEVO" ? ModuloNegocio.PEDIDOS : ModuloNegocio.CAJA;
-  if (!hasPermission(currentUser, requiredModule, "ver")) return { error: "No tenés permiso para esto." };
+  if (!canSeeNotificationType(currentUser, notification.type)) return { error: "No tenés permiso para esto." };
 
   if (!notification.readAt) {
     await prisma.notification.update({ where: { id }, data: { readAt: new Date() } });

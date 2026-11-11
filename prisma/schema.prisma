@@ -27,36 +27,37 @@ enum ModuloNegocio {
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
 model User {
-  id              String                @id @default(uuid())
-  authUserId      String                @unique
+  id              String                   @id @default(uuid())
+  authUserId      String                   @unique
   name            String
-  email           String                @unique
+  email           String                   @unique
   /// Nombre para ingresar al sistema, como lo escribió el dueño (specs/016).
   username        String
   /// Forma normalizada de `username` (minúsculas, sin espacios de más): sobre ella
   /// se busca y se garantiza que sea único sin distinguir mayúsculas.
-  usernameKey     String                @unique
+  usernameKey     String                   @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
-  active          Boolean               @default(true)
+  active          Boolean                  @default(true)
   roleId          String
-  role            Role                  @relation(fields: [roleId], references: [id])
+  role            Role                     @relation(fields: [roleId], references: [id])
   auditLogs       AuditLog[]
   priceChanges    ProductPriceHistory[]
   stockMovements  StockMovement[]
   stockEntries    StockEntry[]
-  shiftsOpened    CashShift[]           @relation("ShiftsOpened")
-  shiftsClosed    CashShift[]           @relation("ShiftsClosed")
+  shiftsOpened    CashShift[]              @relation("ShiftsOpened")
+  shiftsClosed    CashShift[]              @relation("ShiftsClosed")
   cashMovements   CashMovement[]
   sales           Sale[]
-  salesVoided     Sale[]                @relation("SalesVoided")
+  salesVoided     Sale[]                   @relation("SalesVoided")
   ticketReprints  TicketReprint[]
   orders          Order[]
-  ordersCancelled Order[]               @relation("OrdersCancelled")
+  ordersCancelled Order[]                  @relation("OrdersCancelled")
   employee        Employee?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  mlConnections   MercadoLibreConnection[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   @@map("users")
 }
@@ -105,14 +106,14 @@ model RolePermission {
 /// Datos del negocio y parámetros generales. Fila única (id fijo), no un
 /// key-value genérico — son 3 campos conocidos (specs/003, plan.md sección 1).
 model Setting {
-  id                   String   @id @default("singleton")
-  razonSocial          String   @default("")
-  textoTicketAdicional String?
-  stockMinimoDefault   Int      @default(5)
+  id                     String   @id @default("singleton")
+  razonSocial            String   @default("")
+  textoTicketAdicional   String?
+  stockMinimoDefault     Int      @default(5)
   /// Productos que estaban bajo el mínimo cuando alguien marcó leído el aviso de
   /// stock bajo (specs/013). El aviso reaparece si queda bajo algún producto que no figure acá.
   stockAlertDismissedIds String[] @default([])
-  updatedAt            DateTime @updatedAt
+  updatedAt              DateTime @updatedAt
 
   @@map("settings")
 }
@@ -132,6 +133,9 @@ enum AuditAction {
   ROLE_UPDATED
   ROLE_DELETED
   SYSTEM_RESET
+  /// Conectar y desconectar la cuenta de Mercado Libre (specs/019, RF-6).
+  ML_CONNECTED
+  ML_DISCONNECTED
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
@@ -564,6 +568,9 @@ model Employee {
 enum NotificationType {
   PEDIDO_NUEVO
   DIFERENCIA_CAJA
+  /// La conexión con Mercado Libre se cayó y hay que volver a conectar
+  /// (specs/019, RF-5).
+  ML_RECONEXION
 }
 
 /// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
@@ -584,4 +591,93 @@ model Notification {
 
   @@index([readAt])
   @@map("notifications")
+}
+
+enum MlConnectionStatus {
+  CONNECTED
+  /// La renovación falló de forma definitiva: hay que volver a autorizar.
+  NEEDS_RECONNECT
+}
+
+/// Cuenta de Mercado Libre conectada (specs/019). Fila única, igual que
+/// `Setting`: el `id` fijo garantiza una sola cuenta conectada (RF-7).
+/// Desconectar borra la fila.
+model MercadoLibreConnection {
+  id       String @id @default("singleton")
+  /// Identificador de la cuenta en Mercado Libre. Como texto: es un número
+  /// que no se opera y puede superar el rango de `Int`.
+  mlUserId String
+  nickname String
+  siteId   String
+
+  /// Cifrados con `encryptToken` (src/lib/mercadolibre/token-crypto.ts).
+  /// Nunca en claro, nunca al navegador, nunca en registros (RF-16).
+  accessTokenEnc       String
+  refreshTokenEnc      String
+  accessTokenExpiresAt DateTime
+
+  status       MlConnectionStatus @default(CONNECTED)
+  statusReason String?
+
+  connectedAt       DateTime @default(now())
+  connectedByUserId String
+  connectedByUser   User     @relation(fields: [connectedByUserId], references: [id])
+
+  lastRefreshedAt    DateTime?
+  lastNotificationAt DateTime?
+  lastRecoveryAt     DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("ml_connections")
+}
+
+enum MlNotificationSource {
+  /// Llegó a la ruta de avisos.
+  WEBHOOK
+  /// Se recuperó de los avisos perdidos (pasada diaria o botón manual).
+  RECOVERY
+}
+
+enum MlNotificationStatus {
+  PENDING
+  PROCESSED
+  /// No hay ninguna función que procese ese tema (RF-15).
+  NO_ACTION
+  FAILED
+  /// De otra cuenta, sin cuenta conectada, o pendiente al desconectar (RF-11).
+  DISCARDED
+}
+
+/// Aviso de Mercado Libre (specs/019). La tabla funciona como cola: la ruta
+/// de avisos guarda y responde, y el procesamiento viene después. Sin
+/// relación a `ml_connections` a propósito: un aviso queda como dato
+/// histórico aunque se desconecte la cuenta.
+model MercadoLibreNotification {
+  id String @id @default(uuid())
+
+  /// El identificador del aviso si Mercado Libre lo manda; si no, un hash de
+  /// tema, recurso y fecha de envío. Único: el mismo aviso recibido dos veces
+  /// se guarda una sola vez (RF-12).
+  dedupeKey String @unique
+
+  /// Texto libre, no enum: llegan temas que el sistema no conoce.
+  topic    String
+  resource String
+  mlUserId String
+
+  source MlNotificationSource
+  status MlNotificationStatus @default(PENDING)
+
+  /// Intentos de procesamiento propios (no los reintentos de Mercado Libre).
+  attempts  Int     @default(0)
+  lastError String?
+
+  /// Fecha de envío que informa Mercado Libre.
+  sentAt      DateTime?
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([status, receivedAt])
+  @@map("ml_notifications")
 }

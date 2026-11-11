@@ -31,6 +31,8 @@ const ACCIONES: { value: AuditAction; label: string }[] = [
   { value: "ROLE_UPDATED", label: "Rol editado" },
   { value: "ROLE_DELETED", label: "Rol borrado" },
   { value: "SYSTEM_RESET", label: "Sistema reiniciado" },
+  { value: "ML_CONNECTED", label: "Mercado Libre conectado" },
+  { value: "ML_DISCONNECTED", label: "Mercado Libre desconectado" },
 ];
 
 function labelFor(action: AuditAction): string {

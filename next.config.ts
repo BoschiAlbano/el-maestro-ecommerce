@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   /* config options here */
   // "Cache Components" (y "Partial Prefetching", que depende de él) vienen
@@ -17,10 +19,14 @@ const nextConfig: NextConfig = {
   // host real del dev server) — por eso hace falta agregar `localhost:3000`
   // acá, no el dominio del túnel. `allowedDevOrigins` sigue haciendo
   // falta aparte, para los endpoints de desarrollo (HMR, assets).
-  allowedDevOrigins: ["**.devtunnels.ms"],
+  //
+  // Túnel de ngrok para Mercado Libre (spec 019, plan sección 7): la
+  // dirección de retorno y la de avisos tienen que ser públicas y con https.
+  // Se acepta solo en desarrollo: en producción no se abre ningún origen más.
+  allowedDevOrigins: ["**.devtunnels.ms", ...(isDev ? ["**.ngrok-free.dev"] : [])],
   experimental: {
     serverActions: {
-      allowedOrigins: ["**.devtunnels.ms", "localhost:3000"],
+      allowedOrigins: ["**.devtunnels.ms", "localhost:3000", ...(isDev ? ["**.ngrok-free.dev"] : [])],
     },
   },
   turbopack: {
