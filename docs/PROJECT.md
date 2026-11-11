@@ -19,7 +19,7 @@ Toda la operación se maneja en **pesos argentinos (ARS)**.
 
 ## 2. Contexto y usuarios
 
-El cliente importa mercadería de Ciudad del Este (Paraguay), tiene su local y depósito en San Miguel de Tucumán y vende por mostrador y por encargo (WhatsApp y redes sociales).
+El cliente importa mercadería de Ciudad del Este (Paraguay), tiene su local y depósito en San Miguel de Tucumán y vende por mostrador y por encargo (WhatsApp y redes sociales). Desde la ampliación de alcance del 2026-11-10 suma **Mercado Libre** como canal de venta (ver sección 4).
 
 - Volumen inicial: unos **200 productos**, **un solo puesto de caja** y **dos empleados** (turno mañana y turno tarde).
 - El dueño viaja a traer la mercadería. Necesita ver desde el celular **qué stock falta, qué se vende y qué pedidos tiene**.
@@ -61,6 +61,19 @@ Cada módulo tiene su spec en `specs/`.
 | 012 | Inicio del dueño y lista de viaje | Pantalla de inicio con el estado de la caja actual, el resumen de caja de hoy, pedidos pendientes y alertas de stock (sin repetir ventas del mes ni más vendidos, eso está en Analíticas). La lista de viaje reúne los productos bajo el mínimo y los faltantes de pedidos pendientes, con cantidad sugerida, y se copia como texto o se exporta a Excel. |
 | 013 | Notificaciones | Campanita en el header, visible en todas las pantallas, con avisos de pedido nuevo y diferencia de caja (marcables como leídos) y stock bajo (en vivo, sin leído). Se actualiza sola cada 60 segundos. |
 
+### Ampliación de alcance (2026-11-10): Mercado Libre y facturación electrónica
+
+Pedido del cliente posterior al alcance original. Se cotiza aparte (ver sección 12). Las specs están en borrador y el detalle de cada una se confirma al redactarla.
+
+| Spec | Módulo | Qué incluye |
+|---|---|---|
+| 019 | Conexión con Mercado Libre | Vincular la cuenta de Mercado Libre del negocio, mantener la conexión activa sin intervención y recibir los avisos que manda Mercado Libre. Es la base de las specs 020 a 022 y 024. |
+| 020 | Publicación de productos en Mercado Libre | El dueño elige, producto por producto, cuáles se publican. Las publicaciones que ya existan en la cuenta se vinculan con los productos del sistema. Datos extra que pide Mercado Libre (categoría, características, fotos, descripción, peso y medidas) y precio propio para ese canal. Publicar, pausar y dar de baja. |
+| 021 | Sincronización de stock con Mercado Libre | Cada cambio de stock en el sistema se refleja en la publicación, y un control periódico corrige diferencias. |
+| 022 | Órdenes de Mercado Libre | Cada compra en Mercado Libre llega al sistema como una venta de ese canal, descuenta stock y genera un aviso. La cancelación devuelve el stock. Las analíticas suman estas ventas con un filtro para ver Mercado Libre, mostrador o ambos. |
+| 023 | Facturación electrónica (ARCA) | Emisión de factura C con autorización de ARCA para las ventas de mostrador y las entregas de pedidos por encargo, cuando el cajero lo elige. Datos fiscales del negocio en Configuración, impresión del comprobante y notas de crédito por anulación. |
+| 024 | Factura de órdenes de Mercado Libre | Factura electrónica de cada orden de Mercado Libre con los datos fiscales del comprador, envío de la factura a Mercado Libre e impresión para despachar junto al producto. |
+
 ## 5. Reglas de negocio acordadas
 
 - **Moneda.** Todo en pesos argentinos. El sistema no trabaja con dólares ni con tipo de cambio. Cada producto tiene un precio de compra y un precio de venta, cargados por usuarios con permiso.
@@ -71,17 +84,26 @@ Cada módulo tiene su spec en `specs/`.
 - **Entrega.** El usuario elige los ítems que entrega y los convierte en venta, con ticket y descuento de stock. Los ítems entregados salen de la lista de pendientes y quedan en el historial. El pedido se cierra cuando no queda nada pendiente.
 - **Seña.** Se cobra con la caja abierta, en efectivo o transferencia, y suma a la caja del día en que se cobra. Al entregar se aplica como pago ya cobrado hasta el total de la venta, y el excedente queda como saldo a favor del pedido. No se vuelve a contar en el cierre del día de entrega.
 - **Cancelación.** La seña se devuelve como egreso de caja con motivo y el pedido pasa a cancelado. Si la seña fue por transferencia, el egreso se anota por ese medio y no afecta el efectivo esperado.
-- **Caja.** Cada turno abre y cierra su propia sesión. Solo puede haber una caja abierta a la vez y no se vende sin caja abierta. Un cierre no se edita: las correcciones van como movimientos con motivo.
+- **Caja.** Cada turno abre y cierra su propia sesión. Solo puede haber una caja abierta a la vez y no se vende en el local sin caja abierta. Las ventas de Mercado Libre son la excepción: no pasan por la caja (ampliación 2026-11-10). Un cierre no se edita: las correcciones van como movimientos con motivo.
 - **Ticket.** Lleva razón social, número de ticket, fecha y hora, empleado que lo emitió, lista de productos con precios, totales y la leyenda **"DOCUMENTO NO VÁLIDO COMO FACTURA"**.
 - **Permisos.** El dueño, y cualquier empleado al que se le asigne el permiso, puede anular ventas y ajustar stock. Cada acción sensible queda en el registro de auditoría.
 - **Códigos de barras.** La mayoría de los productos trae código de origen. Para los que no, el sistema genera un código propio.
 - **Notificaciones.** Solo en pantalla.
+- **Mercado Libre** *(ampliación 2026-11-10)*. El dueño elige **producto por producto** qué se publica. El stock del sistema es la fuente de verdad y se refleja en Mercado Libre.
+- **Arranque anticipado en Mercado Libre** *(cambio 2026-11-11)*. El cliente empieza a vender en Mercado Libre por su cuenta antes de que el sistema esté terminado. Por eso el sistema, además de publicar, **vincula las publicaciones que ya existan** con sus productos (spec 020), conservando sus ventas y opiniones. Las compras anteriores a la puesta en marcha no se traen al sistema, y mientras tanto el cliente factura por otro medio.
+- **Canales en analíticas** *(ampliación 2026-11-10)*. Las ventas de Mercado Libre se ven en las analíticas junto con las de mostrador, con un filtro para ver un canal, el otro o ambos.
+- **Factura electrónica** *(ampliación 2026-11-10)*. El sistema emite facturas electrónicas con autorización de ARCA. El cliente es **monotributista** (categoría B, venta de cosas muebles), así que el comprobante es siempre **factura C**, sin IVA discriminado. La factura la emite el sistema y **no** se usa el Facturador de Mercado Libre (usar los dos duplicaría comprobantes).
+  - **Órdenes de Mercado Libre:** se facturan siempre.
+  - **Ventas de mostrador y entregas de pedidos por encargo:** la factura es **opcional y la decide el cajero en cada venta**. Si no se factura, sale el ticket interno de siempre.
+  - El ticket de 58 mm sigue siendo un documento interno, distinto de la factura.
 
 ## 6. Fuera de alcance
 
 Nada de lo siguiente se construye en esta etapa. Cualquier cambio posterior se cotiza aparte.
 
-- Facturación electrónica ARCA y cualquier comprobante fiscal. El ticket es un documento interno.
+- *(Cambio 2026-11-10: la facturación electrónica ARCA y la integración con Mercado Libre dejaron de estar fuera de alcance; ver "Ampliación de alcance" en la sección 4.)*
+- De Mercado Libre, todo lo que no figure en las specs 019 a 024: responder preguntas y mensajes de compradores desde el sistema, publicidad, promociones y cupones, envíos con depósito de Mercado Libre (Full), reclamos y devoluciones, y otros marketplaces.
+- Mercado Pago como medio de cobro en el local.
 - Manejo de dólares, tipo de cambio, motor o calculadora de precios y conversor de USD a ARS (posible segunda fase).
 - Cuentas corrientes, fiado, descuentos y múltiples listas de precios.
 - Cobro con tarjeta o QR.
@@ -106,7 +128,11 @@ Nada de lo siguiente se construye en esta etapa. Cualquier cambio posterior se c
 ## 8. Supuestos y responsabilidades del cliente
 
 - Dispone de una impresora térmica de 58 mm y de una PC de caja con Chrome. Informa marca y modelo de la impresora antes de la etapa de ticket.
-- Aclara con su contador si debe emitir factura electrónica. El sistema no emite comprobantes fiscales.
+- *(Cambio 2026-11-10.)* Condición fiscal informada: monotributo, categoría B. Gestiona en ARCA lo necesario para facturar desde el sistema: punto de venta para servicios web y certificado digital. El trámite se hace con su clave fiscal. Revisa con su contador los puntos fiscales de la sección 12.
+- Registra con su cuenta la aplicación en el portal de desarrolladores de Mercado Libre, para que quede a su nombre.
+- Abre la cuenta de vendedor de Mercado Libre a nombre del negocio, con los datos validados, y autoriza la conexión con el sistema.
+- Mientras vende en Mercado Libre sin el sistema, carga en cada publicación el código de barras del producto como código de vendedor (SKU), no usa variantes, y factura por el medio que le indique su contador. Si usa el Facturador de Mercado Libre, lo desactiva cuando el sistema empieza a facturar.
+- Entrega los datos de publicación de cada producto que quiera vender en Mercado Libre: fotos, descripción, peso y medidas del paquete, y precio para ese canal.
 - Entrega los datos del ticket: razón social y cualquier texto adicional.
 - Define los roles y permisos de sus empleados y el stock mínimo de cada producto.
 - Mantiene una conexión a internet estable en el local.
@@ -145,6 +171,8 @@ Precios consultados el 14/10/2026, en USD y sin impuestos. Verificar antes de co
 
 > Mientras se use el plan gratuito de Supabase, la spec 018 agrega un cron diario de Vercel que consulta la base para que no se pause por inactividad. Es un paliativo: no reemplaza al plan Pro.
 
+> La integración con Mercado Libre (specs 019 a 022) necesita tareas programadas más frecuentes que una por día para recuperar avisos perdidos y controlar el stock. El plan Hobby de Vercel permite una sola ejecución diaria. **Decisión 2026-11-10:** por ahora se sigue en el plan gratuito. Consecuencia: la recuperación de avisos perdidos corre una vez por día más un botón manual (spec 019), y una orden cuyo aviso se pierda puede tardar hasta un día en aparecer. Se vuelve a evaluar al redactar las specs 021 y 022.
+
 Fuentes: <https://supabase.com/pricing>, <https://vercel.com/pricing>, <https://vercel.com/docs/plans/hobby>.
 
 ## 11. Hoja de ruta de specs
@@ -171,8 +199,23 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 016 | Ingreso por usuario y contraseña | 001, 002, 003 | Verificada |
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
 | 018 | Keep-alive de la base de datos | 001 | En desarrollo |
+| 019 | Conexión con Mercado Libre | 002, 003, 013 | Verificada (pendiente de despliegue: medir los 500 ms de la ruta de avisos en Vercel) |
+| 020 | Publicación de productos en Mercado Libre | 004, 019 | Borrador |
+| 021 | Sincronización de stock con Mercado Libre | 005, 020 | Borrador |
+| 022 | Órdenes de Mercado Libre | 008, 011, 013, 021 | Borrador |
+| 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Borrador |
+| 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |
 
-Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
+Sobre las specs 019 a 024:
+
+- **Orden.** La 023 no depende de Mercado Libre y se puede probar en el ambiente de pruebas de ARCA con el CUIT del desarrollador. Puede adelantarse mientras se consigue la cuenta de Mercado Libre.
+- **Constitución.** El 2026-11-10 se aprobó exceptuar las ventas de Mercado Libre de la regla 11 (no se vende sin caja abierta); ya está aplicado en `specs/constitution.md`. La regla 25 (leyenda del ticket) no cambia: la factura es un comprobante aparte.
+- **Pendientes del cliente y del contador.** Las preguntas y acciones que dependen de ellos están reunidas en `docs/pendientes-cliente-y-contador.md`.
+- **Tecnologías.** Las bibliotecas y servicios evaluados están en `docs/investigacion/2026-11-10-tecnologias.md`.
+- **Specs que se modifican.** La 023 agrega la opción de facturar a las specs 008 y 009; la 022 agrega el filtro por origen a la 011 y un dato al inicio de la 012. Cada cambio se anota en la spec afectada al aprobarse.
+- **Investigación.** Lo relevado de Mercado Libre y de ARCA, con sus fuentes, está en `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`. Las decisiones están en `docs/decisions/0004` y `0005`.
+
+Estados posibles: Sin redactar → Borrador → Aprobada → En desarrollo → Verificada.
 
 ## 12. Puntos pendientes
 
@@ -187,6 +230,21 @@ Estados posibles: Borrador → Aprobada → En desarrollo → Verificada.
 - Cambios de alcance: cómo se cotiza y se aprueba lo que se pida después de firmado.
 - Hardware: marca y modelo de la impresora y si se incluye lector de código de barras USB.
 - Aclaración fiscal: confirmación del contador del cliente sobre la factura electrónica.
+
+**Ampliación Mercado Libre y facturación electrónica (2026-11-10):**
+
+- Cotización y plazos de las specs 019 a 024, aparte del alcance original.
+- Para consultar con el contador del cliente antes de la spec 023:
+  - Las actividades registradas son venta al por menor por internet, expendio de comidas y peluquería. Ninguna es venta al por menor en local: confirmar si hay que sumarla para facturar el mostrador.
+  - El tope anual de facturación de la categoría B (unos $17,6 millones desde agosto de 2026, según fuentes no oficiales): las ventas de Mercado Libre y las de mostrador facturadas suman para ese tope. Decisión del cliente: el sistema solo avisa al cruzar el 80 %, para informar al contador; pasarse no bloquea nada.
+  - Que facturar en mostrador solo cuando el cajero lo elige sea compatible con sus obligaciones.
+- Datos que faltan para el encabezado de la factura: número de inscripción en Ingresos Brutos (la constancia lo trae vacío) y domicilio comercial (las constancias muestran dos alturas distintas de la misma avenida).
+- Formato de impresión de la factura: hoja A4, ticket de 58 mm, o ambos.
+- Caja y órdenes de Mercado Libre: cómo se registran las ventas que no pasan por la caja del local (spec 022, toca la regla 11 de la constitución).
+- Modalidad de envío en Mercado Libre: etiqueta de Mercado Envíos, envío en el día o retiro en el local.
+- Prueba técnica previa con usuarios de prueba de Mercado Libre (aprobada el 2026-11-10, pendiente de hacer): conectar, publicar un producto y recibir una orden, para confirmar los datos relevados de la documentación antes de cotizar. Se hace con una aplicación registrada en la cuenta del desarrollador (decisión 2026-11-11); la del cliente se usa recién al salir a producción.
+- Trámite en ARCA a cargo del contador: certificado digital y punto de venta para servicios web. Los pasos están en el documento de investigación, sección 2.3.
+- Cada spec de la 020 a la 024 tiene su lista de preguntas abiertas, separadas en las que son para el cliente, para el contador y para la prueba técnica.
 
 **Mejoras de UX/UI pendientes (a futuro, no bloquean el MVP):**
 
