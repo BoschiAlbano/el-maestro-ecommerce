@@ -1,34 +1,8 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { ResetCounts } from "@/lib/system-reset";
+import { BUSINESS_TABLES, type ResetCounts } from "@/lib/system-reset";
 
-/**
- * Tablas de negocio que el reinicio vacía (specs/017, plan sección 3). Los
- * nombres son fijos, no vienen de ninguna entrada del usuario. Todo lo que
- * referencia a estas tablas también está en la lista, así que `CASCADE` no
- * arrastra nada más. Quedan afuera `users`, `roles`, `role_permissions` y
- * `settings`, que se tratan aparte.
- */
-const BUSINESS_TABLES = [
-  "audit_logs",
-  "notifications",
-  "ticket_reprints",
-  "sale_items",
-  "sales",
-  "order_items",
-  "orders",
-  "cash_movements",
-  "cash_shifts",
-  "stock_entry_items",
-  "stock_entries",
-  "stock_movements",
-  "product_price_history",
-  "products",
-  "brands",
-  "rubros",
-  "employees",
-] as const;
 
 /** Cantidades de lo que se va a borrar, para el resumen previo (RF-3). */
 export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts> {
@@ -86,6 +60,14 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
  */
 export async function wipeBusinessData(tx: Prisma.TransactionClient, ownerUserId: string) {
   await tx.$executeRawUnsafe(`TRUNCATE TABLE ${BUSINESS_TABLES.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`);
+
+  // La cuenta de Mercado Libre se conserva (es configuración, specs/019), pero
+  // referencia al usuario que la conectó: si fue otro Dueño, pasa a quien
+  // reinicia, o borrar a ese usuario fallaría y el reinicio entero volvería atrás.
+  await tx.mercadoLibreConnection.updateMany({
+    where: { connectedByUserId: { not: ownerUserId } },
+    data: { connectedByUserId: ownerUserId },
+  });
 
   await tx.user.deleteMany({ where: { id: { not: ownerUserId } } });
   await tx.rolePermission.deleteMany({ where: { role: { isOwnerRole: false } } });

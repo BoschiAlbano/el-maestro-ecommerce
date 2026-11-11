@@ -22,6 +22,7 @@ Es una acción **irreversible**: una vez hecha, los datos no se pueden recuperar
 - Antes de borrar, un resumen de **qué se va a borrar** (cantidades) y una **doble confirmación**: la contraseña del Dueño y escribir una frase exacta.
 - Borrar todos los datos de negocio, los demás usuarios (incluida su cuenta de acceso) y las fotos de productos.
 - Dejar el sistema usable: el Dueño que hizo el reinicio sigue dentro, con su rol y la configuración del negocio.
+- *(Agregado 2026-11-11, spec 019.)* La cuenta de Mercado Libre conectada se conserva, porque es configuración y no datos del negocio: el reinicio no la desconecta. Los avisos recibidos de Mercado Libre sí se borran, y si la cuenta la había conectado otro usuario con rol Dueño, pasa a figurar como conectada por quien reinicia.
 
 **No incluye:**
 

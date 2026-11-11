@@ -3,6 +3,35 @@
 
 export const RESET_PHRASE = "REINICIAR EL SISTEMA";
 
+/**
+ * Tablas de negocio que el reinicio vacía (specs/017, plan sección 3). Los
+ * nombres son fijos, no vienen de ninguna entrada del usuario. Todo lo que
+ * referencia a estas tablas también está en la lista, así que `CASCADE` no
+ * arrastra nada más. Quedan afuera `users`, `roles`, `role_permissions`,
+ * `settings` y `ml_connections` (la cuenta de Mercado Libre es configuración,
+ * no datos del negocio: specs/019), que se tratan aparte.
+ */
+export const BUSINESS_TABLES = [
+  "audit_logs",
+  "notifications",
+  "ml_notifications",
+  "ticket_reprints",
+  "sale_items",
+  "sales",
+  "order_items",
+  "orders",
+  "cash_movements",
+  "cash_shifts",
+  "stock_entry_items",
+  "stock_entries",
+  "stock_movements",
+  "product_price_history",
+  "products",
+  "brands",
+  "rubros",
+  "employees",
+] as const;
+
 /** Devuelve el mensaje de error, o `null` si la confirmación es válida. */
 export function validateResetConfirmation(input: { password: string; phrase: string }): string | null {
   if (!input.password) return "Ingresá tu contraseña.";

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { RESET_PHRASE, summarizeReset, validateResetConfirmation, type ResetCounts } from "./system-reset";
+import {
+  BUSINESS_TABLES,
+  RESET_PHRASE,
+  summarizeReset,
+  validateResetConfirmation,
+  type ResetCounts,
+} from "./system-reset";
 
 const empty: ResetCounts = {
   products: 0,
@@ -60,5 +66,26 @@ describe("summarizeReset", () => {
 
   it("avisa en singular con un solo pedido pendiente", () => {
     expect(summarizeReset({ ...empty, pendingOrders: 1 }).warnings).toEqual(["Hay 1 pedido pendiente: se va a perder."]);
+  });
+});
+
+describe("BUSINESS_TABLES", () => {
+  it("vacía los avisos de Mercado Libre (specs/019)", () => {
+    expect(BUSINESS_TABLES).toContain("ml_notifications");
+  });
+
+  it("conserva la cuenta de Mercado Libre, igual que la configuración (specs/019)", () => {
+    expect(BUSINESS_TABLES).not.toContain("ml_connections");
+    expect(BUSINESS_TABLES).not.toContain("settings");
+  });
+
+  it("no toca usuarios ni roles: se tratan aparte", () => {
+    for (const table of ["users", "roles", "role_permissions"]) {
+      expect(BUSINESS_TABLES).not.toContain(table);
+    }
+  });
+
+  it("no repite tablas", () => {
+    expect(new Set(BUSINESS_TABLES).size).toBe(BUSINESS_TABLES.length);
   });
 });
