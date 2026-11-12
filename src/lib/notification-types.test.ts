@@ -33,7 +33,7 @@ function userWith(modules: ModuloNegocio[], options: { owner?: boolean; active?:
 describe("avisos de la campanita por permiso", () => {
   it("el Dueño ve todos los tipos", () => {
     expect(visibleNotificationTypes(userWith([], { owner: true })).sort()).toEqual(
-      ["DIFERENCIA_CAJA", "ML_RECONEXION", "PEDIDO_NUEVO"].sort(),
+      ["DIFERENCIA_CAJA", "ML_RECONEXION", "PEDIDO_NUEVO", "TOPE_FACTURACION"].sort(),
     );
   });
 
@@ -46,6 +46,13 @@ describe("avisos de la campanita por permiso", () => {
   it("el aviso de reconexión de Mercado Libre no lo ve quien no ve Configuración", () => {
     const cajero = userWith([ModuloNegocio.VENTAS, ModuloNegocio.CAJA, ModuloNegocio.PEDIDOS]);
     expect(canSeeNotificationType(cajero, "ML_RECONEXION")).toBe(false);
+  });
+
+  it("el aviso del tope de facturación es solo del Dueño, aunque el rol vea todos los módulos", () => {
+    const todos = userWith(Object.values(ModuloNegocio));
+    expect(canSeeNotificationType(todos, "TOPE_FACTURACION")).toBe(false);
+    expect(visibleNotificationTypes(todos)).not.toContain("TOPE_FACTURACION");
+    expect(canSeeNotificationType(userWith([], { owner: true }), "TOPE_FACTURACION")).toBe(true);
   });
 
   it("sin permisos no ve ninguno", () => {

@@ -27,37 +27,39 @@ enum ModuloNegocio {
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
 model User {
-  id              String                   @id @default(uuid())
-  authUserId      String                   @unique
-  name            String
-  email           String                   @unique
+  id                String                   @id @default(uuid())
+  authUserId        String                   @unique
+  name              String
+  email             String                   @unique
   /// Nombre para ingresar al sistema, como lo escribió el dueño (specs/016).
-  username        String
+  username          String
   /// Forma normalizada de `username` (minúsculas, sin espacios de más): sobre ella
   /// se busca y se garantiza que sea único sin distinguir mayúsculas.
-  usernameKey     String                   @unique
+  usernameKey       String                   @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
-  active          Boolean                  @default(true)
-  roleId          String
-  role            Role                     @relation(fields: [roleId], references: [id])
-  auditLogs       AuditLog[]
-  priceChanges    ProductPriceHistory[]
-  stockMovements  StockMovement[]
-  stockEntries    StockEntry[]
-  shiftsOpened    CashShift[]              @relation("ShiftsOpened")
-  shiftsClosed    CashShift[]              @relation("ShiftsClosed")
-  cashMovements   CashMovement[]
-  sales           Sale[]
-  salesVoided     Sale[]                   @relation("SalesVoided")
-  ticketReprints  TicketReprint[]
-  orders          Order[]
-  ordersCancelled Order[]                  @relation("OrdersCancelled")
-  employee        Employee?
-  mlConnections   MercadoLibreConnection[]
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
+  active            Boolean                  @default(true)
+  roleId            String
+  role              Role                     @relation(fields: [roleId], references: [id])
+  auditLogs         AuditLog[]
+  priceChanges      ProductPriceHistory[]
+  stockMovements    StockMovement[]
+  stockEntries      StockEntry[]
+  shiftsOpened      CashShift[]              @relation("ShiftsOpened")
+  shiftsClosed      CashShift[]              @relation("ShiftsClosed")
+  cashMovements     CashMovement[]
+  sales             Sale[]
+  salesVoided       Sale[]                   @relation("SalesVoided")
+  ticketReprints    TicketReprint[]
+  orders            Order[]
+  ordersCancelled   Order[]                  @relation("OrdersCancelled")
+  employee          Employee?
+  mlConnections     MercadoLibreConnection[]
+  invoicesRequested Invoice[]
+  arcaCredentials   ArcaCredential[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@map("users")
 }
@@ -136,6 +138,9 @@ enum AuditAction {
   /// Conectar y desconectar la cuenta de Mercado Libre (specs/019, RF-6).
   ML_CONNECTED
   ML_DISCONNECTED
+  /// Datos del emisor y certificado de ARCA (specs/023, RF-1 y RF-2e).
+  FISCAL_CONFIG_UPDATED
+  ARCA_CERTIFICATE_UPDATED
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
@@ -445,6 +450,7 @@ model Sale {
   reprints       TicketReprint[]
   stockMovements StockMovement[]
   cashMovements  CashMovement[]
+  invoices       Invoice[]
 
   @@index([shiftId])
   @@index([orderId])
@@ -571,6 +577,9 @@ enum NotificationType {
   /// La conexión con Mercado Libre se cayó y hay que volver a conectar
   /// (specs/019, RF-5).
   ML_RECONEXION
+  /// Lo facturado en 12 meses cruzó el 80 % del tope del monotributo
+  /// (specs/023, RF-27). Solo informativo, y solo para el Dueño.
+  TOPE_FACTURACION
 }
 
 /// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
@@ -680,4 +689,168 @@ model MercadoLibreNotification {
 
   @@index([status, receivedAt])
   @@map("ml_notifications")
+}
+
+/// Ambiente de ARCA. Un comprobante de prueba nunca se confunde con uno real.
+enum FiscalEnvironment {
+  HOMOLOGACION
+  PRODUCCION
+}
+
+/// Datos del emisor y parámetros de facturación (specs/023, RF-1, RF-6, RF-9
+/// y RF-16). Fila única, con restricción en la base, igual que `ml_connections`.
+/// La condición frente al IVA no es un campo: el emisor es siempre Responsable
+/// Monotributo (docs/decisions/0005).
+model FiscalConfig {
+  id String @id @default("singleton")
+
+  razonSocial        String    @default("")
+  cuit               String    @default("")
+  domicilioComercial String    @default("")
+  iibb               String    @default("")
+  /// Solo la fecha.
+  inicioActividades  DateTime? @db.Date
+  puntoDeVenta       Int?
+
+  /// Con cuál de los dos certificados se factura. El real solo se puede
+  /// activar en el sitio publicado (RF-2d).
+  environment FiscalEnvironment @default(HOMOLOGACION)
+
+  /// Tope anual de la categoría del monotributo, cargado a mano (RF-6).
+  topeAnual           Decimal? @db.Decimal(14, 2)
+  /// Desde qué total hay que identificar al comprador (RF-9).
+  montoIdentificacion Decimal  @default(10000000) @db.Decimal(14, 2)
+  /// Hasta cuántos días después de la venta se puede facturar (RF-16).
+  diasParaFacturar    Int      @default(5)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("fiscal_config")
+}
+
+/// Certificado de ARCA cargado desde Configuración (specs/023, RF-2b a RF-2e).
+/// Una fila por ambiente. La clave privada va cifrada (`src/lib/secret-box.ts`)
+/// y es de solo escritura: ninguna pantalla ni acción la devuelve.
+model ArcaCredential {
+  environment FiscalEnvironment @id
+
+  /// El certificado es público: va sin cifrar.
+  certificatePem String?
+  privateKeyEnc  String?
+
+  /// Clave y pedido generados por el sistema que todavía esperan el
+  /// certificado de ARCA. No reemplazan al que está en uso hasta que llega.
+  pendingKeyEnc String?
+  pendingCsrPem String?
+
+  /// Leídos del certificado en uso.
+  cuit      String?
+  expiresAt DateTime?
+
+  uploadedByUserId String?
+  uploadedByUser   User?     @relation(fields: [uploadedByUserId], references: [id])
+  uploadedAt       DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("arca_credentials")
+}
+
+/// Permiso temporal de ARCA (dura 12 horas), por ambiente y servicio. Va a la
+/// base porque el servidor no tiene disco, y pedir un permiso nuevo con uno
+/// vigente da error. Cifrado.
+model ArcaTicket {
+  environment FiscalEnvironment
+  service     String
+  /// CUIT del certificado con el que se pidió: si cambia, el permiso no sirve.
+  cuit        String
+  payloadEnc  String
+  expiresAt   DateTime
+  updatedAt   DateTime          @updatedAt
+
+  @@id([environment, service])
+  @@map("arca_tickets")
+}
+
+enum InvoiceKind {
+  FACTURA_C
+  NOTA_CREDITO_C
+}
+
+enum InvoiceStatus {
+  /// Pedido y todavía sin autorizar: ARCA no respondió o rechazó (RF-12).
+  PENDING
+  AUTHORIZED
+  /// Nunca llegó a existir en ARCA y ya no corresponde (venta anulada).
+  DISCARDED
+}
+
+enum InvoiceOrigin {
+  LOCAL
+  /// Lo usa la spec 024.
+  MERCADO_LIBRE
+}
+
+enum ReceiverDocType {
+  /// Consumidor Final sin identificar.
+  NONE
+  DNI
+  CUIT
+}
+
+/// Factura o nota de crédito (specs/023). Un comprobante autorizado no se
+/// edita ni se borra: la única forma de dejarlo sin efecto es una nota de
+/// crédito. El detalle de productos sale de `SaleItem`, que ya es inmutable.
+model Invoice {
+  id          String            @id @default(uuid())
+  kind        InvoiceKind
+  status      InvoiceStatus     @default(PENDING)
+  environment FiscalEnvironment
+  origin      InvoiceOrigin     @default(LOCAL)
+
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  /// En una nota de crédito, la factura que deja sin efecto.
+  relatedInvoiceId String?
+  relatedInvoice   Invoice?  @relation("InvoiceCreditNotes", fields: [relatedInvoiceId], references: [id])
+  creditNotes      Invoice[] @relation("InvoiceCreditNotes")
+
+  pointOfSale     Int
+  /// Lo asigna ARCA; vacío mientras está pendiente.
+  number          Int?
+  /// Número con el que se intentó la última vez. Se guarda antes de llamar a
+  /// ARCA para poder comprobar, al reintentar, si ese intento se autorizó.
+  attemptedNumber Int?
+  cae             String?
+  caeExpiresAt    DateTime? @db.Date
+  issueDate       DateTime? @db.Date
+
+  /// El total de la venta, ya redondeado al peso.
+  total Decimal @db.Decimal(12, 2)
+
+  receiverDocType      ReceiverDocType @default(NONE)
+  receiverDocNumber    String?
+  receiverName         String?
+  /// Código de ARCA de la condición frente al IVA del comprador.
+  receiverIvaCondition Int
+
+  /// Datos del emisor al autorizarse: una reimpresión muestra lo que se
+  /// emitió aunque después cambie la configuración.
+  emitterSnapshot Json?
+
+  attempts  Int     @default(0)
+  lastError String?
+
+  requestedByUserId String
+  requestedByUser   User   @relation(fields: [requestedByUserId], references: [id])
+
+  createdAt    DateTime  @default(now())
+  authorizedAt DateTime?
+
+  @@unique([environment, pointOfSale, kind, number])
+  @@index([saleId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("invoices")
 }

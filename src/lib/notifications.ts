@@ -41,6 +41,23 @@ export async function notifyMlReconexion() {
   });
 }
 
+/**
+ * Lo facturado en los últimos 12 meses cruzó el 80 % del tope del monotributo
+ * (specs/023, RF-27). Es solo informativo: para que el dueño le avise al
+ * contador. Nunca frena la facturación.
+ */
+export async function notifyTopeFacturacion(percent: number, accumulated: number, cap: number) {
+  const money = (n: number) => `$${Math.round(n).toLocaleString("es-AR")}`;
+  await prisma.notification.create({
+    data: {
+      type: "TOPE_FACTURACION",
+      message: `Ya facturaste ${money(accumulated)} en los últimos 12 meses: el ${percent} % del tope de ${money(cap)}. Avisale a tu contador.`,
+      targetType: "FiscalConfig",
+      targetId: "singleton",
+    },
+  });
+}
+
 export async function notifyDiferenciaCaja(shiftId: string, difference: number) {
   await prisma.notification.create({
     data: {
