@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Printer } from "lucide-react";
 import { getDepositTicketData } from "../actions";
 import { TicketDialog, TicketLinesPaper, printTicket } from "../../ventas/ticket-dialog";
+import { InvoiceDialog } from "../../ventas/invoice-dialog";
 import { buildDepositTicketLines, type DepositTicketInput } from "@/lib/ticket-lines";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,8 @@ export function OrderTicketHost({ orderId }: { orderId: string }) {
   const router = useRouter();
 
   const saleId = params.get("venta");
+  // `?factura=<id>`: la factura de esa entrega, que se muestra antes que el ticket (specs/023).
+  const invoiceId = params.get("factura");
   const showDeposit = params.get("ticket") === "sena";
 
   function close() {
@@ -38,7 +41,12 @@ export function OrderTicketHost({ orderId }: { orderId: string }) {
 
   return (
     <>
-      <TicketDialog saleId={saleId} onClose={close} />
+      <InvoiceDialog
+        invoiceId={invoiceId}
+        onClose={close}
+        onShowTicket={() => router.replace(saleId ? `${pathname}?venta=${saleId}` : pathname)}
+      />
+      <TicketDialog saleId={invoiceId ? null : saleId} onClose={close} />
       <DepositTicketDialog orderId={orderId} open={showDeposit} onClose={close} />
     </>
   );

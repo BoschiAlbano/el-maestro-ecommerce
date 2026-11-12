@@ -11,6 +11,8 @@ import type { MlConnectionView } from "@/lib/mercadolibre/connection";
 import type { MlConnectResult } from "@/lib/mercadolibre/connection-result";
 import { ResetSystemTab } from "./reset-system-tab";
 import { MercadoLibreTab } from "./mercadolibre-tab";
+import { FacturacionTab } from "./facturacion-tab";
+import type { FacturacionView } from "@/lib/facturacion/facturacion-view";
 
 type Settings = { razonSocial: string; textoTicketAdicional: string | null; stockMinimoDefault: number };
 
@@ -22,6 +24,8 @@ type SettingsFormProps = {
   resetSummary?: ResetSummary;
   /** Pestaña "Mercado Libre" (specs/019): la ve quien tiene permiso "ver". */
   mercadoLibre: { view: MlConnectionView; isOwner: boolean; result: MlConnectResult | null };
+  /** Pestaña "Facturación" (specs/023): la ve quien tiene permiso "ver"; el Dueño edita. */
+  facturacion: { view: FacturacionView; isOwner: boolean };
   /** Pestaña con la que abre, si la dirección la pide y el usuario la puede ver. */
   initialTab?: string;
 };
@@ -88,10 +92,11 @@ function ArticleForm({ settings }: { settings: Settings }) {
 }
 
 /** Configuración del sistema separada por tema; cada pestaña se guarda por su cuenta. */
-export function SettingsForm({ settings, canEdit, resetSummary, mercadoLibre, initialTab }: SettingsFormProps) {
+export function SettingsForm({ settings, canEdit, resetSummary, mercadoLibre, facturacion, initialTab }: SettingsFormProps) {
   const tabs = [
     ...(canEdit ? ["ticket", "articulos"] : []),
     "mercadolibre",
+    "facturacion",
     ...(resetSummary ? ["sistema"] : []),
   ];
   const defaultTab = initialTab && tabs.includes(initialTab) ? initialTab : tabs[0];
@@ -102,6 +107,7 @@ export function SettingsForm({ settings, canEdit, resetSummary, mercadoLibre, in
         {canEdit && <TabsTrigger value="ticket">Ticket</TabsTrigger>}
         {canEdit && <TabsTrigger value="articulos">Artículos</TabsTrigger>}
         <TabsTrigger value="mercadolibre">Mercado Libre</TabsTrigger>
+        <TabsTrigger value="facturacion">Facturación</TabsTrigger>
         {resetSummary && <TabsTrigger value="sistema">Sistema</TabsTrigger>}
       </TabsList>
       {canEdit && (
@@ -116,6 +122,9 @@ export function SettingsForm({ settings, canEdit, resetSummary, mercadoLibre, in
       )}
       <TabsContent value="mercadolibre" className="pt-2">
         <MercadoLibreTab {...mercadoLibre} canEdit={canEdit} />
+      </TabsContent>
+      <TabsContent value="facturacion" className="pt-2">
+        <FacturacionTab {...facturacion} />
       </TabsContent>
       {resetSummary && (
         <TabsContent value="sistema" className="pt-2">

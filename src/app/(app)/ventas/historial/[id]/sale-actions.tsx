@@ -64,7 +64,16 @@ export function SaleActions({
         toast.error(result.error);
         return;
       }
-      toast.success("Venta anulada.");
+      // La anulación nunca espera a ARCA: si la nota de crédito quedó pendiente, se avisa y se reintenta desde el detalle.
+      if (result.invoice?.status === "pending") {
+        toast.warning(
+          "Venta anulada. La nota de crédito de la factura quedó pendiente: reintentala desde el panel Facturación.",
+        );
+      } else if (result.invoice?.status === "authorized") {
+        toast.success("Venta anulada y nota de crédito emitida.");
+      } else {
+        toast.success("Venta anulada.");
+      }
       setVoidOpen(false);
       router.refresh();
     });

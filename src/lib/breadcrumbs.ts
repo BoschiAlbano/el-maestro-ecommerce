@@ -18,6 +18,7 @@ const SECTIONS: Record<string, string> = {
   roles: "Roles",
   empleados: "Empleados",
   analiticas: "Analíticas",
+  comprobantes: "Comprobantes",
   configuracion: "Configuración",
   marcas: "Marcas",
   rubros: "Rubros",

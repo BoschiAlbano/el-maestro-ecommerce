@@ -15,6 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SaleActions } from "./sale-actions";
+import { SaleInvoicing, type SaleInvoiceRow } from "./sale-invoicing";
+import { loadInvoicingAvailability } from "@/lib/facturacion/invoices";
+import { invoiceBlocker } from "@/lib/facturacion/invoice-policy";
+import { dateOnly } from "@/lib/facturacion/fechas";
+import { KIND_TITLE, formatInvoiceNumber, formatIsoDate } from "@/lib/facturacion/invoice-document";
 
 const METHOD_LABELS: Record<string, string> = { EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia" };
 
@@ -46,9 +51,38 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
       items: { include: { product: true } },
       cashMovements: { include: { user: true }, orderBy: { createdAt: "asc" } },
       reprints: { include: { user: true }, orderBy: { createdAt: "asc" } },
+      invoices: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!sale) notFound();
+
+  // Facturación (specs/023): los comprobantes de la venta y si se puede facturar ahora.
+  const invoiceRows: SaleInvoiceRow[] = sale.invoices
+    .filter((invoice) => invoice.status !== "DISCARDED")
+    .map((invoice) => ({
+      id: invoice.id,
+      title: KIND_TITLE[invoice.kind],
+      numberLabel: invoice.number !== null ? formatInvoiceNumber(invoice.pointOfSale, invoice.number) : null,
+      status: invoice.status,
+      date: invoice.issueDate ? formatIsoDate(dateOnly(invoice.issueDate)) : null,
+      lastError: invoice.lastError,
+      isTest: invoice.environment === "HOMOLOGACION",
+    }));
+  const hasActiveInvoice = sale.invoices.some((invoice) => invoice.kind === "FACTURA_C" && invoice.status !== "DISCARDED");
+  const canCreateSales = hasPermission(currentUser, ModuloNegocio.VENTAS, "crear");
+  let issue: { threshold: number } | null = null;
+  let blockedReason: string | null = null;
+  if (!hasActiveInvoice && canCreateSales) {
+    const availability = await loadInvoicingAvailability().catch(() => null);
+    if (availability?.available) {
+      blockedReason = invoiceBlocker(
+        { createdAt: sale.createdAt, voidedAt: sale.voidedAt, hasActiveInvoice },
+        new Date(),
+        availability.config.diasParaFacturar,
+      );
+      if (!blockedReason) issue = { threshold: availability.config.montoIdentificacion };
+    }
+  }
 
   const canReprint =
     hasPermission(currentUser, ModuloNegocio.VENTAS, "ver") &&
@@ -166,6 +200,19 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
           </Table>
         </Panel>
       </section>
+
+      {(invoiceRows.length > 0 || issue || blockedReason) && (
+        <Panel title="Facturación" description="Comprobantes electrónicos de esta venta">
+          <SaleInvoicing
+            saleId={sale.id}
+            total={sale.total.toNumber()}
+            invoices={invoiceRows}
+            issue={issue}
+            blockedReason={blockedReason}
+            canRetry={canCreateSales}
+          />
+        </Panel>
+      )}
 
       {sale.reprints.length > 0 && (
         <Panel title="Reimpresiones del ticket" description="Cada vez que se volvió a imprimir queda registrado">

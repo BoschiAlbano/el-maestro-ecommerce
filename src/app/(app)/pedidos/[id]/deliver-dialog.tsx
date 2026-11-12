@@ -6,6 +6,7 @@ import { Minus, PackageCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { deliverOrderItems } from "../actions";
 import { PaymentDialog, type SalePayment } from "../../ventas/payment-dialog";
+import type { InvoiceRequest } from "@/lib/facturacion/invoice-request";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,10 +34,13 @@ export function DeliverDialog({
   orderId,
   pendingItems,
   remainingDeposit,
+  invoicing = null,
 }: {
   orderId: string;
   pendingItems: PendingItem[];
   remainingDeposit: number;
+  /** Si se puede facturar, el cobro ofrece "Emitir factura" (specs/023). */
+  invoicing?: { threshold: number } | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -53,13 +57,13 @@ export function DeliverDialog({
     setQuantities((prev) => ({ ...prev, [item.orderItemId]: Math.max(0, Math.min(item.pending, quantity)) }));
   }
 
-  function deliver(payments: SalePayment[]) {
+  function deliver(payments: SalePayment[], invoice: InvoiceRequest | null = null) {
     const deliveries = pendingItems
       .map((item) => ({ orderItemId: item.orderItemId, quantity: quantities[item.orderItemId] ?? 0 }))
       .filter((d) => d.quantity > 0);
 
     startDeliver(async () => {
-      const result = await deliverOrderItems(orderId, deliveries, amountToCollect > 0 ? payments : []);
+      const result = await deliverOrderItems(orderId, deliveries, amountToCollect > 0 ? payments : [], invoice);
       if (result.error || !result.saleId) {
         toast.error(result.error ?? "No se pudo registrar la entrega.");
         return;
@@ -69,7 +73,7 @@ export function DeliverDialog({
       setQuantities({});
       // El ticket se abre desde la URL: al entregar lo último del pedido este
       // componente deja de existir y un modal propio se cerraría solo.
-      router.push(`/pedidos/${orderId}?venta=${result.saleId}`);
+      router.push(`/pedidos/${orderId}?venta=${result.saleId}${result.invoice ? `&factura=${result.invoice.id}` : ""}`);
     });
   }
 
@@ -78,8 +82,8 @@ export function DeliverDialog({
       toast.error("Elegí al menos un producto para entregar.");
       return;
     }
-    if (amountToCollect > 0) {
-      // Pasa al cobro; las cantidades quedan guardadas por si se cierra el cobro.
+    if (amountToCollect > 0 || invoicing) {
+      // Pasa al cobro (también cuando la seña lo cubre todo, si se puede facturar: ahí se pide la factura); las cantidades quedan guardadas por si se cierra el cobro.
       setOpen(false);
       setPaying(true);
     } else {
@@ -180,7 +184,7 @@ export function DeliverDialog({
 
           <DialogFooter>
             <Button type="button" disabled={units === 0 || delivering} onClick={handleContinue}>
-              {delivering ? "Entregando..." : amountToCollect > 0 ? "Continuar al cobro" : "Confirmar entrega"}
+              {delivering ? "Entregando..." : amountToCollect > 0 || invoicing ? "Continuar" : "Confirmar entrega"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -196,6 +200,9 @@ export function DeliverDialog({
         totalLabel="Resto a cobrar"
         confirmLabel="Confirmar entrega"
         confirmingLabel="Entregando..."
+        invoicing={invoicing}
+        invoiceTotal={saleTotal}
+        collectPayment={amountToCollect > 0}
       />
     </>
   );

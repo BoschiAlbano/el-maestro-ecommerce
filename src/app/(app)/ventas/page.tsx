@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Panel } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
+import { getInvoicingOffer } from "@/lib/facturacion/invoices";
 import { SaleForm } from "./sale-form";
 
 export default async function VentasPage() {
@@ -20,6 +21,7 @@ export default async function VentasPage() {
   const shift = await prisma.cashShift.findFirst({ where: { closedAt: null } });
   const puedeVerCaja = hasPermission(currentUser, ModuloNegocio.CAJA, "ver");
   const puedeVerHistorial = hasPermission(currentUser, ModuloNegocio.VENTAS, "ver");
+  const invoicing = shift ? await getInvoicingOffer() : null;
 
   return (
     <div className="flex flex-col gap-4 lg:min-h-[calc(100svh-5.5rem)]">
@@ -37,7 +39,7 @@ export default async function VentasPage() {
       </div>
 
       {shift ? (
-        <SaleForm />
+        <SaleForm invoicing={invoicing} />
       ) : (
         <Panel
           title="No hay una caja abierta"

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { searchProducts, confirmSale, type SearchedProduct } from "./actions";
 import { PaymentDialog, type SalePayment } from "./payment-dialog";
 import { TicketDialog } from "./ticket-dialog";
+import { InvoiceDialog } from "./invoice-dialog";
+import type { InvoiceRequest } from "@/lib/facturacion/invoice-request";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/stat-card";
@@ -19,13 +21,15 @@ function formatMoney(n: number) {
 
 const SEARCH_DELAY_MS = 250;
 
-export function SaleForm() {
+export function SaleForm({ invoicing = null }: { invoicing?: { threshold: number } | null }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchedProduct[]>([]);
   const [searched, setSearched] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [paying, setPaying] = useState(false);
   const [ticketSaleId, setTicketSaleId] = useState<string | null>(null);
+  // La factura de la venta que se acaba de hacer, si se pidió: se muestra antes que el ticket (specs/023).
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
   const [searching, startSearch] = useTransition();
   const [confirming, startConfirm] = useTransition();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -105,10 +109,10 @@ export function SaleForm() {
     setCart((prev) => prev.filter((line) => line.productId !== productId));
   }
 
-  function handleConfirm(payments: SalePayment[]) {
+  function handleConfirm(payments: SalePayment[], invoice: InvoiceRequest | null) {
     const cartItems = cart.map((line) => ({ productId: line.productId, quantity: line.quantity }));
     startConfirm(async () => {
-      const result = await confirmSale(cartItems, payments);
+      const result = await confirmSale(cartItems, payments, invoice);
       if (result.error || !result.saleId) {
         toast.error(result.error ?? "No se pudo confirmar la venta.");
         return;
@@ -116,12 +120,14 @@ export function SaleForm() {
       // Venta hecha: se cierra el cobro y se muestra el ticket (specs/008, RF-14).
       setPaying(false);
       setTicketSaleId(result.saleId);
+      setInvoiceId(result.invoice?.id ?? null);
     });
   }
 
   function handleTicketClose() {
     // "Nueva venta": la pantalla queda vacía para la siguiente.
     setTicketSaleId(null);
+    setInvoiceId(null);
     setCart([]);
     setResults([]);
     setSearched(false);
@@ -313,9 +319,22 @@ export function SaleForm() {
         </Button>
       </div>
 
-      <TicketDialog saleId={ticketSaleId} onClose={handleTicketClose} closeLabel="Nueva venta" />
+      <InvoiceDialog
+        invoiceId={invoiceId}
+        onClose={handleTicketClose}
+        closeLabel="Nueva venta"
+        onShowTicket={() => setInvoiceId(null)}
+      />
+      <TicketDialog saleId={invoiceId ? null : ticketSaleId} onClose={handleTicketClose} closeLabel="Nueva venta" />
 
-      <PaymentDialog open={paying} onOpenChange={setPaying} total={total} confirming={confirming} onConfirm={handleConfirm} />
+      <PaymentDialog
+        open={paying}
+        onOpenChange={setPaying}
+        total={total}
+        confirming={confirming}
+        onConfirm={handleConfirm}
+        invoicing={invoicing}
+      />
     </>
   );
 }

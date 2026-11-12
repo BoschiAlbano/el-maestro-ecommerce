@@ -1,9 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { type UserLike } from "@/lib/permissions";
+import { isOwner, type UserLike } from "@/lib/permissions";
 import type { NotificationType } from "@/generated/prisma/client";
 import { loadTravelList } from "@/lib/home-data";
 import { isStockAlertActive, stillDismissed } from "@/lib/stock-alert";
+import { buildInvoicingAlerts, type LiveAlert } from "@/lib/facturacion/alerts";
+import { credentialDeps } from "@/lib/facturacion/credential-repo";
+import { getStatus } from "@/lib/facturacion/credential-service";
+import { getFiscalConfig } from "@/lib/facturacion/fiscal-data";
 import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
 
 export type NotificationItem = {
@@ -17,9 +21,33 @@ export type NotificationItem = {
 
 export type NotificationsSummary = {
   items: NotificationItem[];
+  /** Avisos que se calculan cada vez y no se marcan como leídos (specs/023, RF-26). */
+  liveAlerts: LiveAlert[];
   stockBajo: boolean;
   unreadCount: number;
 };
+
+/**
+ * Los avisos de facturación que se calculan en el momento: comprobantes
+ * pendientes y certificado por vencer. Solo para el Dueño, que es quien puede
+ * resolverlos. Si no se puede consultar, no hay aviso: la campanita no falla.
+ */
+async function loadInvoicingAlerts(currentUser: UserLike): Promise<LiveAlert[]> {
+  if (!isOwner(currentUser)) return [];
+  try {
+    const config = await getFiscalConfig();
+    const [pendingCount, certificate] = await Promise.all([
+      prisma.invoice.count({ where: { status: "PENDING", environment: config.environment } }),
+      getStatus(credentialDeps(), config.environment),
+    ]);
+    return buildInvoicingAlerts({
+      pendingCount,
+      certificateDaysLeft: certificate.hasCertificate ? certificate.daysLeft : null,
+    });
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Resumen de avisos (specs/013) — cada tipo filtrado por el permiso de su
@@ -51,11 +79,13 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
     await prisma.setting.update({ where: { id: "singleton" }, data: { stockAlertDismissedIds: pruned } });
   }
   const stockBajo = isStockAlertActive(lowIds, pruned);
+  const liveAlerts = await loadInvoicingAlerts(currentUser);
 
   return {
     items,
+    liveAlerts,
     stockBajo,
-    unreadCount: items.length + (stockBajo ? 1 : 0),
+    unreadCount: items.length + liveAlerts.length + (stockBajo ? 1 : 0),
   };
 }
 

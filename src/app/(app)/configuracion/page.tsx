@@ -5,6 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { loadResetCounts } from "@/lib/system-reset-data";
 import { summarizeReset } from "@/lib/system-reset";
 import { loadMlConnectionView } from "@/lib/mercadolibre/connection";
+import { loadFacturacionView } from "@/lib/facturacion/facturacion-view";
 import { ML_RESULT_PARAM, parseMlResult } from "@/lib/mercadolibre/connection-result";
 import { SettingsForm } from "./settings-form";
 
@@ -38,6 +39,9 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
     result: parseMlResult(params[ML_RESULT_PARAM]),
   };
 
+  // La pestaña "Facturación" (specs/023) se ve con permiso "ver"; editar y los certificados son solo del Dueño.
+  const facturacion = { view: await loadFacturacionView(), isOwner: owner };
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold">Configuración</h1>
@@ -51,6 +55,7 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
         canEdit={puedeEditar}
         resetSummary={resetSummary}
         mercadoLibre={mercadoLibre}
+        facturacion={facturacion}
         initialTab={initialTab}
       />
     </div>

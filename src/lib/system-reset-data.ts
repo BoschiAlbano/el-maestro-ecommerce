@@ -18,6 +18,9 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     otherUsers,
     otherRoles,
     auditLogs,
+    invoices,
+    realInvoices,
+    pendingInvoices,
     openShifts,
     pendingOrders,
   ] = await Promise.all([
@@ -32,6 +35,9 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     prisma.user.count({ where: { id: { not: ownerUserId } } }),
     prisma.role.count({ where: { isOwnerRole: false } }),
     prisma.auditLog.count(),
+    prisma.invoice.count(),
+    prisma.invoice.count({ where: { status: "AUTHORIZED", environment: "PRODUCCION" } }),
+    prisma.invoice.count({ where: { status: "PENDING" } }),
     prisma.cashShift.count({ where: { closedAt: null } }),
     prisma.order.count({ where: { status: "PENDIENTE" } }),
   ]);
@@ -48,6 +54,9 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     otherUsers,
     otherRoles,
     auditLogs,
+    invoices,
+    realInvoices,
+    pendingInvoices,
     openShift: openShifts > 0,
     pendingOrders,
   };
@@ -67,6 +76,12 @@ export async function wipeBusinessData(tx: Prisma.TransactionClient, ownerUserId
   await tx.mercadoLibreConnection.updateMany({
     where: { connectedByUserId: { not: ownerUserId } },
     data: { connectedByUserId: ownerUserId },
+  });
+
+  // Lo mismo con el certificado de ARCA (specs/023): se conserva y apunta a quien lo cargó.
+  await tx.arcaCredential.updateMany({
+    where: { uploadedByUserId: { not: ownerUserId } },
+    data: { uploadedByUserId: ownerUserId },
   });
 
   await tx.user.deleteMany({ where: { id: { not: ownerUserId } } });

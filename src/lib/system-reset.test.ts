@@ -19,6 +19,9 @@ const empty: ResetCounts = {
   otherUsers: 0,
   otherRoles: 0,
   auditLogs: 0,
+  invoices: 0,
+  realInvoices: 0,
+  pendingInvoices: 0,
   openShift: false,
   pendingOrders: 0,
 };
@@ -69,7 +72,41 @@ describe("summarizeReset", () => {
   });
 });
 
+describe("summarizeReset con comprobantes (specs/023)", () => {
+  it("cuenta los comprobantes como una fila más", () => {
+    const { rows } = summarizeReset({ ...empty, invoices: 2 });
+    expect(rows.find((r) => r.count === 2)?.label).toBe("comprobantes electrónicos");
+  });
+
+  it("con comprobantes reales avisa fuerte: siguen en ARCA, qué se pierde y qué no", () => {
+    const { warnings } = summarizeReset({ ...empty, invoices: 3, realInvoices: 3 });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/3 comprobantes reales emitidos en ARCA/);
+    expect(warnings[0]).toMatch(/NO los anula/);
+    expect(warnings[0]).toMatch(/Excel/);
+    expect(warnings[0]).toMatch(/se conservan/);
+  });
+
+  it("solo con comprobantes de prueba no hay advertencia fuerte", () => {
+    expect(summarizeReset({ ...empty, invoices: 5 }).warnings).toEqual([]);
+  });
+
+  it("avisa de los pendientes de emitir, en singular y plural", () => {
+    expect(summarizeReset({ ...empty, invoices: 1, pendingInvoices: 1 }).warnings).toEqual([
+      "Hay 1 comprobante pendiente de emitir: se va a perder sin emitirse.",
+    ]);
+    expect(summarizeReset({ ...empty, invoices: 2, pendingInvoices: 2 }).warnings[0]).toMatch(/2 comprobantes pendientes/);
+  });
+});
+
 describe("BUSINESS_TABLES", () => {
+  it("vacía los comprobantes y conserva la configuración de facturación (specs/023)", () => {
+    expect(BUSINESS_TABLES).toContain("invoices");
+    for (const table of ["fiscal_config", "arca_credentials", "arca_tickets"]) {
+      expect(BUSINESS_TABLES).not.toContain(table);
+    }
+  });
+
   it("vacía los avisos de Mercado Libre (specs/019)", () => {
     expect(BUSINESS_TABLES).toContain("ml_notifications");
   });

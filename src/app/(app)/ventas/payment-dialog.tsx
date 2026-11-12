@@ -15,6 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { requiresIdentification } from "@/lib/facturacion/invoice-policy";
+import { EMPTY_INVOICE_FORM, buildInvoiceRequest } from "@/lib/facturacion/invoice-form";
+import type { InvoiceRequest } from "@/lib/facturacion/invoice-request";
+import { InvoiceBlock } from "./invoice-block";
 
 type Method = "EFECTIVO" | "TRANSFERENCIA";
 
@@ -41,21 +45,33 @@ export function PaymentDialog({
   totalLabel = "Total a cobrar",
   confirmLabel = "Confirmar venta",
   confirmingLabel = "Confirmando...",
+  invoicing = null,
+  invoiceTotal,
+  collectPayment = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
   confirming: boolean;
-  onConfirm: (payments: SalePayment[]) => void;
+  onConfirm: (payments: SalePayment[], invoice: InvoiceRequest | null) => void;
   /** Textos para reusar el cobro en otros flujos (por ejemplo, la entrega de un pedido). */
   title?: string;
   totalLabel?: string;
   confirmLabel?: string;
   confirmingLabel?: string;
+  /**
+   * Si se puede facturar, se ofrece "Emitir factura" (specs/023). `threshold`: desde qué total hay
+   * que identificar al comprador. `null` = no se ofrece.
+   */
+  invoicing?: { threshold: number } | null;
+  /** Total que lleva la factura, si no es el que se cobra (en una entrega con seña, el de toda la entrega). */
+  invoiceTotal?: number;
+  /** `false`: no hay nada que cobrar (la seña lo cubre) y la ventana solo ofrece la factura. */
+  collectPayment?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-md">
         {/* El formulario vive adentro del contenido: al cerrar se desmonta y la próxima vez arranca de cero. */}
         <PaymentForm
           total={total}
@@ -65,6 +81,9 @@ export function PaymentDialog({
           totalLabel={totalLabel}
           confirmLabel={confirmLabel}
           confirmingLabel={confirmingLabel}
+          invoicing={invoicing}
+          invoiceTotal={invoiceTotal ?? total}
+          collectPayment={collectPayment}
         />
       </DialogContent>
     </Dialog>
@@ -79,20 +98,30 @@ function PaymentForm({
   totalLabel,
   confirmLabel,
   confirmingLabel,
+  invoicing,
+  invoiceTotal,
+  collectPayment,
 }: {
   total: number;
   confirming: boolean;
-  onConfirm: (payments: SalePayment[]) => void;
+  onConfirm: (payments: SalePayment[], invoice: InvoiceRequest | null) => void;
   title: string;
   totalLabel: string;
   confirmLabel: string;
   confirmingLabel: string;
+  invoicing: { threshold: number } | null;
+  invoiceTotal: number;
+  collectPayment: boolean;
 }) {
   const [nextKey, setNextKey] = useState(1);
   const [lines, setLines] = useState<PaymentLine[]>([
     { key: 0, method: "EFECTIVO", amount: String(total), transferReference: "" },
   ]);
   const [cashReceived, setCashReceived] = useState("");
+  const [invoiceForm, setInvoiceForm] = useState(EMPTY_INVOICE_FORM);
+  const invoice = invoicing
+    ? buildInvoiceRequest(invoiceForm, invoiceTotal, invoicing.threshold)
+    : { request: null, error: null };
 
   const amounts = lines.map((l) => ({ amount: Number(l.amount) || 0 }));
   const { paid, remaining, status } = computePaymentStatus(total, amounts);
@@ -105,7 +134,8 @@ function PaymentForm({
   const transfersValid = lines.every(
     (l) => l.method !== "TRANSFERENCIA" || !(Number(l.amount) > 0) || /^\d{4}$/.test(l.transferReference),
   );
-  const canConfirm = status === "complete" && total > 0 && transfersValid && !confirming;
+  const paymentOk = !collectPayment || (status === "complete" && total > 0 && transfersValid);
+  const canConfirm = paymentOk && invoice.error === null && !confirming;
 
   function update(key: number, patch: Partial<PaymentLine>) {
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -126,13 +156,16 @@ function PaymentForm({
 
   function handleConfirm() {
     onConfirm(
-      lines
-        .filter((l) => Number(l.amount) > 0)
-        .map((l) => ({
-          method: l.method,
-          amount: Number(l.amount),
-          transferReference: l.method === "TRANSFERENCIA" ? l.transferReference : undefined,
-        })),
+      collectPayment
+        ? lines
+            .filter((l) => Number(l.amount) > 0)
+            .map((l) => ({
+              method: l.method,
+              amount: Number(l.amount),
+              transferReference: l.method === "TRANSFERENCIA" ? l.transferReference : undefined,
+            }))
+        : [],
+      invoice.request,
     );
   }
 
@@ -140,7 +173,11 @@ function PaymentForm({
     <>
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>Elegí cómo paga el cliente. Podés dividir el pago en dos medios.</DialogDescription>
+        <DialogDescription>
+          {collectPayment
+            ? "Elegí cómo paga el cliente. Podés dividir el pago en dos medios."
+            : "La seña cubre todo lo de esta entrega: no hay nada que cobrar."}
+        </DialogDescription>
       </DialogHeader>
 
       <div className="rounded-lg bg-muted px-4 py-3 text-center">
@@ -148,101 +185,105 @@ function PaymentForm({
         <p className="text-3xl font-semibold tabular-nums">{formatMoney(total)}</p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {lines.map((line, index) => (
-          <div key={line.key} className="flex flex-col gap-2 rounded-lg border p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-1" role="group" aria-label={`Medio de pago ${index + 1}`}>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={line.method === "EFECTIVO" ? "default" : "outline"}
-                  aria-pressed={line.method === "EFECTIVO"}
-                  onClick={() => update(line.key, { method: "EFECTIVO" })}
-                >
-                  <Banknote data-icon="inline-start" />
-                  Efectivo
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={line.method === "TRANSFERENCIA" ? "default" : "outline"}
-                  aria-pressed={line.method === "TRANSFERENCIA"}
-                  onClick={() => update(line.key, { method: "TRANSFERENCIA" })}
-                >
-                  <Landmark data-icon="inline-start" />
-                  Transferencia
-                </Button>
+      {collectPayment && (
+        <div className="flex flex-col gap-3">
+          {lines.map((line, index) => (
+            <div key={line.key} className="flex flex-col gap-2 rounded-lg border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex gap-1" role="group" aria-label={`Medio de pago ${index + 1}`}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={line.method === "EFECTIVO" ? "default" : "outline"}
+                    aria-pressed={line.method === "EFECTIVO"}
+                    onClick={() => update(line.key, { method: "EFECTIVO" })}
+                  >
+                    <Banknote data-icon="inline-start" />
+                    Efectivo
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={line.method === "TRANSFERENCIA" ? "default" : "outline"}
+                    aria-pressed={line.method === "TRANSFERENCIA"}
+                    onClick={() => update(line.key, { method: "TRANSFERENCIA" })}
+                  >
+                    <Landmark data-icon="inline-start" />
+                    Transferencia
+                  </Button>
+                </div>
+                {lines.length > 1 && (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label="Quitar esta forma de pago"
+                    onClick={() => setLines((prev) => prev.filter((l) => l.key !== line.key))}
+                  >
+                    <X />
+                  </Button>
+                )}
               </div>
-              {lines.length > 1 && (
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Quitar esta forma de pago"
-                  onClick={() => setLines((prev) => prev.filter((l) => l.key !== line.key))}
-                >
-                  <X />
-                </Button>
+
+              <div className="flex items-end gap-2">
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <Label htmlFor={`amount-${line.key}`}>Monto</Label>
+                  <Input
+                    id={`amount-${line.key}`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={line.amount}
+                    onChange={(e) => update(line.key, { amount: e.target.value })}
+                  />
+                </div>
+                {lines.length > 1 && (
+                  <Button type="button" variant="outline" onClick={() => setRest(line.key)}>
+                    Poner el resto
+                  </Button>
+                )}
+              </div>
+
+              {line.method === "TRANSFERENCIA" && (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`ref-${line.key}`}>Últimos 4 dígitos del comprobante</Label>
+                  <Input
+                    id={`ref-${line.key}`}
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="0000"
+                    value={line.transferReference}
+                    onChange={(e) => update(line.key, { transferReference: e.target.value })}
+                  />
+                </div>
               )}
             </div>
+          ))}
 
-            <div className="flex items-end gap-2">
-              <div className="flex flex-1 flex-col gap-1.5">
-                <Label htmlFor={`amount-${line.key}`}>Monto</Label>
-                <Input
-                  id={`amount-${line.key}`}
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={line.amount}
-                  onChange={(e) => update(line.key, { amount: e.target.value })}
-                />
-              </div>
-              {lines.length > 1 && (
-                <Button type="button" variant="outline" onClick={() => setRest(line.key)}>
-                  Poner el resto
-                </Button>
-              )}
-            </div>
+          {lines.length < 2 && (
+            <Button type="button" variant="outline" className="w-fit" onClick={addLine}>
+              <Plus data-icon="inline-start" />
+              Dividir pago
+            </Button>
+          )}
+        </div>
+      )}
 
-            {line.method === "TRANSFERENCIA" && (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor={`ref-${line.key}`}>Últimos 4 dígitos del comprobante</Label>
-                <Input
-                  id={`ref-${line.key}`}
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="0000"
-                  value={line.transferReference}
-                  onChange={(e) => update(line.key, { transferReference: e.target.value })}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+      {collectPayment && (
+        <p
+          className={cn(
+            "rounded-lg px-3 py-2 text-center text-sm font-medium",
+            status === "complete" ? "bg-muted text-foreground" : "bg-destructive/10 text-destructive",
+          )}
+          aria-live="polite"
+        >
+          {status === "complete" && `Pago completo (${formatMoney(paid)})`}
+          {status === "missing" && `Falta cobrar ${formatMoney(remaining)}`}
+          {status === "excess" && `Sobran ${formatMoney(-remaining)}: los pagos superan el total`}
+        </p>
+      )}
 
-        {lines.length < 2 && (
-          <Button type="button" variant="outline" className="w-fit" onClick={addLine}>
-            <Plus data-icon="inline-start" />
-            Dividir pago
-          </Button>
-        )}
-      </div>
-
-      <p
-        className={cn(
-          "rounded-lg px-3 py-2 text-center text-sm font-medium",
-          status === "complete" ? "bg-muted text-foreground" : "bg-destructive/10 text-destructive",
-        )}
-        aria-live="polite"
-      >
-        {status === "complete" && `Pago completo (${formatMoney(paid)})`}
-        {status === "missing" && `Falta cobrar ${formatMoney(remaining)}`}
-        {status === "excess" && `Sobran ${formatMoney(-remaining)}: los pagos superan el total`}
-      </p>
-
-      {hasCash && (
+      {collectPayment && hasCash && (
         <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
           <Label htmlFor="cashReceived">Efectivo recibido (opcional, para calcular el vuelto)</Label>
           <Input
@@ -264,6 +305,15 @@ function PaymentForm({
             <p className="text-sm text-destructive">Faltan {formatMoney(cashAmount - received)} por recibir.</p>
           )}
         </div>
+      )}
+
+      {invoicing && (
+        <InvoiceBlock
+          form={invoiceForm}
+          onChange={setInvoiceForm}
+          error={invoice.error}
+          mustIdentify={requiresIdentification(invoiceTotal, invoicing.threshold)}
+        />
       )}
 
       <DialogFooter>
