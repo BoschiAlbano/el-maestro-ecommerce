@@ -203,7 +203,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 020 | Publicación de productos en Mercado Libre | 004, 019 | Borrador |
 | 021 | Sincronización de stock con Mercado Libre | 005, 020 | Borrador |
 | 022 | Órdenes de Mercado Libre | 008, 011, 013, 021 | Borrador |
-| 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Borrador |
+| 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Verificada en homologación (pendiente de despliegue: medir el arranque en frío de ARCA en Vercel, y confirmar el QR con la primera factura real) |
 | 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |
 
 Sobre las specs 019 a 024:

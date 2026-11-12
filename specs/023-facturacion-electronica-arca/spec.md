@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Borrador |
+| **Estado** | Verificada en homologación (2026-11-12) |
 | **Depende de** | 003, 008, 009 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 ("Ampliación de alcance"); decisión 0005; `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`, sección 2 |
 
@@ -56,6 +56,12 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 
 - **RF-1.** Configuración tiene una sección "Facturación" con los datos del emisor: razón social, CUIT, domicilio comercial, condición frente al IVA (Responsable Monotributo), número de Ingresos Brutos, fecha de inicio de actividades y número de punto de venta.
 - **RF-2.** La sección muestra el estado de la conexión con ARCA: si está en modo de prueba o real, si la última consulta funcionó y la fecha de vencimiento del certificado.
+- **RF-2b.** *(Agregado 2026-11-11, a pedido del desarrollador.)* El certificado de ARCA se carga **desde la sección "Facturación"**, de una de dos formas:
+  - **Generarlo con el sistema (recomendada).** El sistema crea la clave privada y un pedido de certificado. El Dueño descarga el pedido, lo presenta en ARCA (él o su contador) y sube el certificado que ARCA devuelve. La clave privada nunca sale del sistema.
+  - **Subir uno existente.** El Dueño sube el certificado y su clave privada.
+- **RF-2c.** Al cargar un certificado el sistema verifica que esté vigente, que corresponda a la clave privada y que su CUIT sea el de los datos del emisor. Si algo no coincide, no lo guarda y explica por qué.
+- **RF-2d.** Al cargar un certificado se indica si es de **pruebas** o **real**. El modo real solo se puede activar en el sitio publicado.
+- **RF-2e.** La clave privada no se muestra ni se descarga nunca, ni siquiera al Dueño. Del certificado cargado se ve el CUIT, el ambiente, el vencimiento y quién lo cargó y cuándo. Reemplazarlo o quitarlo pide confirmación y queda en la auditoría.
 - **RF-3.** "Probar conexión" consulta a ARCA y muestra el resultado y el último número de factura autorizado para el punto de venta.
 - **RF-4.** Mientras los datos del RF-1 estén incompletos o la conexión no funcione, la opción de facturar no se ofrece en las ventas y la sección explica qué falta.
 - **RF-5.** El sistema avisa en la campanita cuando al certificado le faltan 30 días o menos para vencer.
@@ -75,7 +81,7 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 **Facturar una venta ya hecha**
 
 - **RF-15.** Desde el detalle de una venta sin factura y sin anular se puede "Emitir factura", con los mismos datos del RF-8. La factura lleva la fecha del día en que se emite.
-- **RF-16.** Solo se puede facturar después una venta hecha dentro del plazo que se define en la pregunta abierta 2.
+- **RF-16.** Solo se puede facturar después una venta hecha dentro de un plazo en días que se guarda en la configuración. *(Precisado el 2026-11-11, al escribir el plan: arranca en 5 días, y se ajusta cuando el contador responda la pregunta abierta 2.)*
 
 **Nota de crédito**
 
@@ -107,8 +113,9 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 - **El total facturado es el total de la venta**, ya redondeado al peso (constitución, regla 6). En la entrega de un pedido con seña, la factura es por el total de la venta que se entrega: la seña aplicada es parte del pago, no un descuento.
 - **El ticket sigue siendo un documento interno** y siempre lleva la leyenda "DOCUMENTO NO VÁLIDO COMO FACTURA" (constitución, regla 25). La regla no cambia: la factura es otro documento.
 - **La fecha del comprobante es la del día de emisión**, en la zona de Tucumán (regla 9).
-- **Las credenciales de ARCA son secretos** (regla 16): no se cargan, no se ven ni se descargan desde la interfaz.
-- **Modo de prueba.** En modo de prueba los comprobantes no tienen validez fiscal y el PDF lo dice de forma visible. El modo real se activa solo en producción.
+- **El certificado se carga desde el sistema, y su clave privada es un secreto** (regla 16). *(Cambio 2026-11-11: antes decía que las credenciales no se cargaban desde la interfaz.)* La clave privada se guarda cifrada, es de solo escritura (RF-2e) y nunca va al repositorio ni al navegador. La clave que la cifra sí vive fuera de la base, en el servidor: quien obtuviera solo la base no podría usar el certificado.
+- **Renovar el certificado no necesita al desarrollador.** Los certificados de ARCA vencen; el Dueño o su contador lo reemplazan desde la misma pantalla.
+- **Modo de prueba.** En modo de prueba los comprobantes no tienen validez fiscal y el PDF lo dice de forma visible. El modo real se activa solo en el sitio publicado (RF-2d).
 - **Datos del comprador.** Son datos personales: se guardan los que exige el comprobante y los ve quien puede ver la venta.
 - **El tope del monotributo es solo informativo** (decisión del cliente, 2026-11-10). El sistema nunca impide facturar por haberlo alcanzado o superado: qué hacer en ese caso es tarea del contador.
 - **Condiciones que impone ARCA** (ver investigación, sección 2.4): condición frente al IVA del comprador obligatoria, identificación del comprador desde cierto monto, y código QR en el comprobante.
@@ -125,6 +132,7 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 | Exportar comprobantes | Permiso "exportar" en Ventas |
 | Ver el acumulado contra el tope | Solo el rol Dueño |
 | Editar los datos fiscales, el tope y el monto de identificación | Solo el rol Dueño |
+| Generar el pedido de certificado, cargar, reemplazar o quitar el certificado | Solo el rol Dueño |
 | Probar la conexión con ARCA | Solo el rol Dueño |
 
 ## 7. Casos borde y errores
@@ -136,6 +144,12 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 - **Se anula una venta cuya factura está pendiente:** la factura pendiente se descarta y no se emite nota de crédito, porque nunca existió un comprobante.
 - **Se anula una venta facturada y ARCA está caído:** la venta se anula, la nota de crédito queda pendiente y se avisa (RF-18).
 - **El certificado venció:** no se puede facturar; el sistema lo explica y las ventas siguen saliendo con ticket.
+- **Se sube un certificado que no corresponde a la clave, vencido o de otro CUIT:** no se guarda; el que estaba sigue vigente (RF-2c).
+- **Se sube un certificado sin haber generado antes el pedido ni subir la clave:** se rechaza: sin clave privada no sirve.
+- **Se genera un pedido nuevo cuando había otro sin completar:** el anterior se descarta, con aviso; el certificado en uso no se toca hasta cargar el nuevo.
+- **Se reemplaza el certificado habiendo comprobantes pendientes:** se autorizan con el nuevo al reintentar.
+- **Se pierde o cambia la clave de cifrado del servidor:** el certificado guardado deja de poder usarse y hay que cargarlo de nuevo. El sistema lo explica en lugar de fallar al facturar.
+- **Se intenta activar el modo real fuera del sitio publicado:** se rechaza (RF-2d).
 - **Datos fiscales incompletos:** la opción de facturar no aparece (RF-4).
 - **CUIT o DNI con formato inválido:** se rechaza antes de consultar a ARCA.
 - **Venta por un monto que exige identificar al comprador, sin datos:** no se puede emitir hasta cargarlos; la venta ya está hecha y la factura queda pendiente.
@@ -147,24 +161,30 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 
 ## 8. Criterios de aceptación
 
-- [ ] Con los datos fiscales completos, "Probar conexión" responde bien y muestra el último número autorizado.
-- [ ] Con datos incompletos, la opción de facturar no aparece al cobrar.
-- [ ] Una venta de mostrador "con factura" a Consumidor Final emite una factura C con número, código de autorización y QR.
-- [ ] Una venta "sin factura" sale con el ticket de siempre, con su leyenda.
-- [ ] Una factura con comprador identificado muestra sus datos en el comprobante.
-- [ ] La entrega de un pedido con seña se factura por el total de la venta.
-- [ ] Con ARCA sin responder, la venta se confirma, la factura queda pendiente y aparece el aviso.
-- [ ] Reintentar una pendiente la emite; si el primer intento ya se había autorizado, no se duplica.
-- [ ] Una venta sin factura se factura después desde su detalle.
-- [ ] Anular una venta facturada emite la nota de crédito asociada.
-- [ ] El comprobante se imprime en A4 y en 58 mm con todos los datos del RF-20, y el QR lleva a la verificación de ARCA.
-- [ ] La pantalla de comprobantes filtra, totaliza y exporta a Excel.
-- [ ] El acumulado de 12 meses se muestra contra el tope y genera un aviso al cruzar el 80 %.
-- [ ] Con el acumulado por encima del tope, se sigue pudiendo facturar y no aparece ningún aviso más.
-- [ ] Un usuario que no es Dueño no puede editar los datos fiscales.
-- [ ] Hay pruebas unitarias de: armado de los datos del comprobante, validación de CUIT y DNI, exigencia de identificar al comprador según el monto, decisión de emitir o no la nota de crédito, control de duplicados al reintentar, y cálculo del acumulado.
-- [ ] Todas las pruebas se hicieron en el modo de prueba de ARCA antes de activar el modo real.
+- [x] Con los datos fiscales completos, "Probar conexión" responde bien y muestra el último número autorizado.
+- [x] El Dueño genera el pedido de certificado, lo presenta en ARCA y carga el certificado; el sistema muestra CUIT, ambiente y vencimiento.
+- [x] Un certificado que no corresponde a la clave, vencido o de otro CUIT se rechaza con su motivo.
+- [x] La clave privada no aparece en ninguna pantalla, respuesta ni registro, y en la base está cifrada.
+- [x] Un usuario que no es Dueño no puede cargar ni quitar el certificado.
+- [x] Con datos incompletos, la opción de facturar no aparece al cobrar.
+- [x] Una venta de mostrador "con factura" a Consumidor Final emite una factura C con número, código de autorización y QR.
+- [x] Una venta "sin factura" sale con el ticket de siempre, con su leyenda.
+- [x] Una factura con comprador identificado muestra sus datos en el comprobante.
+- [x] La entrega de un pedido con seña se factura por el total de la venta.
+- [x] Con ARCA sin responder, la venta se confirma, la factura queda pendiente y aparece el aviso.
+- [x] Reintentar una pendiente la emite; si el primer intento ya se había autorizado, no se duplica.
+- [x] Una venta sin factura se factura después desde su detalle.
+- [x] Anular una venta facturada emite la nota de crédito asociada.
+- [x] El comprobante se imprime en A4 y en 58 mm con todos los datos del RF-20, y el QR lleva a la verificación de ARCA.
+- [x] La pantalla de comprobantes filtra, totaliza y exporta a Excel.
+- [x] El acumulado de 12 meses se muestra contra el tope y genera un aviso al cruzar el 80 %.
+- [x] Con el acumulado por encima del tope, se sigue pudiendo facturar y no aparece ningún aviso más.
+- [x] Un usuario que no es Dueño no puede editar los datos fiscales.
+- [x] Hay pruebas unitarias de: armado de los datos del comprobante, validación de CUIT y DNI, exigencia de identificar al comprador según el monto, decisión de emitir o no la nota de crédito, control de duplicados al reintentar, y cálculo del acumulado.
+- [x] Todas las pruebas se hicieron en el modo de prueba de ARCA antes de activar el modo real.
 - [ ] Cobertura E2E: pendiente para la pasada de endurecimiento (ver `AGENTS.md`).
+
+> Verificados el 2026-11-12 en homologación (revisión manual del cliente, pruebas unitarias y pruebas con ARCA real). El código QR abre en ARCA con todos los datos cargados; su constatación final solo responde con comprobantes reales, así que se confirma con la primera factura de producción.
 
 ## 9. Preguntas abiertas
 

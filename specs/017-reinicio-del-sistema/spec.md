@@ -23,6 +23,7 @@ Es una acción **irreversible**: una vez hecha, los datos no se pueden recuperar
 - Borrar todos los datos de negocio, los demás usuarios (incluida su cuenta de acceso) y las fotos de productos.
 - Dejar el sistema usable: el Dueño que hizo el reinicio sigue dentro, con su rol y la configuración del negocio.
 - *(Agregado 2026-11-11, spec 019.)* La cuenta de Mercado Libre conectada se conserva, porque es configuración y no datos del negocio: el reinicio no la desconecta. Los avisos recibidos de Mercado Libre sí se borran, y si la cuenta la había conectado otro usuario con rol Dueño, pasa a figurar como conectada por quien reinicia.
+- *(Agregado 2026-11-11, spec 023.)* Los comprobantes electrónicos se borran junto con las ventas, **también los reales**: el Dueño puede reiniciar con facturas emitidas, pero el resumen previo lo advierte con un aviso fuerte (cuántas son, que borrarlas del sistema no las anula en ARCA, que se pierde la copia y el acumulado contra el tope, y que conviene exportar antes el Excel desde Comprobantes). Los datos del emisor, el certificado y el permiso de ARCA se conservan, porque son configuración; el certificado, si lo había cargado otro Dueño, pasa a figurar como cargado por quien reinicia. La numeración no se pierde: la lleva ARCA.
 
 **No incluye:**
 

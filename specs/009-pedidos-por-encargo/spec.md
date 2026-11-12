@@ -23,7 +23,7 @@ Llevar el registro de lo que un cliente encargó (con o sin stock), cobrar una s
 - Indicador informativo de unidades comprometidas en pedidos pendientes, por producto
 - Historial de pedidos y exportación de la lista
 
-**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md` (sin reserva automática de stock). No incluye un comprobante fiscal distinto del ticket de entrega ni de la seña.
+**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md` (sin reserva automática de stock). No incluye un comprobante fiscal distinto del ticket de entrega ni de la seña. *(2026-11-11, spec 023: la entrega puede llevar además una factura electrónica opcional; la seña en sí nunca se factura por separado.)*
 
 ## 3. Historias de usuario
 
@@ -108,6 +108,7 @@ A confirmar en el plan: `Order` (cliente, canal, estado, usuario, fecha), `Order
 
 ## 10. Decisiones (ya confirmadas con el cliente)
 
+- **La factura electrónica de una entrega es opcional y por el total** *(agregado 2026-11-11, spec 023).* Al cobrar una entrega, la cajera puede pedir factura: sale por el total de la venta que se entrega, sin descontar la seña (la seña es parte del pago, no un descuento). Si la seña cubre todo y no queda nada por cobrar, igual se ofrece la opción de facturar antes de confirmar. La seña no lleva factura propia.
 - **El ticket de entrega muestra la seña aplicada y el saldo a favor**; no se entrega ningún comprobante aparte al cobrar la seña en sí.
 - **La seña se cobra en una sola forma de pago**, no repartida como una venta.
 - **La seña es opcional**: un pedido puede crearse, entregarse y cancelarse sin cobrar nunca ninguna seña — no es un requisito en ningún paso del flujo.
