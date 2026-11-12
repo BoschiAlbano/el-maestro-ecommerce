@@ -93,3 +93,18 @@ COMMIT;
 pnpm prisma migrate resolve --applied 20261015003109_require_user_role
 pnpm prisma migrate deploy
 ```
+
+## Certificado de ARCA para desarrollo (spec 023)
+
+La carpeta `afip/` de la raíz del proyecto guarda el certificado y la clave de **homologación** (el ambiente de pruebas de ARCA) para desarrollar y probar la facturación:
+
+| Archivo | Qué es |
+|---|---|
+| `afip/elmaestro.crt` | Certificado de homologación, con el alias `elmaestro`. |
+| `afip/elmaestro.key` | Su clave privada. **Es un secreto.** |
+
+- La carpeta está en `.gitignore`, igual que cualquier `*.key`, `*.crt`, `*.csr`, `*.p12` y `*.pfx`: nunca se sube al repositorio. Antes de un commit, `git status` no debería mostrar nada de `afip/`.
+- **Este certificado es solo de El Maestro.** ARCA entrega un solo permiso temporal por certificado: si otro sistema usa el mismo, cada uno invalida al otro. Cada sistema tiene el suyo.
+- **No se carga en el sitio publicado.** Producción usa el certificado del cliente, que se carga desde Configuración > Facturación.
+- Para usarlo en el sistema local, se suben desde esa misma pantalla con "Subir certificado y clave existentes".
+- Si hay que crear otro: el sistema genera la clave y el pedido (Configuración > Facturación), y el pedido se pega en el portal de pruebas de ARCA (WSASS, "Crear DN y certificado"). Después hay que autorizar el certificado al servicio `wsfe`.

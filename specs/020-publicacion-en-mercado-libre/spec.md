@@ -175,6 +175,7 @@ Esta spec agrega el módulo **Mercado Libre** a la matriz de permisos (spec 002)
 
 ## 9. Preguntas abiertas
 
+0. **Cuenta de prueba habilitada.** La cuenta de prueba no estaba en el modelo nuevo el 2026-11-11. Hasta que Mercado Libre la habilite (formulario, dos semanas) no se puede probar la publicación en ese modelo. Se verifica con la etiqueta `user_product_seller` de `GET /users/me`.
 1. **Título en el modelo nuevo de Mercado Libre.** La documentación dice que en el modelo nuevo el título no se envía y Mercado Libre lo arma. Hay que ver en la prueba técnica si el usuario escribe un título o solo un nombre de producto. Puede cambiar el RF-2.
 2. **Modalidad de envío.** ¿Despacho en sucursal, colecta o envío en el día? ¿Se ofrece retiro en el local? Define qué se configura al publicar y lo que cobra Mercado Libre.
 3. **Garantía por defecto.** ¿Qué garantía ofrece el negocio y por cuánto tiempo?

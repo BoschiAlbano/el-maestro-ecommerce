@@ -297,7 +297,7 @@ En producción la cuenta dueña de la aplicación y la cuenta conectada son la m
     - Las publicaciones de prueba se titulan "Item de Prueba - Por favor, NO OFERTAR", van de preferencia en la categoría "Otros" y no en los tipos de mayor exposición. Eso limita lo que se puede probar de la spec 020 sobre categorías reales y sus características.
     - Las cuentas de prueba se eliminan tras 60 días sin actividad, y sus publicaciones se borran periódicamente. Usuario y contraseña no se pueden volver a consultar.
     - Si Mercado Libre pide un código de verificación por email, es igual a los últimos 4 o 6 dígitos del identificador de la cuenta.
-    - Habilitar una cuenta de prueba para el modelo nuevo de publicación se pide por formulario y tarda hasta 7 días. La verificación P-4 muestra si la cuenta ya lo tiene; si no, conviene pedirlo enseguida para no frenar la spec 020.
+    - Habilitar una cuenta de prueba para el modelo nuevo de publicación se pide por un formulario y **tarda dos semanas**, sin aviso (ver `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`, sección 1.4). La verificación P-4 muestra si la cuenta ya lo tiene; no la tenía el 2026-11-11, así que conviene pedirlo enseguida para no frenar la spec 020.
 
 ## 9. Preguntas abiertas
 

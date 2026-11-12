@@ -128,7 +128,7 @@ El cliente es monotributista, categoría B, venta de cosas muebles (constancia v
 ### Gestiones en ARCA
 
 **1. Certificado digital para facturar por servicio web.**
-*Propuesta:* que quede a nombre del cliente. El desarrollador le envía un archivo de pedido de certificado; usted lo carga en "Administración de Certificados Digitales" con la clave fiscal del cliente y nos devuelve el certificado que entrega ARCA. La clave privada no viaja en ningún momento.
+*Propuesta:* que quede a nombre del cliente. El sistema genera un archivo de pedido de certificado, que el dueño descarga desde la pantalla de Configuración y le envía. Usted lo carga en "Administración de Certificados Digitales" con la clave fiscal del cliente y le devuelve el certificado que entrega ARCA; el dueño lo sube al sistema. La clave privada no viaja en ningún momento: queda guardada y cifrada dentro del sistema. Cuando el certificado venza, se renueva con los mismos pasos.
 La alternativa es delegar el servicio al CUIT del desarrollador; no la recomendamos, porque deja la facturación del cliente atada a un tercero.
 
 - [ ] De acuerdo con que quede a nombre del cliente
