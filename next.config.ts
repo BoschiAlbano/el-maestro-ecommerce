@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   // falta aparte, para los endpoints de desarrollo (HMR, assets).
   allowedDevOrigins: ["**.devtunnels.ms"],
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       allowedOrigins: ["**.devtunnels.ms", "localhost:3000"],
     },
