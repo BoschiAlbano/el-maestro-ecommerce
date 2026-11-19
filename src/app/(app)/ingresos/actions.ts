@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { markPricePending, pushPendingListingsSafely } from "@/lib/mercadolibre/listings";
 
 export type CreateStockEntryState = { error?: string };
 
@@ -44,6 +46,9 @@ export async function createStockEntry(
   }
   const salePriceById = new Map(products.map((p) => [p.id, p.salePrice.toNumber()]));
   const purchasePriceById = new Map(products.map((p) => [p.id, p.purchasePrice.toNumber()]));
+  // Productos cuyo precio de venta cambió: se envía a Mercado Libre (specs/020, RF-13).
+  const salePriceChangedIds = new Set<string>();
+  let pricePending = 0;
 
   const entry = await prisma.$transaction(async (tx) => {
     const created = await tx.stockEntry.create({
@@ -95,11 +100,14 @@ export async function createStockEntry(
         });
         purchasePriceById.set(item.productId, item.purchasePrice);
         salePriceById.set(item.productId, finalSalePrice);
+        if (saleChanged) salePriceChangedIds.add(item.productId);
       }
     }
 
+    pricePending = await markPricePending(tx, [...salePriceChangedIds]);
     return created;
   });
+  if (pricePending > 0) after(() => pushPendingListingsSafely({ productIds: [...salePriceChangedIds] }));
 
   revalidatePath("/ingresos");
   revalidatePath("/inventario");

@@ -12,6 +12,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 const EMPTY_SUMMARY: NotificationsSummary = { items: [], liveAlerts: [], stockBajo: false, unreadCount: 0 };
 const POLL_INTERVAL_MS = 60_000;
 
+/** Evento para que otra pantalla pida actualizar la campanita sin esperar la próxima vuelta (specs/020, RF-14b). */
+export const REFRESH_NOTIFICATIONS_EVENT = "notifications:refresh";
+
+export function requestNotificationsRefresh() {
+  window.dispatchEvent(new Event(REFRESH_NOTIFICATIONS_EVENT));
+}
+
 export function NotificationsBell() {
   const [summary, setSummary] = useState<NotificationsSummary>(EMPTY_SUMMARY);
   const [pending, startTransition] = useTransition();
@@ -37,7 +44,11 @@ export function NotificationsBell() {
     };
     void poll();
     const interval = setInterval(poll, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    window.addEventListener(REFRESH_NOTIFICATIONS_EVENT, poll);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(REFRESH_NOTIFICATIONS_EVENT, poll);
+    };
   }, []);
 
   function handleMarkRead(id: string) {

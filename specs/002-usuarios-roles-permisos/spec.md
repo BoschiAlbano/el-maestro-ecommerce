@@ -96,6 +96,9 @@ Matriz por módulo (estructura; las filas se van confirmando a medida que cada m
 | Empleados | | | | | |
 | Analíticas | | | | | |
 | Configuración | | | | | |
+| Mercado Libre | | | | | |
+
+*(Agregado 2026-11-16, spec 020.)* El módulo **Mercado Libre** cubre las publicaciones: «ver» para la pantalla de publicaciones, «crear» para vincular, «editar» para pausar, reactivar y reintentar envíos, y «anular» para finalizar una publicación y deshacer un vínculo. Los roles que ya existían quedan sin permiso en este módulo hasta que el Dueño se lo dé.
 
 ## 7. Casos borde y errores
 

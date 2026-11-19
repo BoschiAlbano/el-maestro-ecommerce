@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks, ShieldCheck, ScrollText, Receipt } from "lucide-react";
+import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks, ShieldCheck, ScrollText, Receipt, Store } from "lucide-react";
 // Desde "enums" (no desde "client"): ver nota en components/permission-matrix.tsx.
 import { ModuloNegocio } from "@/generated/prisma/enums";
 import { isOwner, hasPermission, type Accion, type UserLike } from "@/lib/permissions";
@@ -96,6 +96,14 @@ export const navItems: NavItem[] = [
     group: "catalogo",
     enabled: true,
     requiresPermission: { module: ModuloNegocio.INGRESO_MERCADERIA, action: "ver" },
+  },
+  {
+    href: "/publicaciones",
+    label: "Mercado Libre",
+    icon: Store,
+    group: "catalogo",
+    enabled: true,
+    requiresPermission: { module: ModuloNegocio.MERCADO_LIBRE, action: "ver" },
   },
   {
     href: "/usuarios",

@@ -4,7 +4,10 @@ import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { STATUS_LABELS } from "@/lib/mercadolibre/listing-status";
 import {
   Table,
   TableBody,
@@ -29,6 +32,9 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
       where: { id },
       include: {
         priceHistory: { include: { changedByUser: true }, orderBy: { createdAt: "desc" } },
+        mlLinkedListing: {
+          select: { mlItemId: true, permalink: true, status: true, statusReason: true, linkedAt: true },
+        },
       },
     }),
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
@@ -47,6 +53,8 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
   const puedeEditar = hasPermission(currentUser, ModuloNegocio.CATALOGO, "editar");
   const puedeAnular = hasPermission(currentUser, ModuloNegocio.CATALOGO, "anular");
   const canChangePrice = hasSpecialPermission(currentUser, "cambiarPrecios");
+  const verMercadoLibre = hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver");
+  const listing = product.mlLinkedListing;
 
   const productId = product.id;
   const nextActive = !product.active;
@@ -59,6 +67,26 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold">{product.name}</h1>
 
+      {verMercadoLibre && listing && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Mercado Libre:</span>
+          <Badge variant={listing.status === "ACTIVE" ? "default" : "secondary"}>{STATUS_LABELS[listing.status]}</Badge>
+          <a href={listing.permalink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">
+            {listing.mlItemId}
+            <ExternalLink className="size-3" />
+          </a>
+          <span className="text-muted-foreground">
+            · vinculada el{" "}
+            {new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeZone: "America/Argentina/Tucuman" }).format(
+              listing.linkedAt,
+            )}
+          </span>
+          {listing.statusReason && listing.status !== "ACTIVE" && (
+            <span className="basis-full text-xs text-muted-foreground">{listing.statusReason}</span>
+          )}
+        </div>
+      )}
+
       {puedeEditar ? (
         <ProductForm
           brands={brands}
@@ -70,6 +98,7 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
             brandId: product.brandId,
             rubroId: product.rubroId,
             barcode: product.barcode,
+            sku: product.sku,
             photoUrl: product.photoUrl,
             purchasePrice: product.purchasePrice.toString(),
             salePrice: product.salePrice.toString(),
@@ -109,7 +138,7 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
                     timeZone: "America/Argentina/Tucuman",
                   }).format(entry.createdAt)}
                 </TableCell>
-                <TableCell>{entry.changedByUser.name}</TableCell>
+                <TableCell>{entry.changedByUser?.name ?? "Mercado Libre"}</TableCell>
                 {verCostos && <TableCell>${entry.purchasePrice.toFixed(0)}</TableCell>}
                 <TableCell>${entry.salePrice.toFixed(0)}</TableCell>
               </TableRow>

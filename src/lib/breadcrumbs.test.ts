@@ -53,4 +53,11 @@ describe("buildBreadcrumbs", () => {
       { label: "Nuevo" },
     ]);
   });
+
+  it("publicaciones de Mercado Libre y su pantalla de vincular (specs/020)", () => {
+    expect(buildBreadcrumbs("/publicaciones/vincular")).toEqual([
+      { label: "Mercado Libre", href: "/publicaciones" },
+      { label: "Vincular publicaciones" },
+    ]);
+  });
 });
