@@ -69,7 +69,7 @@ Pedido del cliente posterior al alcance original. Se cotiza aparte (ver sección
 |---|---|---|
 | 019 | Conexión con Mercado Libre | Vincular la cuenta de Mercado Libre del negocio, mantener la conexión activa sin intervención y recibir los avisos que manda Mercado Libre. Es la base de las specs 020 a 022 y 024. |
 | 020 | Vincular y administrar publicaciones de Mercado Libre | Las publicaciones de la cuenta se vinculan con los productos del sistema (por SKU, código de barras o a mano). Campo SKU en el producto, igual en los dos lados. Un solo precio, igual en el sistema y en Mercado Libre: un cambio en cualquiera de los dos lados se refleja en el otro. Estado de cada publicación, pausar, reactivar y finalizar. *(Separada el 2026-11-12: publicar desde el sistema pasó a la 025.)* |
-| 021 | Sincronización de stock con Mercado Libre | Cada cambio de stock en el sistema se refleja en la publicación, y un control periódico corrige diferencias. |
+| 021 | Sincronización de stock con Mercado Libre | Cada cambio de stock en el sistema se refleja en la publicación, y un control periódico corrige diferencias. Sin stock de reserva: se publica el stock completo, y con 0 unidades la publicación queda pausada. |
 | 022 | Órdenes de Mercado Libre | Cada compra en Mercado Libre llega al sistema como una venta de ese canal, descuenta stock y genera un aviso. La cancelación devuelve el stock. Las analíticas suman estas ventas con un filtro para ver Mercado Libre, mostrador o ambos. |
 | 023 | Facturación electrónica (ARCA) | Emisión de factura C con autorización de ARCA para las ventas de mostrador y las entregas de pedidos por encargo, cuando el cajero lo elige. Datos fiscales del negocio en Configuración, impresión del comprobante y notas de crédito por anulación. |
 | 024 | Factura de órdenes de Mercado Libre | Factura electrónica de cada orden de Mercado Libre con los datos fiscales del comprador, envío de la factura a Mercado Libre e impresión para despachar junto al producto. |
@@ -202,7 +202,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 018 | Keep-alive de la base de datos | 001 | En desarrollo |
 | 019 | Conexión con Mercado Libre | 002, 003, 013 | Verificada (pendiente de despliegue: medir los 500 ms de la ruta de avisos en Vercel) |
 | 020 | Vincular y administrar publicaciones de Mercado Libre | 004, 019 | Verificada (2026-11-19) |
-| 021 | Sincronización de stock con Mercado Libre | 005, 020 | Borrador |
+| 021 | Sincronización de stock con Mercado Libre | 005, 020 | Verificada (2026-11-19) |
 | 022 | Órdenes de Mercado Libre | 008, 011, 013, 021 | Borrador |
 | 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Verificada en homologación (pendiente de despliegue: medir el arranque en frío de ARCA en Vercel, y confirmar el QR con la primera factura real) |
 | 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |

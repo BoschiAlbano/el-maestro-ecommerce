@@ -87,7 +87,7 @@ Respuesta: ______________________
 **10. ¿Quiere guardar algunas unidades fuera de Mercado Libre?**
 Si la última unidad de un producto se vende en el local y en Mercado Libre casi al mismo tiempo, una de las dos ventas queda sin mercadería. Para evitarlo se puede indicar que no se publiquen, por ejemplo, las últimas 1 o 2 unidades. *Propuesta:* arrancar sin reserva y ajustarlo si hace falta.
 
-Respuesta: ______________________
+Respuesta: *(decidido 2026-11-19)* Sin reserva: se publica el stock completo. El riesgo de vender dos veces la última unidad es chico y se acepta; si aparece, se agrega la reserva.
 
 **11. Si entra una compra de un producto que justo se quedó sin stock, ¿qué espera del sistema?**
 *Propuesta:* que la marque como "sin stock" y le avise, para que usted decida si consigue el producto o cancela la venta en Mercado Libre.
