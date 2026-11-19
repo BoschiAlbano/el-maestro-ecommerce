@@ -23,6 +23,8 @@ enum ModuloNegocio {
   EMPLEADOS
   ANALITICAS
   CONFIGURACION
+  /// Publicaciones de Mercado Libre (specs/020, sección 6).
+  MERCADO_LIBRE
 }
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
@@ -56,6 +58,7 @@ model User {
   ordersCancelled   Order[]                  @relation("OrdersCancelled")
   employee          Employee?
   mlConnections     MercadoLibreConnection[]
+  mlListingsLinked  MercadoLibreListing[]
   invoicesRequested Invoice[]
   arcaCredentials   ArcaCredential[]
   createdAt         DateTime                 @default(now())
@@ -141,6 +144,12 @@ enum AuditAction {
   /// Datos del emisor y certificado de ARCA (specs/023, RF-1 y RF-2e).
   FISCAL_CONFIG_UPDATED
   ARCA_CERTIFICATE_UPDATED
+  /// Publicaciones de Mercado Libre (specs/020).
+  ML_LISTING_LINKED
+  ML_LISTING_UNLINKED
+  ML_LISTING_PAUSED
+  ML_LISTING_ACTIVATED
+  ML_LISTING_CLOSED
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
@@ -217,6 +226,13 @@ model Product {
 
   photoUrl String?
 
+  /// SKU como lo escribió el usuario (specs/020, RF-1). Opcional.
+  sku    String?
+  /// `sku` en mayúsculas: sobre esta columna se garantiza que no se repita
+  /// sin distinguir mayúsculas (mismo criterio que `User.usernameKey`). La
+  /// calcula siempre `normalizeSku`; nunca se escribe a mano.
+  skuKey String? @unique
+
   /// `Decimal`, nunca `Float` (constitución, regla 6).
   purchasePrice Decimal @db.Decimal(12, 2)
   salePrice     Decimal @db.Decimal(12, 2)
@@ -235,6 +251,8 @@ model Product {
   stockEntryItems StockEntryItem[]
   saleItems       SaleItem[]
   orderItems      OrderItem[]
+  mlListings      MercadoLibreListing[] @relation("MlListingProduct")
+  mlLinkedListing MercadoLibreListing?  @relation("MlListingLinkedProduct")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -254,13 +272,21 @@ model ProductPriceHistory {
   purchasePrice Decimal @db.Decimal(12, 2)
   salePrice     Decimal @db.Decimal(12, 2)
 
-  changedByUserId String
-  changedByUser   User   @relation(fields: [changedByUserId], references: [id])
+  /// Vacío cuando el cambio llegó de Mercado Libre (specs/020, RF-15).
+  changedByUserId String?
+  changedByUser   User?             @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
+  source          PriceChangeSource @default(USER)
 
   createdAt DateTime @default(now())
 
   @@index([productId])
   @@map("product_price_history")
+}
+
+/// De dónde vino un cambio de precio (specs/020, RF-15).
+enum PriceChangeSource {
+  USER
+  MERCADO_LIBRE
 }
 
 /// INGRESO y VENTA los generan las specs 006 y 008 (todavía no existen);
@@ -580,6 +606,9 @@ enum NotificationType {
   /// Lo facturado en 12 meses cruzó el 80 % del tope del monotributo
   /// (specs/023, RF-27). Solo informativo, y solo para el Dueño.
   TOPE_FACTURACION
+  /// Mercado Libre observó, pausó o dio de baja una publicación vinculada
+  /// (specs/020, RF-14).
+  ML_PUBLICACION
 }
 
 /// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
@@ -853,4 +882,68 @@ model Invoice {
   @@index([status])
   @@index([createdAt])
   @@map("invoices")
+}
+
+/// Estado de una publicación vinculada, como lo muestra el sistema
+/// (specs/020, RF-12). Lo que informa Mercado Libre, sin traducir, va en
+/// `mlStatus` y `mlSubStatus`.
+enum MlListingStatus {
+  ACTIVE
+  PAUSED
+  PAUSED_NO_STOCK
+  UNDER_REVIEW
+  CLOSED
+}
+
+/// Publicación de Mercado Libre vinculada a un producto (specs/020). Deshacer
+/// el vínculo borra la fila; finalizarla la conserva como historial.
+model MercadoLibreListing {
+  id       String @id @default(uuid())
+  mlItemId String @unique
+
+  /// De qué producto es. Se conserva aunque la publicación se finalice.
+  productId       String
+  product         Product  @relation("MlListingProduct", fields: [productId], references: [id], onDelete: Cascade)
+  /// Igual a `productId` mientras la publicación está vigente; vacío al
+  /// finalizarla. El `@unique` garantiza "un producto, una publicación
+  /// vigente" (specs/020, sección 5) sin un índice parcial.
+  linkedProductId String?  @unique
+  linkedProduct   Product? @relation("MlListingLinkedProduct", fields: [linkedProductId], references: [id], onDelete: Cascade)
+
+  /// Referencia, tomada al vincular y en cada lectura (RF-8).
+  title        String
+  thumbnailUrl String?
+  permalink    String
+  categoryId   String?
+
+  status       MlListingStatus
+  mlStatus     String
+  mlSubStatus  String[]        @default([])
+  /// Motivo en español cuando Mercado Libre la pausa, la observa o la da de
+  /// baja (RF-14).
+  statusReason String?
+
+  /// Último precio y SKU leídos de Mercado Libre o enviados a Mercado Libre.
+  lastKnownPrice Decimal @db.Decimal(12, 2)
+  lastKnownSku   String?
+  /// SKU que llegó de Mercado Libre y no se pudo tomar (RF-3).
+  skuConflict    String?
+
+  /// Hay un precio del sistema que todavía no llegó a Mercado Libre (RF-13).
+  pricePendingSince DateTime?
+  /// El producto se desactivó y la pausa todavía no llegó (RF-18).
+  pausePendingSince DateTime?
+  lastSyncError     String?
+  lastReadAt        DateTime?
+
+  linkedAt       DateTime  @default(now())
+  linkedByUserId String
+  linkedByUser   User      @relation(fields: [linkedByUserId], references: [id])
+  closedAt       DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([pricePendingSince])
+  @@map("ml_listings")
 }
