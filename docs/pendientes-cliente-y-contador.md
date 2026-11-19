@@ -35,7 +35,7 @@ Hay que registrar el sistema dentro de su cuenta de Mercado Libre, para que qued
 **4. Si empieza a vender en Mercado Libre antes de que el sistema esté listo, cargar las publicaciones de esta forma.**
 Las publicaciones que cargue ahora se van a conectar después con el sistema, y van a conservar sus ventas, sus opiniones y su posición. Para que esa conexión sea automática y sin errores:
 
-- **Cargar el código de barras del producto en el campo "SKU" de cada publicación.** Tiene que ser exactamente el mismo código que figura en el sistema para ese producto. Es lo más importante: con ese dato el sistema reconoce solo a qué producto corresponde cada publicación.
+- **Cargar un "SKU" en cada publicación** *(actualizado 2026-11-12)*. Puede ser el código de barras del producto o un código propio, con letras y números. El sistema va a tener un campo SKU en cada producto: si es el mismo en los dos lados, el sistema reconoce solo a qué producto corresponde cada publicación. Si no tiene SKU, también sirve que coincida con el código de barras que figura en el sistema. Es lo más importante para que la conexión sea automática.
 - **Una publicación por producto.** No cargar el mismo producto en dos publicaciones.
 - **No usar variantes** (una misma publicación con varios colores o talles). Si un producto viene en dos colores, son dos productos en el sistema y dos publicaciones.
 - **No usar el depósito de Mercado Libre (Full).** El sistema trabaja con el stock del local.
@@ -53,7 +53,7 @@ Sirven tanto para cargar la publicación a mano ahora como para publicarla despu
 - Fotos nítidas, con fondo claro. Mínimo 500 × 500 píxeles; lo ideal es 1200 × 1200.
 - Una descripción del producto.
 - Alto, ancho y largo del **paquete ya embalado**, en centímetros, y su peso en gramos.
-- El precio para Mercado Libre. Puede ser distinto del precio del local, porque Mercado Libre cobra una comisión por cada venta.
+- El precio es el mismo que en el local *(decisión 2026-11-12)*: si cambia en el sistema o en Mercado Libre, se actualiza en el otro lado. Mercado Libre cobra una comisión por cada venta; si quiere cubrirla, conviene tenerla en cuenta al fijar el precio del producto.
 
 - [ ] Lista de los primeros productos a publicar: ______________________
 

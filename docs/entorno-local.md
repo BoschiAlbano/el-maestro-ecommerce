@@ -2,7 +2,24 @@
 
 Para desarrollar sin tocar la base que usa el cliente. Se creó con la spec 019 (plan, sección 7). Todos los comandos son para **PowerShell**, parado en la carpeta del proyecto.
 
-## Qué hay
+## Qué base se usa y cuándo (decisión 2026-11-12)
+
+Mientras el cliente **no use** el sistema, se desarrolla directamente sobre la **base de Supabase en la nube** (la misma que usa el sitio publicado). Antes de que el cliente empiece a usarlo en producción, se vuelve a la **base local** para seguir desarrollando, y la de la nube queda solo para el cliente.
+
+| Quiero usar | Cómo |
+|---|---|
+| **La nube** (hoy) | Que `.env.development.local` **no exista** con ese nombre: `Rename-Item .env.development.local .env.docker.local`. Así `next dev` lee `.env.local` y `.env` (nube). `pnpm dev` tiene que mostrar `Environments: .env.local, .env`. |
+| **La local** (después del arranque real) | `Rename-Item .env.docker.local .env.development.local` y levantar Supabase local (sección «Uso diario»). |
+
+Mientras se desarrolla sobre la nube:
+
+- `.env.local` guarda `ARCA_ENCRYPTION_KEY` de la nube. **Tiene que ser el mismo valor en Vercel**, o el certificado guardado deja de poder usarse. Con Mercado Libre pasa lo mismo (`ML_*`, que hoy están solo en el archivo local).
+- Todo lo que se pruebe de facturación es **de prueba** (homologación). El modo real solo se activa desde el sitio publicado, y **no hay que activarlo mientras se comparta la base**: un `pnpm dev` conectado a ella emitiría facturas de verdad.
+- Antes de una migración o de un script que borre datos: volcado de la base (`pg_dump`). Las migraciones se aplican con `pnpm prisma migrate deploy` (lee `.env`).
+- **Después de una migración, reiniciar `pnpm dev`.** En desarrollo el cliente de Prisma queda guardado en memoria entre recargas, así que un `pnpm dev` que ya estaba corriendo sigue sin conocer las tablas nuevas y falla con `TypeError` (pasó el 2026-11-16 con los avisos de Mercado Libre de la spec 020). Si no hay un volcado con `pg_dump` a mano, alcanza con copiar las tablas a un JSON con un script de Node.
+- **Antes de dar la app al cliente:** reiniciar el sistema desde Configuración > Sistema, quitar el certificado de homologación y cargar el del cliente, reconectar Mercado Libre con su cuenta y pasar a modo real desde el sitio publicado.
+
+## Qué hay (entorno local)
 
 | Pieza | Dónde |
 |---|---|
