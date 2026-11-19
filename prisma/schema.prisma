@@ -924,17 +924,23 @@ model MercadoLibreListing {
   statusReason String?
 
   /// Último precio y SKU leídos de Mercado Libre o enviados a Mercado Libre.
-  lastKnownPrice Decimal @db.Decimal(12, 2)
-  lastKnownSku   String?
+  lastKnownPrice     Decimal   @db.Decimal(12, 2)
+  lastKnownSku       String?
+  /// Última cantidad leída de Mercado Libre o enviada (specs/021, RF-10).
+  lastKnownQuantity  Int?
+  /// Último envío o control de cantidad que terminó bien.
+  lastQuantitySyncAt DateTime?
   /// SKU que llegó de Mercado Libre y no se pudo tomar (RF-3).
-  skuConflict    String?
+  skuConflict        String?
 
   /// Hay un precio del sistema que todavía no llegó a Mercado Libre (RF-13).
-  pricePendingSince DateTime?
+  pricePendingSince    DateTime?
   /// El producto se desactivó y la pausa todavía no llegó (RF-18).
-  pausePendingSince DateTime?
-  lastSyncError     String?
-  lastReadAt        DateTime?
+  pausePendingSince    DateTime?
+  /// Hay una cantidad del sistema que todavía no llegó (specs/021, RF-6).
+  quantityPendingSince DateTime?
+  lastSyncError        String?
+  lastReadAt           DateTime?
 
   linkedAt       DateTime  @default(now())
   linkedByUserId String
@@ -945,5 +951,6 @@ model MercadoLibreListing {
 
   @@index([status])
   @@index([pricePendingSince])
+  @@index([quantityPendingSince])
   @@map("ml_listings")
 }
