@@ -166,6 +166,6 @@ La regla 10 queda igual: cuando una venta no tiene caja, lo que se guarda junto 
 1. **Pedidos por encargo en el filtro Origen.** La propuesta es que "Local" agrupe mostrador y pedidos por encargo. ¿O el cliente quiere tres opciones separadas?
 2. **Margen con comisión.** El RF-24 propone descontar lo que cobra Mercado Libre. ¿El dueño quiere ver el margen así, o sin descontar?
 3. **Impresora para la etiqueta.** La etiqueta de Mercado Libre es un PDF pensado para hoja común o para impresora de etiquetas de 10 × 15 cm. La impresora de tickets de 58 mm no sirve. ¿Con qué impresora cuenta el local?
-4. **Modalidad de envío** (misma pregunta que en la spec 020): define si hay etiqueta, quién retira y los plazos de despacho.
+4. **Modalidad de envío** (misma pregunta que en la spec 025): define si hay etiqueta, quién retira y los plazos de despacho.
 5. **Aviso de despacho por vencer.** ¿Con cuántas horas de anticipación?
 6. **Sin stock.** Cuando entra una compra sin stock, ¿alcanza con marcarla y avisar, o el dueño quiere además un aviso distinto y más visible?

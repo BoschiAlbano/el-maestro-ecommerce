@@ -68,11 +68,12 @@ Pedido del cliente posterior al alcance original. Se cotiza aparte (ver sección
 | Spec | Módulo | Qué incluye |
 |---|---|---|
 | 019 | Conexión con Mercado Libre | Vincular la cuenta de Mercado Libre del negocio, mantener la conexión activa sin intervención y recibir los avisos que manda Mercado Libre. Es la base de las specs 020 a 022 y 024. |
-| 020 | Publicación de productos en Mercado Libre | El dueño elige, producto por producto, cuáles se publican. Las publicaciones que ya existan en la cuenta se vinculan con los productos del sistema. Datos extra que pide Mercado Libre (categoría, características, fotos, descripción, peso y medidas) y precio propio para ese canal. Publicar, pausar y dar de baja. |
+| 020 | Vincular y administrar publicaciones de Mercado Libre | Las publicaciones de la cuenta se vinculan con los productos del sistema (por SKU, código de barras o a mano). Campo SKU en el producto, igual en los dos lados. Un solo precio, igual en el sistema y en Mercado Libre: un cambio en cualquiera de los dos lados se refleja en el otro. Estado de cada publicación, pausar, reactivar y finalizar. *(Separada el 2026-11-12: publicar desde el sistema pasó a la 025.)* |
 | 021 | Sincronización de stock con Mercado Libre | Cada cambio de stock en el sistema se refleja en la publicación, y un control periódico corrige diferencias. |
 | 022 | Órdenes de Mercado Libre | Cada compra en Mercado Libre llega al sistema como una venta de ese canal, descuenta stock y genera un aviso. La cancelación devuelve el stock. Las analíticas suman estas ventas con un filtro para ver Mercado Libre, mostrador o ambos. |
 | 023 | Facturación electrónica (ARCA) | Emisión de factura C con autorización de ARCA para las ventas de mostrador y las entregas de pedidos por encargo, cuando el cajero lo elige. Datos fiscales del negocio en Configuración, impresión del comprobante y notas de crédito por anulación. |
 | 024 | Factura de órdenes de Mercado Libre | Factura electrónica de cada orden de Mercado Libre con los datos fiscales del comprador, envío de la factura a Mercado Libre e impresión para despachar junto al producto. |
+| 025 | Publicar productos en Mercado Libre | Crear una publicación desde el sistema: datos extra que pide Mercado Libre (categoría, características, fotos, descripción, peso y medidas), estimación de lo que cobra y edición del contenido. Solo con el modelo nuevo de publicación de Mercado Libre. |
 
 ## 5. Reglas de negocio acordadas
 
@@ -90,7 +91,7 @@ Pedido del cliente posterior al alcance original. Se cotiza aparte (ver sección
 - **Códigos de barras.** La mayoría de los productos trae código de origen. Para los que no, el sistema genera un código propio.
 - **Notificaciones.** Solo en pantalla.
 - **Mercado Libre** *(ampliación 2026-11-10)*. El dueño elige **producto por producto** qué se publica. El stock del sistema es la fuente de verdad y se refleja en Mercado Libre.
-- **Arranque anticipado en Mercado Libre** *(cambio 2026-11-11)*. El cliente empieza a vender en Mercado Libre por su cuenta antes de que el sistema esté terminado. Por eso el sistema, además de publicar, **vincula las publicaciones que ya existan** con sus productos (spec 020), conservando sus ventas y opiniones. Las compras anteriores a la puesta en marcha no se traen al sistema, y mientras tanto el cliente factura por otro medio.
+- **Arranque anticipado en Mercado Libre** *(cambio 2026-11-11)*. El cliente empieza a vender en Mercado Libre por su cuenta antes de que el sistema esté terminado. Por eso el sistema **vincula las publicaciones que ya existan** con sus productos (spec 020), conservando sus ventas y opiniones. Las compras anteriores a la puesta en marcha no se traen al sistema, y mientras tanto el cliente factura por otro medio.
 - **Canales en analíticas** *(ampliación 2026-11-10)*. Las ventas de Mercado Libre se ven en las analíticas junto con las de mostrador, con un filtro para ver un canal, el otro o ambos.
 - **Factura electrónica** *(ampliación 2026-11-10)*. El sistema emite facturas electrónicas con autorización de ARCA. El cliente es **monotributista** (categoría B, venta de cosas muebles), así que el comprobante es siempre **factura C**, sin IVA discriminado. La factura la emite el sistema y **no** se usa el Facturador de Mercado Libre (usar los dos duplicaría comprobantes).
   - **Órdenes de Mercado Libre:** se facturan siempre.
@@ -102,7 +103,7 @@ Pedido del cliente posterior al alcance original. Se cotiza aparte (ver sección
 Nada de lo siguiente se construye en esta etapa. Cualquier cambio posterior se cotiza aparte.
 
 - *(Cambio 2026-11-10: la facturación electrónica ARCA y la integración con Mercado Libre dejaron de estar fuera de alcance; ver "Ampliación de alcance" en la sección 4.)*
-- De Mercado Libre, todo lo que no figure en las specs 019 a 024: responder preguntas y mensajes de compradores desde el sistema, publicidad, promociones y cupones, envíos con depósito de Mercado Libre (Full), reclamos y devoluciones, y otros marketplaces.
+- De Mercado Libre, todo lo que no figure en las specs 019 a 025: responder preguntas y mensajes de compradores desde el sistema, publicidad, promociones y cupones, envíos con depósito de Mercado Libre (Full), reclamos y devoluciones, y otros marketplaces.
 - Mercado Pago como medio de cobro en el local.
 - Manejo de dólares, tipo de cambio, motor o calculadora de precios y conversor de USD a ARS (posible segunda fase).
 - Cuentas corrientes, fiado, descuentos y múltiples listas de precios.
@@ -200,19 +201,20 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
 | 018 | Keep-alive de la base de datos | 001 | En desarrollo |
 | 019 | Conexión con Mercado Libre | 002, 003, 013 | Verificada (pendiente de despliegue: medir los 500 ms de la ruta de avisos en Vercel) |
-| 020 | Publicación de productos en Mercado Libre | 004, 019 | Borrador |
+| 020 | Vincular y administrar publicaciones de Mercado Libre | 004, 019 | Verificada (2026-11-19) |
 | 021 | Sincronización de stock con Mercado Libre | 005, 020 | Borrador |
 | 022 | Órdenes de Mercado Libre | 008, 011, 013, 021 | Borrador |
 | 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Verificada en homologación (pendiente de despliegue: medir el arranque en frío de ARCA en Vercel, y confirmar el QR con la primera factura real) |
 | 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |
+| 025 | Publicar productos en Mercado Libre | 004, 019, 020 | Borrador |
 
-Sobre las specs 019 a 024:
+Sobre las specs 019 a 025:
 
-- **Orden.** La 023 no depende de Mercado Libre y se puede probar en el ambiente de pruebas de ARCA con el CUIT del desarrollador. Puede adelantarse mientras se consigue la cuenta de Mercado Libre.
+- **Orden.** La 023 no depende de Mercado Libre y se puede probar en el ambiente de pruebas de ARCA con el CUIT del desarrollador. Puede adelantarse mientras se consigue la cuenta de Mercado Libre. *(2026-11-12)* Después de la 023: **020 → 021 → 022 → 024 → 025**. Publicar desde el sistema (025) quedó al final porque necesita que Mercado Libre habilite el modelo nuevo en la cuenta de prueba, y no frena la cadena vincular → stock → órdenes → factura.
 - **Constitución.** El 2026-11-10 se aprobó exceptuar las ventas de Mercado Libre de la regla 11 (no se vende sin caja abierta); ya está aplicado en `specs/constitution.md`. La regla 25 (leyenda del ticket) no cambia: la factura es un comprobante aparte.
 - **Pendientes del cliente y del contador.** Las preguntas y acciones que dependen de ellos están reunidas en `docs/pendientes-cliente-y-contador.md`.
 - **Tecnologías.** Las bibliotecas y servicios evaluados están en `docs/investigacion/2026-11-10-tecnologias.md`.
-- **Specs que se modifican.** La 023 agrega la opción de facturar a las specs 008 y 009; la 022 agrega el filtro por origen a la 011 y un dato al inicio de la 012. Cada cambio se anota en la spec afectada al aprobarse.
+- **Specs que se modifican.** La 023 agrega la opción de facturar a las specs 008 y 009; la 022 agrega el filtro por origen a la 011 y un dato al inicio de la 012; la 020 agrega el campo SKU al producto y el origen «Mercado Libre» al historial de precios (spec 004), envía a Mercado Libre los cambios de precio de la ficha y del ingreso de mercadería (spec 006), y suma el módulo Mercado Libre a la matriz de permisos (spec 002). Cada cambio se anota en la spec afectada al aprobarse.
 - **Investigación.** Lo relevado de Mercado Libre y de ARCA, con sus fuentes, está en `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`. Las decisiones están en `docs/decisions/0004` y `0005`.
 
 Estados posibles: Sin redactar → Borrador → Aprobada → En desarrollo → Verificada.
