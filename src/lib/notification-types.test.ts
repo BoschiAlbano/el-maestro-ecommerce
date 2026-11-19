@@ -33,7 +33,7 @@ function userWith(modules: ModuloNegocio[], options: { owner?: boolean; active?:
 describe("avisos de la campanita por permiso", () => {
   it("el Dueño ve todos los tipos", () => {
     expect(visibleNotificationTypes(userWith([], { owner: true })).sort()).toEqual(
-      ["DIFERENCIA_CAJA", "ML_RECONEXION", "PEDIDO_NUEVO", "TOPE_FACTURACION"].sort(),
+      ["DIFERENCIA_CAJA", "ML_PUBLICACION", "ML_RECONEXION", "PEDIDO_NUEVO", "TOPE_FACTURACION"].sort(),
     );
   });
 
@@ -41,6 +41,7 @@ describe("avisos de la campanita por permiso", () => {
     expect(visibleNotificationTypes(userWith([ModuloNegocio.PEDIDOS]))).toEqual(["PEDIDO_NUEVO"]);
     expect(visibleNotificationTypes(userWith([ModuloNegocio.CAJA]))).toEqual(["DIFERENCIA_CAJA"]);
     expect(visibleNotificationTypes(userWith([ModuloNegocio.CONFIGURACION]))).toEqual(["ML_RECONEXION"]);
+    expect(visibleNotificationTypes(userWith([ModuloNegocio.MERCADO_LIBRE]))).toEqual(["ML_PUBLICACION"]);
   });
 
   it("el aviso de reconexión de Mercado Libre no lo ve quien no ve Configuración", () => {

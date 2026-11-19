@@ -22,6 +22,7 @@ const empty: ResetCounts = {
   invoices: 0,
   realInvoices: 0,
   pendingInvoices: 0,
+  linkedListings: 0,
   openShift: false,
   pendingOrders: 0,
 };
@@ -99,6 +100,20 @@ describe("summarizeReset con comprobantes (specs/023)", () => {
   });
 });
 
+describe("publicaciones vinculadas (specs/020)", () => {
+  it("avisa que se pierde el vínculo pero no la publicación", () => {
+    const { warnings, rows } = summarizeReset({ ...empty, linkedListings: 2 });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/2 publicaciones de Mercado Libre vinculadas/);
+    expect(warnings[0]).toMatch(/sigue en Mercado Libre/);
+    expect(rows.some((r) => r.label.includes("Mercado Libre"))).toBe(false);
+  });
+
+  it("sin publicaciones vinculadas no avisa nada", () => {
+    expect(summarizeReset(empty).warnings).toEqual([]);
+  });
+});
+
 describe("BUSINESS_TABLES", () => {
   it("vacía los comprobantes y conserva la configuración de facturación (specs/023)", () => {
     expect(BUSINESS_TABLES).toContain("invoices");
@@ -109,6 +124,11 @@ describe("BUSINESS_TABLES", () => {
 
   it("vacía los avisos de Mercado Libre (specs/019)", () => {
     expect(BUSINESS_TABLES).toContain("ml_notifications");
+  });
+
+  it("vacía los vínculos con Mercado Libre junto con los productos (specs/020)", () => {
+    expect(BUSINESS_TABLES).toContain("ml_listings");
+    expect(BUSINESS_TABLES).toContain("products");
   });
 
   it("conserva la cuenta de Mercado Libre, igual que la configuración (specs/019)", () => {

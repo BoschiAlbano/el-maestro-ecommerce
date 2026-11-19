@@ -21,6 +21,7 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     invoices,
     realInvoices,
     pendingInvoices,
+    linkedListings,
     openShifts,
     pendingOrders,
   ] = await Promise.all([
@@ -38,6 +39,7 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     prisma.invoice.count(),
     prisma.invoice.count({ where: { status: "AUTHORIZED", environment: "PRODUCCION" } }),
     prisma.invoice.count({ where: { status: "PENDING" } }),
+    prisma.mercadoLibreListing.count({ where: { linkedProductId: { not: null } } }),
     prisma.cashShift.count({ where: { closedAt: null } }),
     prisma.order.count({ where: { status: "PENDIENTE" } }),
   ]);
@@ -57,6 +59,7 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     invoices,
     realInvoices,
     pendingInvoices,
+    linkedListings,
     openShift: openShifts > 0,
     pendingOrders,
   };

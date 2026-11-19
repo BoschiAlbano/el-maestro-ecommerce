@@ -1,0 +1,102 @@
+{
+  "id": "MLA2279211711",
+  "title": "Cable Usb-c A Usb-a Negro 1 Metro Trenzado Genérica Negro",
+  "family_name": "Cable Usb-c A Usb-a Negro 1 Metro Trenzado Genérica",
+  "price": 777777,
+  "currency_id": "ARS",
+  "status": "paused",
+  "sub_status": [
+    "paused_by_seller"
+  ],
+  "available_quantity": 5,
+  "sold_quantity": 0,
+  "listing_type_id": "gold_special",
+  "catalog_listing": false,
+  "catalog_product_id": null,
+  "user_product_id": "MLAU5875030934",
+  "category_id": "MLA5338",
+  "permalink": "https://articulo.mercadolibre.com.ar/MLA-2279211711-cable-usb-c-a-usb-a-negro-1-metro-trenzado-generica-negro-_JM",
+  "thumbnail": "http://http2.mlstatic.com/D_784078-MLA119504121670_112026-I.jpg",
+  "last_updated": "2026-11-10T21:37:10.632Z",
+  "tags": [
+    "good_quality_thumbnail",
+    "user_product_listing",
+    "immediate_payment",
+    "cart_eligible"
+  ],
+  "variations": [],
+  "seller_custom_field": null,
+  "seller_id": 1,
+  "pictures": [
+    {
+      "id": "784078-MLA119504121670_112026",
+      "url": "http://http2.mlstatic.com/D_784078-MLA119504121670_112026-O.jpg",
+      "secure_url": "https://http2.mlstatic.com/D_784078-MLA119504121670_112026-O.jpg",
+      "size": "500x457",
+      "max_size": "1003x918",
+      "quality": ""
+    }
+  ],
+  "shipping": {
+    "mode": "me2",
+    "logistic_type": "xd_drop_off"
+  },
+  "attributes": [
+    {
+      "id": "BRAND",
+      "name": "Marca del cable",
+      "value_id": "276243",
+      "value_name": "Genérica",
+      "values": [
+        {
+          "id": "276243",
+          "name": "Genérica",
+          "struct": null
+        }
+      ],
+      "value_type": "string"
+    },
+    {
+      "id": "EMPTY_GTIN_REASON",
+      "name": "Motivo de GTIN vacío",
+      "value_id": "17055161",
+      "value_name": "Otra razón",
+      "values": [
+        {
+          "id": "17055161",
+          "name": "Otra razón",
+          "struct": null
+        }
+      ],
+      "value_type": "list"
+    },
+    {
+      "id": "MODEL",
+      "name": "Modelo del cable",
+      "value_id": "13408377",
+      "value_name": "USB-C",
+      "values": [
+        {
+          "id": "13408377",
+          "name": "USB-C",
+          "struct": null
+        }
+      ],
+      "value_type": "string"
+    },
+    {
+      "id": "SELLER_SKU",
+      "name": "SKU",
+      "value_id": null,
+      "value_name": "ODOO-TEST-001",
+      "values": [
+        {
+          "id": null,
+          "name": "ODOO-TEST-001",
+          "struct": null
+        }
+      ],
+      "value_type": "string"
+    }
+  ]
+}

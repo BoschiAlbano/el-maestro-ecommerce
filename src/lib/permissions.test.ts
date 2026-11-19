@@ -79,6 +79,21 @@ describe("hasPermission / requirePermission (matriz por módulo)", () => {
     expect(hasPermission(cajero, ModuloNegocio.CONFIGURACION, "ver")).toBe(false);
   });
 
+  it("el módulo Mercado Libre (specs/020): los roles que ya existían no tienen fila y no pueden; el Dueño sí", () => {
+    const cajero = makeUser();
+    expect(hasPermission(cajero, ModuloNegocio.MERCADO_LIBRE, "ver")).toBe(false);
+    expect(() => requirePermission(cajero, ModuloNegocio.MERCADO_LIBRE, "crear")).toThrow(PermissionError);
+    expect(hasPermission(dueno, ModuloNegocio.MERCADO_LIBRE, "anular")).toBe(true);
+    const vendedorMl = makeUser({
+      role: {
+        ...makeUser().role,
+        permissions: [{ module: ModuloNegocio.MERCADO_LIBRE, ver: true, crear: false, editar: true, anular: false, exportar: false }],
+      },
+    });
+    expect(hasPermission(vendedorMl, ModuloNegocio.MERCADO_LIBRE, "editar")).toBe(true);
+    expect(hasPermission(vendedorMl, ModuloNegocio.MERCADO_LIBRE, "anular")).toBe(false);
+  });
+
   it("un usuario inactivo no puede, aunque la matriz diga que sí", () => {
     const inactivo = makeUser({
       active: false,

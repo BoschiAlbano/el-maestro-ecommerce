@@ -12,7 +12,8 @@ export const RESET_PHRASE = "REINICIAR EL SISTEMA";
  * no datos del negocio: specs/019) y los datos de facturación (`fiscal_config`,
  * `arca_credentials`, `arca_tickets`: son configuración, specs/023), que se
  * tratan aparte. Los comprobantes (`invoices`) sí se vacían, con una advertencia
- * fuerte si hay reales.
+ * fuerte si hay reales. Los vínculos con Mercado Libre (`ml_listings`, specs/020)
+ * también: sus productos se borran, y las publicaciones siguen en Mercado Libre.
  */
 export const BUSINESS_TABLES = [
   "audit_logs",
@@ -30,6 +31,7 @@ export const BUSINESS_TABLES = [
   "stock_entries",
   "stock_movements",
   "product_price_history",
+  "ml_listings",
   "products",
   "brands",
   "rubros",
@@ -65,11 +67,16 @@ export type ResetCounts = {
   realInvoices: number;
   /** Los que todavía no se emitieron: se pierden sin emitirse. */
   pendingInvoices: number;
+  /** Publicaciones de Mercado Libre vinculadas a un producto (specs/020). */
+  linkedListings: number;
   openShift: boolean;
   pendingOrders: number;
 };
 
-type CountKey = Exclude<keyof ResetCounts, "openShift" | "pendingOrders" | "realInvoices" | "pendingInvoices">;
+type CountKey = Exclude<
+  keyof ResetCounts,
+  "openShift" | "pendingOrders" | "realInvoices" | "pendingInvoices" | "linkedListings"
+>;
 
 const ROWS: { key: CountKey; singular: string; plural: string }[] = [
   { key: "products", singular: "producto", plural: "productos" },
@@ -122,6 +129,14 @@ export function summarizeReset(counts: ResetCounts): ResetSummary {
       counts.pendingInvoices === 1
         ? "Hay 1 comprobante pendiente de emitir: se va a perder sin emitirse."
         : `Hay ${counts.pendingInvoices} comprobantes pendientes de emitir: se van a perder sin emitirse.`,
+    );
+  }
+
+  if (counts.linkedListings > 0) {
+    warnings.push(
+      `Hay ${counts.linkedListings} ${counts.linkedListings === 1 ? "publicación de Mercado Libre vinculada" : "publicaciones de Mercado Libre vinculadas"}. ` +
+        "Se pierde el vínculo, no la publicación: sigue en Mercado Libre tal como está, pero sus ventas ya no descuentan stock. " +
+        "Después del reinicio vas a tener que vincularlas de nuevo.",
     );
   }
 

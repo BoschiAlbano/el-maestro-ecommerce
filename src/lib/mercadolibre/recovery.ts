@@ -8,6 +8,7 @@ import { parseMissedFeeds, type IncomingNotification } from "./inbox";
 import { acceptNotifications, deleteOldNotifications, processPending, type ProcessSummary } from "./inbox-store";
 import { mlFetch } from "./client";
 import { getAppAccessToken } from "./tokens";
+import { pushPendingListings, rereadLinkedListings, type PushSummary } from "./listings";
 
 // Recuperación de avisos perdidos y pasada de mantenimiento (specs/019, RF-13
 // y RF-14; plan, sección 3.5). La corre la tarea diaria y el botón "Buscar
@@ -47,6 +48,8 @@ export type MaintenanceSummary =
       ignoredOtherAccount: number;
       process: ProcessSummary;
       deletedOld: number;
+      /** Publicaciones vinculadas (specs/020): envíos pendientes y relectura. */
+      listings: { pushed: PushSummary; reread: number } | null;
     };
 
 /**
@@ -90,6 +93,14 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
   const process = await processPending({ limit: 200 });
   const deletedOld = await deleteOldNotifications();
 
+  // Publicaciones vinculadas (specs/020, plan sección 3.5): primero lo que el
+  // sistema no pudo enviar, después se vuelven a leer todas, por si se perdió
+  // algún aviso.
+  const listings =
+    connection.status === "CONNECTED"
+      ? { pushed: await pushPendingListings(), reread: await rereadLinkedListings() }
+      : null;
+
   await prisma.mercadoLibreConnection.updateMany({
     where: { id: CONNECTION_ID },
     data: { lastRecoveryAt: new Date() },
@@ -102,5 +113,6 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
     ignoredOtherAccount: found.length - mine.length,
     process,
     deletedOld,
+    listings,
   };
 }

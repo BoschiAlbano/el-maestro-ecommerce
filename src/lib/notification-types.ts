@@ -12,6 +12,7 @@ type NotificationAccess = { module: ModuloNegocio } | { ownerOnly: true };
  * El de reconexión de Mercado Libre es de Configuración (specs/019, sección 6).
  * El del tope de facturación es solo del Dueño, igual que el acumulado que
  * avisa (specs/023, sección 6).
+ * El de publicaciones de Mercado Libre, del módulo Mercado Libre (specs/020).
  * `Record` completo a propósito: agregar un tipo al enum sin decidir quién lo
  * ve no compila.
  */
@@ -20,12 +21,14 @@ export const NOTIFICATION_ACCESS: Record<NotificationType, NotificationAccess> =
   DIFERENCIA_CAJA: { module: ModuloNegocio.CAJA },
   ML_RECONEXION: { module: ModuloNegocio.CONFIGURACION },
   TOPE_FACTURACION: { ownerOnly: true },
+  ML_PUBLICACION: { module: ModuloNegocio.MERCADO_LIBRE },
 };
 
 /** A dónde lleva el aviso al tocarlo, si lleva a algún lado. */
 export const NOTIFICATION_HREF: Partial<Record<NotificationType, string>> = {
   ML_RECONEXION: "/configuracion?tab=mercadolibre",
   TOPE_FACTURACION: "/comprobantes",
+  ML_PUBLICACION: "/publicaciones",
 };
 
 export function canSeeNotificationType(user: UserLike, type: NotificationType): boolean {
