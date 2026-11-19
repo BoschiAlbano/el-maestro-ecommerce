@@ -38,6 +38,10 @@ export type PublicationRow = {
   skuConflict: string | null;
   pricePending: boolean;
   pausePending: boolean;
+  /** Cantidad sin enviar (specs/021). */
+  quantityPending: boolean;
+  /** Cantidad que tiene Mercado Libre, según la última lectura o envío; `null` si todavía no se leyó. */
+  publishedQuantity: number | null;
   lastSyncError: string | null;
   closedAt: Date | null;
   product: {
@@ -89,6 +93,8 @@ export async function loadPublications(filter: PublicationsFilter): Promise<Publ
     skuConflict: r.skuConflict,
     pricePending: r.pricePendingSince !== null,
     pausePending: r.pausePendingSince !== null,
+    quantityPending: r.quantityPendingSince !== null,
+    publishedQuantity: r.lastKnownQuantity,
     lastSyncError: r.lastSyncError,
     closedAt: r.closedAt,
     product: { ...r.product, salePrice: r.product.salePrice.toString() },

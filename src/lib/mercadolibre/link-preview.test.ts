@@ -42,20 +42,15 @@ describe("buildLinkPreview", () => {
     const preview = buildLinkPreview({ salePrice: "100", currentStock: -2, sku: null }, { price: "100", quantity: 4, sku: null });
     expect(preview.quantity).toEqual({ from: 4, to: 0, changes: true });
   });
-
-  it("descuenta la reserva", () => {
-    const preview = buildLinkPreview({ salePrice: "100", currentStock: 10, sku: null }, { price: "100", quantity: 10, sku: null }, 3);
-    expect(preview.quantity.to).toBe(7);
-  });
 });
 
-describe("publishableQuantity", () => {
+describe("publishableQuantity (sin stock de reserva)", () => {
   it.each([
-    [10, 0, 10],
-    [10, 3, 7],
-    [2, 3, 0],
-    [-5, 0, 0],
-  ])("stock %i, reserva %i → %i", (stock, reserve, expected) => {
-    expect(publishableQuantity(stock, reserve)).toBe(expected);
+    [10, 10],
+    [1, 1],
+    [0, 0],
+    [-5, 0],
+  ])("stock %i → %i", (stock, expected) => {
+    expect(publishableQuantity(stock)).toBe(expected);
   });
 });

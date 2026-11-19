@@ -26,14 +26,17 @@ export type LinkPreview = {
   productTakesListingSku: boolean;
 };
 
-/** Cantidad que se publica: stock menos la reserva, nunca menos de cero (spec 021, RF-1). */
-export function publishableQuantity(currentStock: number, reserve: number): number {
-  return Math.max(0, currentStock - reserve);
+/**
+ * Cantidad que se publica: el stock del sistema, nunca menos de cero (spec 021,
+ * RF-1). Sin stock de reserva por decisión del cliente (2026-11-19).
+ */
+export function publishableQuantity(currentStock: number): number {
+  return Math.max(0, currentStock);
 }
 
-export function buildLinkPreview(product: PreviewProduct, listing: PreviewListing, reserve = 0): LinkPreview {
+export function buildLinkPreview(product: PreviewProduct, listing: PreviewListing): LinkPreview {
   const priceTo = new Decimal(product.salePrice);
-  const quantityTo = publishableQuantity(product.currentStock, reserve);
+  const quantityTo = publishableQuantity(product.currentStock);
   const productTakesListingSku = product.sku === null && listing.sku !== null;
   const skuTo = product.sku ?? listing.sku;
 

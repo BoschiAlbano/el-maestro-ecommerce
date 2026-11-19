@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/current-user";
 import { isOwner } from "@/lib/permissions";
 import { readMlConfig } from "@/lib/mercadolibre/config";
 import { saveMlConnection } from "@/lib/mercadolibre/connection";
+import { syncAllListingsSafely } from "@/lib/mercadolibre/listings";
 import { mlResultPath, type MlConnectResult } from "@/lib/mercadolibre/connection-result";
 import { MlConfigError, MlTokenRequestError, MlUnavailableError } from "@/lib/mercadolibre/errors";
 import { exchangeCode, mlHttp } from "@/lib/mercadolibre/http";
@@ -57,7 +58,10 @@ async function completeConnection(request: NextRequest): Promise<MlConnectResult
       account: { mlUserId: account.data.id, nickname: account.data.nickname, siteId: account.data.site_id },
       authorization: { ...authorization, refreshToken },
     });
-    return saved === "saved" ? "conectada" : "otra_cuenta";
+    if (saved !== "saved") return "otra_cuenta";
+    // Al reconectar se corrige lo que haya quedado mientras estaba desconectada (specs/021, sección 7).
+    after(syncAllListingsSafely);
+    return "conectada";
   } catch (error) {
     if (error instanceof MlConfigError) return "sin_configurar";
     if (error instanceof MlUnavailableError) return "ml_no_responde";

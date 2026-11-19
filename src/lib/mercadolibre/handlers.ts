@@ -42,8 +42,9 @@ async function handleItemChanged({ resource }: NotificationContext): Promise<voi
 
   const item = await getListing(mlItemId);
   const result = await applyListingRead(mlItemId, item);
-  // Hay un precio propio que todavía no llegó: se aprovecha para enviarlo.
-  if (result?.pushPendingPrice) await pushPendingListings({ listingIds: [listing.id] });
+  // Hay un precio propio que no llegó, o la cantidad no es la del sistema
+  // (specs/021, RF-11): se envía ahora.
+  if (result?.pushPendingPrice || result?.pushQuantity) await pushPendingListings({ listingIds: [listing.id] });
 }
 
 export const notificationHandlers: Record<string, NotificationHandler> = {

@@ -22,12 +22,14 @@ function input(changes: {
   product?: Partial<ReconcileInput["product"]>;
   stored?: Partial<ReconcileInput["stored"]>;
   taken?: boolean;
+  mode?: ReconcileInput["mode"];
 }): ReconcileInput {
   return {
     read: { ...read, ...changes.read },
-    product: { salePrice: "15000.00", sku: "ABC-1", ...changes.product },
+    product: { salePrice: "15000.00", sku: "ABC-1", currentStock: 5, ...changes.product },
     stored: { status: "ACTIVE", pricePending: false, ...changes.stored },
     incomingSkuTakenByOther: changes.taken ?? false,
+    mode: changes.mode,
   };
 }
 
@@ -146,5 +148,45 @@ describe("reconcile", () => {
   it("guarda lo último que se leyó", () => {
     const result = reconcile(input({ read: { price: "20000", sku: "WEB-020", title: "Nuevo título" } }));
     expect(result.listing).toMatchObject({ lastKnownPrice: "20000", lastKnownSku: "WEB-020", title: "Nuevo título" });
+  });
+});
+
+describe("reconcile: cantidad (specs/021, plan sección 3.3)", () => {
+  it("igual a la del sistema: nada, también el aviso de un envío propio", () => {
+    expect(reconcile(input({ read: { quantity: 5 } })).pushQuantity).toBe(false);
+    expect(reconcile(input({ read: { quantity: 5 }, mode: "control" })).pushQuantity).toBe(false);
+  });
+
+  it("Mercado Libre tiene de más: se envía, en los dos modos", () => {
+    expect(reconcile(input({ read: { quantity: 9 } })).pushQuantity).toBe(true);
+    expect(reconcile(input({ read: { quantity: 9 }, mode: "control" })).pushQuantity).toBe(true);
+  });
+
+  it("Mercado Libre tiene de menos: con un aviso no se sube (puede ser una venta sin registrar)", () => {
+    expect(reconcile(input({ read: { quantity: 4 } })).pushQuantity).toBe(false);
+  });
+
+  it("Mercado Libre tiene de menos: el control completo la corrige", () => {
+    expect(reconcile(input({ read: { quantity: 4 }, mode: "control" })).pushQuantity).toBe(true);
+  });
+
+  it("con un envío propio pendiente, siempre se manda el del sistema", () => {
+    expect(reconcile(input({ read: { quantity: 4 }, stored: { quantityPending: true } })).pushQuantity).toBe(true);
+  });
+
+  it("stock negativo corresponde a 0: con 0 en Mercado Libre no hay nada que hacer", () => {
+    expect(reconcile(input({ read: { quantity: 0 }, product: { currentStock: -3 } })).pushQuantity).toBe(false);
+  });
+
+  it("finalizada: no se envía la cantidad", () => {
+    expect(reconcile(input({ read: { mlStatus: "closed", quantity: 9 }, mode: "control" })).pushQuantity).toBe(false);
+  });
+
+  it("un cambio de cantidad no avisa en la campanita", () => {
+    expect(reconcile(input({ read: { quantity: 9 } })).notification).toBeNull();
+  });
+
+  it("guarda la cantidad leída", () => {
+    expect(reconcile(input({ read: { quantity: 4 } })).listing.lastKnownQuantity).toBe(4);
   });
 });

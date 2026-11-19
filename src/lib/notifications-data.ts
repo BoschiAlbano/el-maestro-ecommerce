@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { isOwner, type UserLike } from "@/lib/permissions";
-import type { NotificationType } from "@/generated/prisma/client";
+import { hasPermission, isOwner, type UserLike } from "@/lib/permissions";
+import { ModuloNegocio, type NotificationType } from "@/generated/prisma/client";
 import { loadTravelList } from "@/lib/home-data";
 import { isStockAlertActive, stillDismissed } from "@/lib/stock-alert";
 import { buildInvoicingAlerts, type LiveAlert } from "@/lib/facturacion/alerts";
@@ -9,6 +9,7 @@ import { credentialDeps } from "@/lib/facturacion/credential-repo";
 import { getStatus } from "@/lib/facturacion/credential-service";
 import { getFiscalConfig } from "@/lib/facturacion/fiscal-data";
 import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
+import { buildPendingSyncAlert, pendingAlertCutoff } from "@/lib/mercadolibre/alerts";
 
 export type NotificationItem = {
   id: string;
@@ -50,6 +51,32 @@ async function loadInvoicingAlerts(currentUser: UserLike): Promise<LiveAlert[]> 
 }
 
 /**
+ * Publicaciones de Mercado Libre con cambios sin enviar hace más de unos
+ * minutos (specs/021, RF-7): precio, pausa o cantidad. Para quien ve el módulo
+ * Mercado Libre. Si no se puede consultar, no hay aviso.
+ */
+async function loadMercadoLibreAlerts(currentUser: UserLike): Promise<LiveAlert[]> {
+  if (!hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver")) return [];
+  try {
+    const cutoff = pendingAlertCutoff(new Date());
+    const pendingCount = await prisma.mercadoLibreListing.count({
+      where: {
+        linkedProductId: { not: null },
+        OR: [
+          { pricePendingSince: { lt: cutoff } },
+          { pausePendingSince: { lt: cutoff } },
+          { quantityPendingSince: { lt: cutoff } },
+        ],
+      },
+    });
+    const alert = buildPendingSyncAlert(pendingCount);
+    return alert ? [alert] : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Resumen de avisos (specs/013) — cada tipo filtrado por el permiso de su
  * propio módulo, igual criterio que el inicio (spec 012). El de stock bajo
  * no se persiste: reusa `loadTravelList` (spec 012) tal cual.
@@ -79,7 +106,7 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
     await prisma.setting.update({ where: { id: "singleton" }, data: { stockAlertDismissedIds: pruned } });
   }
   const stockBajo = isStockAlertActive(lowIds, pruned);
-  const liveAlerts = await loadInvoicingAlerts(currentUser);
+  const liveAlerts = [...(await loadInvoicingAlerts(currentUser)), ...(await loadMercadoLibreAlerts(currentUser))];
 
   return {
     items,

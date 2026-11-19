@@ -4,6 +4,7 @@
 // encuentra diferencias y no hace nada. Pura.
 import Decimal from "decimal.js";
 import type { MlListingStatus } from "@/generated/prisma/enums";
+import { publishableQuantity } from "./link-preview";
 import type { ListingRead } from "./listing-read";
 import { mapListingStatus, statusChangeNote } from "./listing-status";
 import { normalizeSku, skuKeyOf } from "./sku";
@@ -14,12 +15,22 @@ export type StoredListing = {
   pricePending: boolean;
   /** SKU en conflicto ya señalado, para no avisar dos veces lo mismo. */
   skuConflict?: string | null;
+  /** Hay una cantidad del sistema que todavía no llegó a Mercado Libre (specs/021). */
+  quantityPending?: boolean;
 };
 
 export type CurrentProduct = {
   salePrice: string;
   sku: string | null;
+  /** Stock del sistema, para la cantidad que corresponde publicar (specs/021). */
+  currentStock: number;
 };
+
+/**
+ * De dónde viene la lectura (specs/021, plan sección 3.3): un aviso de Mercado
+ * Libre, o el control completo (diario o «Sincronizar ahora»).
+ */
+export type ReconcileMode = "notification" | "control";
 
 export type ReconcileInput = {
   stored: StoredListing;
@@ -27,6 +38,8 @@ export type ReconcileInput = {
   read: ListingRead;
   /** El SKU que llegó de Mercado Libre ya lo usa otro producto. Lo calcula quien llama. */
   incomingSkuTakenByOther: boolean;
+  /** Por defecto, `notification`. */
+  mode?: ReconcileMode;
 };
 
 export type ReconcileResult = {
@@ -37,6 +50,7 @@ export type ReconcileResult = {
     statusReason: string | null;
     lastKnownPrice: string;
     lastKnownSku: string | null;
+    lastKnownQuantity: number;
     skuConflict: string | null;
     title: string;
     thumbnailUrl: string | null;
@@ -49,6 +63,8 @@ export type ReconcileResult = {
   newSalePrice: string | null;
   /** Hay un envío propio pendiente y Mercado Libre todavía muestra otro precio. */
   pushPendingPrice: boolean;
+  /** La cantidad en Mercado Libre no es la del sistema y hay que enviarla (specs/021, RF-11). */
+  pushQuantity: boolean;
   /** El SKU cambió en Mercado Libre y se toma (RF-3). `sku: null` si lo borraron. */
   newProductSku: { sku: string | null; skuKey: string | null } | null;
   /** Mensaje para la campanita, si corresponde (RF-14). */
@@ -64,7 +80,13 @@ function sameSku(a: string | null, b: string | null): boolean {
   return skuKeyOf(a) === skuKeyOf(b);
 }
 
-export function reconcile({ stored, product, read, incomingSkuTakenByOther }: ReconcileInput): ReconcileResult {
+export function reconcile({
+  stored,
+  product,
+  read,
+  incomingSkuTakenByOther,
+  mode = "notification",
+}: ReconcileInput): ReconcileResult {
   const mapped = mapListingStatus(read.mlStatus, read.mlSubStatus);
   const closed = mapped.status === "CLOSED";
 
@@ -75,6 +97,16 @@ export function reconcile({ stored, product, read, incomingSkuTakenByOther }: Re
   if (!closed && !new Decimal(read.price).equals(product.salePrice)) {
     if (stored.pricePending) pushPendingPrice = true;
     else newSalePrice = new Decimal(read.price).toString();
+  }
+
+  // Cantidad: manda el sistema (specs/021, RF-11). Si Mercado Libre tiene de
+  // menos y la lectura viene de un aviso, puede ser una venta de Mercado Libre
+  // que el sistema todavía no registró (spec 022): no se sube en el momento,
+  // lo corrige el control completo. Un envío propio pendiente siempre se manda.
+  const expectedQuantity = publishableQuantity(product.currentStock);
+  let pushQuantity = false;
+  if (!closed && read.quantity !== expectedQuantity) {
+    pushQuantity = Boolean(stored.quantityPending) || read.quantity > expectedQuantity || mode === "control";
   }
 
   // SKU: se toma el de Mercado Libre salvo que no sea válido o sea de otro producto.
@@ -121,6 +153,7 @@ export function reconcile({ stored, product, read, incomingSkuTakenByOther }: Re
       statusReason: mapped.reason,
       lastKnownPrice: read.price,
       lastKnownSku: read.sku,
+      lastKnownQuantity: read.quantity,
       skuConflict,
       title: read.title,
       thumbnailUrl: read.thumbnailUrl,
@@ -130,6 +163,7 @@ export function reconcile({ stored, product, read, incomingSkuTakenByOther }: Re
     closed,
     newSalePrice,
     pushPendingPrice,
+    pushQuantity,
     newProductSku,
     notification,
   };

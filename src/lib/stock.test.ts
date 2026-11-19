@@ -5,6 +5,7 @@ function makeTx() {
   return {
     stockMovement: { create: vi.fn().mockResolvedValue({ id: "mov-1" }) },
     product: { update: vi.fn().mockResolvedValue({}) },
+    mercadoLibreListing: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
   };
 }
 
@@ -60,5 +61,15 @@ describe("registerStockMovement", () => {
       userId: "u1",
     });
     expect(result).toEqual({ id: "mov-1" });
+  });
+
+  it("marca la cantidad pendiente de enviar en la publicación vigente del producto (specs/021, RF-3)", async () => {
+    const tx = makeTx();
+    await registerStockMovement(tx, { productId: "p1", type: "VENTA", quantity: -1, userId: "u1" });
+
+    expect(tx.mercadoLibreListing.updateMany).toHaveBeenCalledWith({
+      where: { linkedProductId: "p1" },
+      data: { quantityPendingSince: expect.any(Date) },
+    });
   });
 });

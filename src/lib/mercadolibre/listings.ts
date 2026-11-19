@@ -1,17 +1,23 @@
 import "server-only";
+import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MlError, MlReconnectRequiredError } from "./errors";
+import { publishableQuantity } from "./link-preview";
 import type { MlItem } from "./listing-read";
 import { readListing } from "./listing-read";
-import { reconcile, type ReconcileResult } from "./listing-reconcile";
+import { reconcile, type ReconcileMode, type ReconcileResult } from "./listing-reconcile";
 import { mapListingStatus } from "./listing-status";
 import { describeMlRejection, getListings, updateListing, type ListingChanges } from "./listings-api";
 import { skuKeyOf } from "./sku";
 
 // Lo que toca la base en las publicaciones vinculadas (specs/020, plan
-// secciones 3.4 y 3.5): aplicar lo que se leyó de Mercado Libre y la bandeja
-// de salida de precios y pausas.
+// secciones 3.4 y 3.5; specs/021, plan sección 3): aplicar lo que se leyó de
+// Mercado Libre, la bandeja de salida de precio, pausa y cantidad, y el
+// control completo.
+
+/** Envíos a Mercado Libre en paralelo (specs/021, plan, riesgo 1). */
+const PUSH_CONCURRENCY = 5;
 
 /** Mensaje en español para cualquier error al hablar con Mercado Libre. */
 export function mlErrorMessage(error: unknown): string {
@@ -23,15 +29,23 @@ export function mlErrorMessage(error: unknown): string {
 
 /**
  * Aplica a una publicación vinculada lo que se acaba de leer de Mercado Libre:
- * estado, precio y SKU (RF-3, RF-14, RF-15). Todo en una transacción. Correrla
- * dos veces con la misma lectura no cambia nada la segunda vez.
+ * estado, precio, SKU y cantidad (specs/020 RF-3, RF-14, RF-15; specs/021
+ * RF-11). Todo en una transacción. Correrla dos veces con la misma lectura no
+ * cambia nada la segunda vez. Si la cantidad hay que enviarla, la deja marcada
+ * como pendiente; el envío lo hace quien llama.
  * Devuelve `null` si la publicación ya no está vinculada o estaba finalizada.
  */
-export async function applyListingRead(mlItemId: string, item: MlItem): Promise<ReconcileResult | null> {
+export async function applyListingRead(
+  mlItemId: string,
+  item: MlItem,
+  mode: ReconcileMode = "notification",
+): Promise<ReconcileResult | null> {
   return prisma.$transaction(async (tx) => {
     const listing = await tx.mercadoLibreListing.findUnique({
       where: { mlItemId },
-      include: { product: { select: { id: true, salePrice: true, purchasePrice: true, sku: true, skuKey: true } } },
+      include: {
+        product: { select: { id: true, salePrice: true, purchasePrice: true, sku: true, skuKey: true, currentStock: true } },
+      },
     });
     if (!listing || listing.status === "CLOSED") return null;
     const { product } = listing;
@@ -44,10 +58,16 @@ export async function applyListingRead(mlItemId: string, item: MlItem): Promise<
         : false;
 
     const result = reconcile({
-      stored: { status: listing.status, pricePending: listing.pricePendingSince !== null, skuConflict: listing.skuConflict },
-      product: { salePrice: product.salePrice.toString(), sku: product.sku },
+      stored: {
+        status: listing.status,
+        pricePending: listing.pricePendingSince !== null,
+        quantityPending: listing.quantityPendingSince !== null,
+        skuConflict: listing.skuConflict,
+      },
+      product: { salePrice: product.salePrice.toString(), sku: product.sku, currentStock: product.currentStock },
       read,
       incomingSkuTakenByOther,
+      mode,
     });
 
     const now = new Date();
@@ -56,7 +76,10 @@ export async function applyListingRead(mlItemId: string, item: MlItem): Promise<
       data: {
         ...result.listing,
         lastReadAt: now,
-        ...(result.closed ? { closedAt: now, linkedProductId: null, pricePendingSince: null, pausePendingSince: null } : {}),
+        ...(result.pushQuantity && listing.quantityPendingSince === null ? { quantityPendingSince: now } : {}),
+        ...(result.closed
+          ? { closedAt: now, linkedProductId: null, pricePendingSince: null, pausePendingSince: null, quantityPendingSince: null }
+          : {}),
       },
     });
 
@@ -109,54 +132,73 @@ export async function markPausePending(tx: Prisma.TransactionClient, productId: 
 
 export type PushSummary = { sent: number; failed: number };
 
+type PendingListing = Prisma.MercadoLibreListingGetPayload<{ include: { product: { select: { salePrice: true; currentStock: true } } } }>;
+
+/** Envía lo pendiente de una publicación. Devuelve `false` si falló. Nunca lanza, salvo sin conexión. */
+async function pushOne(listing: PendingListing): Promise<boolean> {
+  const changes: ListingChanges = {};
+  if (listing.pricePendingSince) changes.price = listing.product.salePrice.toString();
+  if (listing.pausePendingSince) changes.status = "paused";
+  // Se lee el stock ahora: si hubo dos movimientos seguidos, va el último (specs/021, RF-5).
+  if (listing.quantityPendingSince) changes.quantity = publishableQuantity(listing.product.currentStock);
+
+  let item: MlItem;
+  try {
+    item = await updateListing(listing.mlItemId, changes);
+  } catch (error) {
+    await prisma.mercadoLibreListing.update({ where: { id: listing.id }, data: { lastSyncError: mlErrorMessage(error) } });
+    if (error instanceof MlReconnectRequiredError) throw error;
+    return false;
+  }
+
+  // Se borra cada marca solo si nadie volvió a marcar mientras se enviaba.
+  await prisma.mercadoLibreListing.updateMany({
+    where: { id: listing.id, pricePendingSince: listing.pricePendingSince },
+    data: { pricePendingSince: null },
+  });
+  await prisma.mercadoLibreListing.updateMany({
+    where: { id: listing.id, pausePendingSince: listing.pausePendingSince },
+    data: { pausePendingSince: null },
+  });
+  await prisma.mercadoLibreListing.updateMany({
+    where: { id: listing.id, quantityPendingSince: listing.quantityPendingSince },
+    data: { quantityPendingSince: null },
+  });
+  // La pausa la hizo el sistema: se guarda el estado antes de aplicar la
+  // lectura, para que no se tome como un cambio de Mercado Libre (RF-14).
+  const ownStatus = changes.status ? { status: mapListingStatus(item.status, item.sub_status ?? []).status } : {};
+  const quantitySynced = changes.quantity !== undefined ? { lastQuantitySyncAt: new Date() } : {};
+  await prisma.mercadoLibreListing.update({
+    where: { id: listing.id },
+    data: { lastSyncError: null, ...ownStatus, ...quantitySynced },
+  });
+  await applyListingRead(listing.mlItemId, item);
+  return true;
+}
+
 /**
- * Envía lo pendiente (precio y pausa) de las publicaciones vigentes. Lee el
- * producto en el momento del envío: si el precio cambió dos veces seguidas,
- * va el último. Cada envío lleva el precio completo, así que repetirlo no
- * cambia nada. Nunca lanza: lo que falla queda marcado para el próximo intento.
+ * Envía lo pendiente (precio, pausa y cantidad) de las publicaciones vigentes,
+ * de a varias en paralelo. Cada envío lleva los valores completos, así que
+ * repetirlo no cambia nada. Lo que falla queda marcado para el próximo intento.
+ * Sin conexión se corta y lanza el error.
  */
 export async function pushPendingListings(filter: { productIds?: string[]; listingIds?: string[] } = {}): Promise<PushSummary> {
   const pending = await prisma.mercadoLibreListing.findMany({
     where: {
       linkedProductId: filter.productIds ? { in: filter.productIds } : { not: null },
       ...(filter.listingIds ? { id: { in: filter.listingIds } } : {}),
-      OR: [{ pricePendingSince: { not: null } }, { pausePendingSince: { not: null } }],
+      OR: [{ pricePendingSince: { not: null } }, { pausePendingSince: { not: null } }, { quantityPendingSince: { not: null } }],
     },
-    include: { product: { select: { salePrice: true } } },
+    include: { product: { select: { salePrice: true, currentStock: true } } },
   });
 
   const summary: PushSummary = { sent: 0, failed: 0 };
-  for (const listing of pending) {
-    const changes: ListingChanges = {};
-    if (listing.pricePendingSince) changes.price = listing.product.salePrice.toString();
-    if (listing.pausePendingSince) changes.status = "paused";
-
-    let item: MlItem;
-    try {
-      item = await updateListing(listing.mlItemId, changes);
-    } catch (error) {
-      summary.failed++;
-      await prisma.mercadoLibreListing.update({ where: { id: listing.id }, data: { lastSyncError: mlErrorMessage(error) } });
-      // Sin conexión no tiene sentido seguir con las demás.
-      if (error instanceof MlReconnectRequiredError) break;
-      continue;
+  for (let i = 0; i < pending.length; i += PUSH_CONCURRENCY) {
+    const results = await Promise.all(pending.slice(i, i + PUSH_CONCURRENCY).map(pushOne));
+    for (const ok of results) {
+      if (ok) summary.sent++;
+      else summary.failed++;
     }
-
-    // Se borra la marca solo si nadie volvió a marcar mientras se enviaba.
-    await prisma.mercadoLibreListing.updateMany({
-      where: { id: listing.id, pricePendingSince: listing.pricePendingSince },
-      data: { pricePendingSince: null },
-    });
-    await prisma.mercadoLibreListing.updateMany({
-      where: { id: listing.id, pausePendingSince: listing.pausePendingSince },
-      data: { pausePendingSince: null },
-    });
-    // La pausa la hizo el sistema: se guarda el estado antes de aplicar la
-    // lectura, para que no se tome como un cambio de Mercado Libre (RF-14).
-    const ownStatus = changes.status ? { status: mapListingStatus(item.status, item.sub_status ?? []).status } : {};
-    await prisma.mercadoLibreListing.update({ where: { id: listing.id }, data: { lastSyncError: null, ...ownStatus } });
-    await applyListingRead(listing.mlItemId, item);
-    summary.sent++;
   }
   return summary;
 }
@@ -171,16 +213,70 @@ export async function pushPendingListingsSafely(filter: { productIds?: string[];
 }
 
 /**
- * Lee de nuevo todas las publicaciones vigentes y aplica lo que haya cambiado
- * (pasada diaria): cubre los avisos que se perdieron (specs/020, sección 7).
+ * Agenda el envío de lo pendiente de esos productos para después de responder
+ * (specs/021, plan sección 3.2). Se llama una vez por acción, después de su
+ * transacción. Nunca lanza: fuera de un pedido (un script) no hace nada, y lo
+ * que no se envíe lo toman los reintentos, porque la marca ya quedó.
  */
-export async function rereadLinkedListings(): Promise<number> {
+export function scheduleListingPush(productIds: string[]) {
+  const ids = [...new Set(productIds)];
+  if (ids.length === 0) return;
+  try {
+    after(() => pushPendingListingsSafely({ productIds: ids }));
+  } catch {
+    // fuera de un pedido: lo envían los reintentos
+  }
+}
+
+export type SyncSummary = {
+  reviewed: number;
+  corrected: number;
+  failed: { title: string; reason: string }[];
+};
+
+/**
+ * Control completo (specs/021, RF-8 y RF-9): envía lo pendiente, lee todas las
+ * publicaciones vigentes, corrige las diferencias (manda el sistema) y vuelve a
+ * enviar. También cubre los avisos que se perdieron (specs/020, sección 7).
+ */
+export async function syncAllListings(): Promise<SyncSummary> {
+  await pushPendingListings();
+
   const linked = await prisma.mercadoLibreListing.findMany({
     where: { linkedProductId: { not: null } },
     select: { mlItemId: true },
   });
-  if (linked.length === 0) return 0;
-  const items = await getListings(linked.map((l) => l.mlItemId));
-  for (const item of items) await applyListingRead(item.id, item);
-  return items.length;
+  let corrected = 0;
+  let reviewed = 0;
+  if (linked.length > 0) {
+    const items = await getListings(linked.map((l) => l.mlItemId));
+    reviewed = items.length;
+    for (const item of items) {
+      const result = await applyListingRead(item.id, item, "control");
+      if (result && (result.pushQuantity || result.pushPendingPrice)) corrected++;
+    }
+    await pushPendingListings();
+  }
+
+  const stillPending = await prisma.mercadoLibreListing.findMany({
+    where: {
+      linkedProductId: { not: null },
+      OR: [{ pricePendingSince: { not: null } }, { pausePendingSince: { not: null } }, { quantityPendingSince: { not: null } }],
+    },
+    select: { title: true, lastSyncError: true },
+  });
+  return {
+    reviewed,
+    corrected,
+    failed: stillPending.map((l) => ({ title: l.title, reason: l.lastSyncError ?? "Sin enviar todavía." })),
+  };
+}
+
+/** Igual que `syncAllListings`, para usar con `after` (al reconectar la cuenta). */
+export async function syncAllListingsSafely() {
+  try {
+    await syncAllListings();
+  } catch (error) {
+    console.error("No se pudo hacer el control completo de Mercado Libre", error);
+  }
 }
