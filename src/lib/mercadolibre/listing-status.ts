@@ -48,7 +48,9 @@ export function mapListingStatus(mlStatus: string, subStatus: string[]): MappedS
     case "active":
       return { status: "ACTIVE", reason: null, imposedByMercadoLibre: false };
     case "paused":
-      if (subStatus.includes("out_of_stock") && reason === null) {
+      // Pausada por el vendedor y además en 0 unidades: manda la pausa del
+      // vendedor, porque al volver el stock sigue pausada (prueba técnica 021).
+      if (subStatus.includes("out_of_stock") && reason === null && !subStatus.includes("paused_by_seller")) {
         return { status: "PAUSED_NO_STOCK", reason: REASONS.out_of_stock, imposedByMercadoLibre: false };
       }
       return { status: "PAUSED", reason, imposedByMercadoLibre: reason !== null };

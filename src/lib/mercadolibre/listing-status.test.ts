@@ -22,6 +22,14 @@ describe("mapListingStatus", () => {
     });
   });
 
+  it("pausada por el vendedor y en 0 unidades: sigue siendo pausada por el vendedor (prueba técnica 021)", () => {
+    expect(mapListingStatus("paused", ["out_of_stock", "paused_by_seller"])).toEqual({
+      status: "PAUSED",
+      reason: null,
+      imposedByMercadoLibre: false,
+    });
+  });
+
   it("pausada por Mercado Libre, con motivo", () => {
     const result = mapListingStatus("paused", ["held"]);
     expect(result.status).toBe("PAUSED");
