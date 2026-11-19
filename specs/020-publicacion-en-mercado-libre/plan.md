@@ -140,7 +140,7 @@ El precio en el sistema nunca espera a Mercado Libre. Funciona como una bandeja 
 1. **Dentro de la misma transacción que cambia el precio** — `updateProduct` (ficha) y `createStockEntry` (ingreso de mercadería, spec 006) — se llama `markPricePending(tx, productIds)`: pone `pricePendingSince = now()` en las publicaciones vigentes de esos productos. Si la transacción falla, no queda nada marcado.
 2. **Después de confirmar,** `after(() => pushPendingListings({ productIds }))` intenta enviar sin demorar la respuesta.
 3. `pushPendingListings`: por cada publicación con `pricePendingSince` o `pausePendingSince`, lee el producto **en ese momento** (si cambió dos veces seguidas, va el último precio) y hace `PUT /items/{id}`. Bien: borra la marca, guarda `lastKnownPrice` y la respuesta. Error: deja la marca y guarda `lastSyncError`.
-4. **Reintentos:** la pasada diaria (spec 019), cada procesamiento de avisos, y el botón «Reintentar envíos» de la pantalla de publicaciones. Una publicación con marca muestra «Precio pendiente de enviar» y el error.
+4. **Reintentos:** la pasada diaria (spec 019), cada procesamiento de avisos, y el botón «Reintentar envíos» de la pantalla de publicaciones *(reemplazado el 2026-11-19 por «Sincronizar ahora», spec 021)*. Una publicación con marca muestra «Precio pendiente de enviar» y el error.
 
 Cada `PUT` lleva el precio completo, no una diferencia: enviarlo dos veces no cambia nada.
 

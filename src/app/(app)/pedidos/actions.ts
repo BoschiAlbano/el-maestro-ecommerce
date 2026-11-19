@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { scheduleListingPush } from "@/lib/mercadolibre/listings";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 import { computeDepositApplication, validateOrderItemQuantity } from "@/lib/order";
@@ -373,6 +374,9 @@ export async function deliverOrderItems(
 
     return { sale: created, invoiceId };
   });
+
+  // La cantidad en Mercado Libre se envía después de responder (specs/021, RF-4).
+  scheduleListingPush(deliveries.map((delivery) => itemById.get(delivery.orderItemId)!.productId));
 
   // La entrega ya está hecha: la factura nunca puede hacerla fallar (RF-10).
   const invoice = invoiceId ? await authorizeAfterSale(invoiceId) : undefined;

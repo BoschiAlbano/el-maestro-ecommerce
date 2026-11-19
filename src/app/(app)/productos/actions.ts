@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
@@ -17,7 +16,7 @@ import {
   markPausePending,
   markPricePending,
   mlErrorMessage,
-  pushPendingListingsSafely,
+  scheduleListingPush,
 } from "@/lib/mercadolibre/listings";
 
 export type ActionState = { error?: string; warning?: string };
@@ -285,7 +284,7 @@ export async function updateProduct(
     if (isSkuCollision(error)) return { error: SKU_TAKEN };
     throw error;
   }
-  if (pricePending > 0) after(() => pushPendingListingsSafely({ productIds: [productId] }));
+  if (pricePending > 0) scheduleListingPush([productId]);
 
   revalidatePath("/productos");
   revalidatePath(`/productos/${productId}`);
@@ -306,7 +305,7 @@ export async function setProductActive(productId: string, active: boolean): Prom
     await tx.product.update({ where: { id: productId }, data: { active } });
     return active ? 0 : markPausePending(tx, productId);
   });
-  if (pausePending > 0) after(() => pushPendingListingsSafely({ productIds: [productId] }));
+  if (pausePending > 0) scheduleListingPush([productId]);
   revalidatePath("/productos");
   revalidatePath(`/productos/${productId}`);
   return {};

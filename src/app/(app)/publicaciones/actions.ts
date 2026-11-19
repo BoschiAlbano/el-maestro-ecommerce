@@ -10,7 +10,7 @@ import { buildLinkPreview } from "@/lib/mercadolibre/link-preview";
 import { readListing, type MlItem } from "@/lib/mercadolibre/listing-read";
 import { mapListingStatus } from "@/lib/mercadolibre/listing-status";
 import { getListing, updateListing, type ListingChanges } from "@/lib/mercadolibre/listings-api";
-import { applyListingRead, mlErrorMessage, pushPendingListings } from "@/lib/mercadolibre/listings";
+import { applyListingRead, mlErrorMessage, syncAllListings } from "@/lib/mercadolibre/listings";
 import { normalizeSku } from "@/lib/mercadolibre/sku";
 import { requireMlConnection, searchLinkableProducts } from "@/lib/mercadolibre/listings-view";
 
@@ -100,6 +100,8 @@ async function linkOne(pair: { mlItemId: string; productId: string }, userId: st
           statusReason: status.reason,
           lastKnownPrice: final.price,
           lastKnownSku: final.sku,
+          lastKnownQuantity: final.quantity,
+          lastQuantitySyncAt: new Date(),
           lastReadAt: new Date(),
           linkedByUserId: userId,
         },
@@ -235,17 +237,30 @@ export async function closeListing(listingId: string) {
   return changeStatus(listingId, "close");
 }
 
-/** Reintenta los envíos pendientes de precio y pausa (RF-13). */
-export async function retryPendingSync(): Promise<ListingActionState> {
+/**
+ * «Sincronizar ahora» (specs/021, RF-9): envía lo pendiente y hace el control
+ * completo. Reemplaza al «Reintentar envíos» de la spec 020.
+ */
+export async function syncListingsNow(): Promise<ListingActionState> {
   const currentUser = await getCurrentUser();
   requirePermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "editar");
   const connection = await requireMlConnection();
   if (!connection.ok) return { error: connection.error };
 
-  const { sent, failed } = await pushPendingListings();
+  let summary;
+  try {
+    summary = await syncAllListings();
+  } catch (error) {
+    return { error: mlErrorMessage(error) };
+  }
   revalidate();
-  if (failed > 0) return { error: `Se enviaron ${sent} y fallaron ${failed}. Mirá el motivo en cada publicación.` };
-  return { success: sent === 0 ? "No había nada pendiente." : `Se enviaron ${sent} cambios a Mercado Libre.` };
+  const reviewed = `Se revisaron ${summary.reviewed} ${summary.reviewed === 1 ? "publicación" : "publicaciones"}`;
+  const corrected = summary.corrected === 0 ? "todo estaba al día" : `se corrigieron ${summary.corrected}`;
+  if (summary.failed.length > 0) {
+    const names = summary.failed.map((f) => `«${f.title}»: ${f.reason}`).join(" ");
+    return { error: `${reviewed} y ${corrected}, pero ${summary.failed.length} quedaron sin enviar. ${names}` };
+  }
+  return { success: `${reviewed} y ${corrected}.` };
 }
 
 /** Buscador de productos para vincular a mano (RF-7). */

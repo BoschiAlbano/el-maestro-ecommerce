@@ -4,6 +4,7 @@ import { ModuloNegocio, type MlListingStatus } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { STATUS_LABELS } from "@/lib/mercadolibre/listing-status";
+import { publishableQuantity } from "@/lib/mercadolibre/link-preview";
 import { countUnlinkedActive, loadPublications, requireMlConnection } from "@/lib/mercadolibre/listings-view";
 import { FilterForm } from "@/components/filter-form";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ListingActions, RetryPendingButton } from "./listing-actions";
+import { ListingActions, SyncNowButton } from "./listing-actions";
 import { AutoRefresh } from "./auto-refresh";
 
 const STATUS_OPTIONS = Object.keys(STATUS_LABELS) as MlListingStatus[];
@@ -54,7 +55,7 @@ export default async function PublicacionesPage({
     loadPublications({ status, q }),
     connection.ok ? countUnlinkedActive(connection.mlUserId) : Promise.resolve(null),
   ]);
-  const pendingCount = rows.filter((r) => r.pricePending || r.pausePending).length;
+  const pendingCount = rows.filter((r) => r.pricePending || r.pausePending || r.quantityPending).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,7 +63,7 @@ export default async function PublicacionesPage({
         <h1 className="text-lg font-semibold">Publicaciones de Mercado Libre</h1>
         <div className="flex flex-wrap gap-2">
           <AutoRefresh />
-          {can.edit && connection.ok && pendingCount > 0 && <RetryPendingButton count={pendingCount} />}
+          {can.edit && connection.ok && <SyncNowButton pendingCount={pendingCount} />}
           {can.link && connection.ok && (
             <Link href="/publicaciones/vincular" className={cn(buttonVariants())}>
               Vincular publicaciones
@@ -138,6 +139,7 @@ export default async function PublicacionesPage({
             <TableHead>SKU</TableHead>
             <TableHead className="text-right">Precio</TableHead>
             <TableHead className="text-right">Stock</TableHead>
+            <TableHead className="text-right">En Mercado Libre</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
@@ -185,13 +187,35 @@ export default async function PublicacionesPage({
                 {row.pricePending && <p className="text-xs text-amber-700 dark:text-amber-300">Pendiente de enviar</p>}
               </TableCell>
               <TableCell className="text-right">{row.product.currentStock}</TableCell>
+              <TableCell className="text-right">
+                {row.status === "CLOSED" ? (
+                  "—"
+                ) : (
+                  <>
+                    <span
+                      className={
+                        row.publishedQuantity !== null &&
+                        !row.quantityPending &&
+                        row.publishedQuantity !== publishableQuantity(row.product.currentStock)
+                          ? "text-destructive"
+                          : undefined
+                      }
+                    >
+                      {row.publishedQuantity ?? "—"}
+                    </span>
+                    {row.quantityPending && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300">Pendiente de enviar</p>
+                    )}
+                  </>
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={STATUS_BADGE[row.status]}>{STATUS_LABELS[row.status]}</Badge>
                 {row.statusReason && row.status !== "ACTIVE" && (
                   <p className="mt-1 max-w-56 text-xs text-muted-foreground">{row.statusReason}</p>
                 )}
                 {row.pausePending && <p className="text-xs text-amber-700 dark:text-amber-300">Pausa pendiente de enviar</p>}
-                {row.lastSyncError && (row.pricePending || row.pausePending) && (
+                {row.lastSyncError && (row.pricePending || row.pausePending || row.quantityPending) && (
                   <p className="max-w-56 text-xs text-destructive">{row.lastSyncError}</p>
                 )}
               </TableCell>
@@ -210,7 +234,7 @@ export default async function PublicacionesPage({
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
                 {q || status ? "No hay publicaciones para estos filtros." : "Todavía no hay publicaciones vinculadas."}
               </TableCell>
             </TableRow>

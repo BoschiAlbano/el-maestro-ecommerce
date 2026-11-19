@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { scheduleListingPush } from "@/lib/mercadolibre/listings";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 import { invoiceRequestSchema, type InvoiceRequest, type SaleInvoiceInfo } from "@/lib/facturacion/invoice-request";
@@ -172,6 +173,9 @@ export async function confirmSale(
     return { sale: created, invoiceId };
   });
 
+  // La cantidad en Mercado Libre se envía después de responder (specs/021, RF-4).
+  scheduleListingPush(parsedItems.data.map((item) => item.productId));
+
   // La venta ya está hecha: la factura nunca puede hacerla fallar (RF-10).
   const invoice = invoiceId ? await authorizeAfterSale(invoiceId) : undefined;
 
@@ -259,6 +263,8 @@ export async function voidSale(saleId: string, reason: string): Promise<VoidSale
       toAuthorize.push(invoice.id);
     }
   });
+
+  scheduleListingPush(sale.items.map((item) => item.productId));
 
   // Nunca lanza: si ARCA no responde, la nota de crédito queda pendiente y se reintenta desde el comprobante.
   let invoiceInfo: SaleInvoiceInfo | undefined;

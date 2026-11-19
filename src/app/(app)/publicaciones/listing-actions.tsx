@@ -21,7 +21,7 @@ import {
   activateListing,
   closeListing,
   pauseListing,
-  retryPendingSync,
+  syncListingsNow,
   unlinkListing,
   type ListingActionState,
 } from "./actions";
@@ -112,8 +112,8 @@ export function ListingActions({
   );
 }
 
-/** Reintenta los envíos pendientes de precio y pausa (RF-13). */
-export function RetryPendingButton({ count }: { count: number }) {
+/** «Sincronizar ahora» (specs/021, RF-9): envía lo pendiente y revisa todas las publicaciones. */
+export function SyncNowButton({ pendingCount }: { pendingCount: number }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
@@ -122,14 +122,14 @@ export function RetryPendingButton({ count }: { count: number }) {
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
-          const result = await retryPendingSync();
+          const result = await syncListingsNow();
           if (result.error) toast.error(result.error);
           else if (result.success) toast.success(result.success);
           router.refresh();
         })
       }
     >
-      {pending ? "Enviando..." : `Reintentar envíos (${count})`}
+      {pending ? "Sincronizando..." : pendingCount > 0 ? `Sincronizar ahora (${pendingCount} pendientes)` : "Sincronizar ahora"}
     </Button>
   );
 }

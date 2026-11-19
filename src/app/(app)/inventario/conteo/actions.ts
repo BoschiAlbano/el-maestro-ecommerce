@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { scheduleListingPush } from "@/lib/mercadolibre/listings";
 import { computeCountAdjustments, type CountAdjustment } from "@/lib/stock-count";
 
 export type PreviewCountState = { error?: string; adjustments?: CountAdjustment[] };
@@ -73,6 +74,7 @@ export async function confirmCount(adjustments: CountAdjustment[]): Promise<Conf
     }
   });
 
+  scheduleListingPush(adjustments.map((a) => a.productId));
   revalidatePath("/inventario");
   return { applied };
 }

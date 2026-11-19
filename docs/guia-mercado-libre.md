@@ -29,7 +29,18 @@ El precio de venta del producto es el mismo en el local y en Mercado Libre.
 - Cada cambio queda en el historial de precios del producto, con quién lo hizo, o «Mercado Libre».
 - Mercado Libre cobra una comisión por cada venta, y el sistema no la suma al precio. Si querés cubrirla, subí el precio del producto.
 
-Si Mercado Libre no responde en el momento, el precio cambia igual en el sistema y la publicación muestra **Pendiente de enviar**. El sistema lo reintenta solo; también podés tocar **Reintentar envíos**.
+Si Mercado Libre no responde en el momento, el precio cambia igual en el sistema y la publicación muestra **Pendiente de enviar**. El sistema lo reintenta solo; también podés tocar **Sincronizar ahora**.
+
+## Stock
+
+La cantidad en Mercado Libre es siempre el stock del sistema. Cada venta, anulación, entrega de pedido, ingreso de mercadería, ajuste, merma o conteo la cambia sola, unos segundos después.
+
+- **Con 0 unidades** Mercado Libre pausa la publicación por falta de stock, y la reactiva sola cuando vuelve a haber. Si la pausaste vos, sigue pausada aunque entre mercadería.
+- **No hay stock de reserva:** se publica todo el stock. Si la última unidad se vende en el local y en Mercado Libre casi al mismo tiempo, una de las dos ventas queda sin mercadería. Es poco probable, pero conviene tener el inventario al día.
+- La pantalla de publicaciones muestra **En Mercado Libre**, la cantidad que tiene publicada. En rojo, si no coincide con el stock.
+- Si alguien cambia la cantidad a mano en Mercado Libre, el sistema la vuelve a poner. Si la baja, espera al control diario o a **Sincronizar ahora**, por si fue una venta que todavía no llegó.
+- **Sincronizar ahora** envía lo pendiente y revisa todas las cantidades. Usalo después de un conteo grande o si Mercado Libre estuvo caído. Además el sistema lo hace solo una vez por día.
+- Si algo queda sin enviar más de unos minutos, aparece un aviso en la campanita.
 
 ## Pausar, reactivar y finalizar
 
@@ -53,6 +64,5 @@ Si hay publicaciones activas en Mercado Libre que no están vinculadas, la panta
 
 Llega en las próximas etapas:
 
-- **La cantidad publicada no sigue al stock.** Se envía una sola vez, al vincular. Hasta que esté la sincronización de stock (spec 021), si vendés en el local, la cantidad en Mercado Libre no baja sola.
-- **Las ventas de Mercado Libre no entran al sistema** ni descuentan stock hasta que esté la parte de órdenes (spec 022).
+- **Las ventas de Mercado Libre no entran al sistema** ni descuentan stock hasta que esté la parte de órdenes (spec 022). **Mientras tanto no vendas por Mercado Libre:** el sistema no se entera de esas ventas y el control diario volvería a ofrecer las unidades vendidas.
 - **Publicar un producto nuevo desde el sistema** (spec 025). Por ahora se publica en Mercado Libre y después se vincula.
