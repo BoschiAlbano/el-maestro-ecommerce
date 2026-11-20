@@ -61,7 +61,7 @@ Sirven tanto para cargar la publicación a mano ahora como para publicarla despu
 La etiqueta de envío de Mercado Libre y la factura que va dentro del paquete se imprimen en hoja común (A4). La impresora de tickets no sirve para eso.
 
 - [x] *(Respondido 2026-11-19)* Tiene una impresora de etiquetas de 10 × 15 cm (3nStar POSVENT), ya configurada: ahí sale la etiqueta de envío.
-- [ ] Hay una impresora común en el local, para la factura que va dentro del paquete (spec 024): sí / no
+- [x] *(Respondido 2026-11-20)* La factura que va dentro del paquete también sale por la impresora de etiquetas de 10 × 15 (spec 024); no hace falta una impresora común.
 
 ### Preguntas
 
@@ -176,6 +176,7 @@ Respuesta: ______________________
 
 **9. Formato de la factura impresa.**
 ¿Es válido entregar la factura impresa en el rollo de la impresora de tickets (58 mm), con todos sus datos, el código de autorización y el código QR?
+Y para las ventas de Mercado Libre: ¿es válido imprimirla en una etiqueta de 10 × 15 cm para meterla en el paquete? El comprobante oficial, en PDF, le llega al comprador por Mercado Libre. *(Agregada 2026-11-20, spec 024.)*
 
 Respuesta: ______________________
 

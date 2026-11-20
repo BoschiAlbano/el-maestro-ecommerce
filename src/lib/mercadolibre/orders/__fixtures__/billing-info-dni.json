@@ -1,0 +1,39 @@
+{
+  "id": "1",
+  "site_id": "MLA",
+  "buyer": {
+    "cust_id": "1",
+    "billing_info": {
+      "name": "Test",
+      "last_name": "Test",
+      "identification": {
+        "type": "DNI",
+        "number": "1111111"
+      },
+      "taxes": {
+        "taxpayer_type": {
+          "id": "05",
+          "description": "Consumidor Final"
+        }
+      },
+      "address": {
+        "street_name": "Calle Falsa",
+        "street_number": "123",
+        "city_name": "San Miguel de Tucumán",
+        "state": {
+          "code": "AR-T",
+          "name": "Tucumán"
+        },
+        "zip_code": "4000",
+        "country_id": "AR"
+      },
+      "attributes": {
+        "normalized": "false",
+        "cust_type": "CO"
+      }
+    }
+  },
+  "seller": {
+    "cust_id": "2"
+  }
+}

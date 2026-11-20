@@ -39,4 +39,27 @@ describe("buildOrderAlerts", () => {
     ]);
     expect(alerts.every((a) => a.href === "/ordenes")).toBe(true);
   });
+
+  it("van a la pestaña Mercado Libre; despacho vencido y fraude son urgentes (specs/013, sección 11)", () => {
+    const alerts = buildOrderAlerts({ soon: 1, overdue: 1, fraud: 1 });
+    expect(alerts.every((a) => a.tab === "mercadolibre")).toBe(true);
+    expect(alerts.filter((a) => a.urgent).map((a) => a.key)).toEqual(["ml-despacho-vencido", "ml-fraude"]);
+  });
+
+  it("despachadas sin la factura subida (specs/024, RF-23)", () => {
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 0 })).toEqual([]);
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 1 })).toEqual([
+      {
+        key: "ml-despachada-sin-factura",
+        message: "Hay 1 orden de Mercado Libre despachada sin la factura subida.",
+        href: "/ordenes?estado=despachadas&factura=sin-subir",
+        tab: "mercadolibre",
+        icon: "factura",
+        urgent: false,
+      },
+    ]);
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 3 })[0].message).toBe(
+      "Hay 3 órdenes de Mercado Libre despachadas sin la factura subida.",
+    );
+  });
 });

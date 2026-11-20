@@ -69,12 +69,15 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 **Preparación y envío**
 
 - **RF-16.** Desde una orden para preparar se descarga la etiqueta de envío de Mercado Libre para imprimirla. El sistema registra quién la descargó y cuándo, y permite volver a descargarla. *(Decisión del cliente, 2026-11-19.)* El local despacha con Mercado Envíos en un correo o una sucursal de Mercado Libre, e imprime en una impresora de etiquetas de 10 × 15 cm (3nStar POSVENT) ya configurada: la etiqueta se pide a Mercado Libre en ese formato.
+- *(Agregado 2026-11-20, spec 024.)* El botón principal de una orden por despachar pasó a ser «Preparar envío»: emite la factura, la sube a la compra en Mercado Libre y deja imprimir la factura y la etiqueta, las dos en 10 × 15. La etiqueta sola sigue disponible.
 - **RF-17.** Una orden cuya fecha límite de despacho vence en las **próximas 4 horas** *(decisión del cliente, 2026-11-19)* se destaca en la lista y genera un aviso en la campanita. Si vence sin haberse despachado, se genera otro aviso.
 - **RF-18.** Una orden marcada por Mercado Libre con **riesgo de fraude** se muestra con una advertencia de no despachar, no permite descargar la etiqueta y genera un aviso en la campanita.
+- *(Agregado 2026-11-20, spec 013, sección 11.)* Los avisos de las órdenes (RF-10, RF-17 y RF-18) van en la pestaña **Mercado Libre** de la campanita. Se destacan como urgentes la venta sin stock, el despacho vencido y el riesgo de fraude.
 
 **Cancelaciones**
 
 - **RF-19.** Si una compra se cancela **antes de despacharse**, el sistema anula la venta y devuelve el stock de cada ítem, en una sola operación, y genera un aviso.
+- *(Agregado 2026-11-20, spec 024.)* Si la venta de la compra cancelada tenía factura, dentro de la misma anulación se emite la nota de crédito (o, si la factura estaba pendiente, se averigua en ARCA antes de descartarla), con la misma regla que la anulación de una venta del local. Vale también para el RF-20. La nota de crédito no se sube a Mercado Libre.
 - **RF-20.** Si una compra se cancela o no se entrega **después de despachada**, la venta se marca como cancelada pero el stock **no** vuelve solo. La orden ofrece "Reingresar al stock", que el usuario usa cuando la mercadería vuelve en condiciones, indicando la cantidad por ítem.
 - **RF-21.** Una venta de Mercado Libre no se puede anular con la anulación de ventas de mostrador (spec 008). Su estado sigue al de Mercado Libre.
 

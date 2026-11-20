@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Verificada |
+| **Estado** | Verificada; cambio de la sección 11 verificado (2026-11-20) |
 | **Depende de** | 005, 007, 009 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -82,3 +82,53 @@ A confirmar en el plan: `Notification` (tipo, mensaje, referencia a lo que origi
 
 - **El aviso de stock bajo es en vivo, sin leído/no leído** — es una condición que sigue existiendo hasta que se repone el stock, no un evento puntual como los otros dos.
 - **La actualización sin recargar es por revisión periódica cada 60 segundos**, no tiempo real — más simple, sin sumar una suscripción en vivo nueva al stack.
+
+## 11. Cambio 2026-11-20: pestañas y diseño de la campanita
+
+*(Pedido del cliente, aprobado el 2026-11-20.)*
+
+**Por qué.** Con Mercado Libre andando, la campanita se llena de ventas, cancelaciones y cambios de publicaciones, y un aviso del local (un pedido nuevo, una diferencia de caja) queda perdido entre ellos. Además todos los avisos se ven iguales: un enlace subrayado, sin fecha ni distinción de lo urgente.
+
+### Requisitos
+
+- **RF-8.** La ventana de la campanita tiene tres pestañas: **Todos**, **Sistema** y **Mercado Libre**. Cada una muestra cuántos avisos sin leer tiene. El número de la campanita sigue siendo el total. Abre en «Todos».
+- **RF-9.** Qué va en cada pestaña (todos aparecen también en «Todos»):
+
+  | Sistema | Mercado Libre |
+  |---|---|
+  | Pedido nuevo | Venta, venta sin stock, cancelación y riesgo de fraude |
+  | Diferencia de caja | Despacho por vencer o vencido, y despachadas sin factura subida (spec 024) |
+  | Stock bajo | Cambios en publicaciones y envíos pendientes a Mercado Libre (specs 020 y 021) |
+  | Facturas pendientes, certificado por vencer y tope del monotributo (spec 023) | Reconexión de la cuenta de Mercado Libre (spec 019) |
+
+- **RF-10.** Quien no ve ningún aviso de Mercado Libre (sin «ver» en Mercado Libre) no ve las pestañas: la campanita queda como una sola lista, como hasta ahora.
+- **RF-11.** Cada pestaña tiene **«Marcar todas como leídas»**: marca como leídos los avisos de esa pestaña que el usuario puede ver (en «Todos», los de las dos), incluido el de stock bajo (RF-4b). Los avisos calculados (despacho por vencer, facturas pendientes, envíos pendientes a Mercado Libre) no se marcan: desaparecen solos cuando se resuelve lo que avisan, como hasta ahora.
+- **RF-12.** Diseño de cada aviso:
+  - un ícono según el tipo (por ejemplo, carrito para una venta, cruz para una cancelación, escudo para el riesgo de fraude, caja registradora para una diferencia de caja);
+  - la hora: «hace 5 min», «hace 3 h», «ayer 18:40» o la fecha;
+  - toda la fila lleva al lugar del aviso, sin enlace subrayado; «marcar como leído» es un botón chico al costado;
+  - los **urgentes** se destacan en rojo: riesgo de fraude, venta sin stock, despacho vencido y reconexión de Mercado Libre;
+  - los avisos calculados van arriba, sin hora, con la marca «Ahora».
+- **RF-13.** La ventana es más ancha y, si hay muchos avisos, se desplaza por dentro sin tapar la pantalla. Una pestaña sin avisos lo dice: «No hay avisos de Mercado Libre».
+
+### Permisos
+
+Sin cambios, salvo uno *(confirmado por el cliente, 2026-11-20)*: el aviso de **reconexión de Mercado Libre** pasa a verlo todo el que ve la pestaña Mercado Libre (permiso «ver» en Mercado Libre), además de quien tiene «ver» en Configuración. Quien no tiene Configuración ve el aviso con el texto «avisale al Dueño», porque no puede reconectar.
+
+«Marcar todas como leídas» respeta el RF-7: nunca marca un aviso que el usuario no ve.
+
+### Casos borde
+
+- Llega un aviso nuevo mientras la ventana está abierta: aparece en la próxima actualización (cada 60 segundos, RF-6) sin cambiar de pestaña.
+- «Marcar todas como leídas» con dos personas a la vez: no pasa nada (marcar como leído es seguro de repetir).
+- Un aviso de un tipo nuevo que agregue otra spec sin decidir su pestaña no compila: cada tipo declara su pestaña, como ya declara su permiso.
+
+### Criterios de aceptación
+
+- [x] La ventana tiene las pestañas Todos, Sistema y Mercado Libre, cada una con sus avisos y su contador. *(Revisión manual del cliente, 2026-11-20.)*
+- [x] Sin permiso de Mercado Libre no hay pestañas. *(Revisión manual.)*
+- [x] «Marcar todas como leídas» marca solo los avisos de esa pestaña que el usuario ve, incluido el de stock bajo, y no toca los calculados. *(Revisión manual y prueba unitaria de `typesToMarkRead`.)*
+- [x] Cada aviso muestra su ícono y su hora; los urgentes se ven en rojo; los calculados van arriba con «Ahora». *(Revisión manual.)*
+- [x] Toda la fila lleva al lugar del aviso. *(Revisión manual.)*
+- [x] Con muchos avisos, la lista se desplaza dentro de la ventana. *(Revisión manual.)*
+- [x] Prueba unitaria de la clasificación por pestaña, de los urgentes y del texto de la hora. *(`notification-tabs.test.ts`.)*

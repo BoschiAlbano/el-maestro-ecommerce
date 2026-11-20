@@ -27,7 +27,13 @@ export type InvoiceView = {
     inicioActividades: string | null;
     condicionIva: string;
   } | null;
-  receiver: { docLabel: string | null; name: string | null; ivaLabel: string };
+  receiver: {
+    docLabel: string | null;
+    name: string | null;
+    ivaLabel: string;
+    /** Domicilio fiscal (specs/024): solo en las facturas de Mercado Libre que lo traen. */
+    address?: string | null;
+  };
   items: { description: string; quantity: number; unitPrice: number; subtotal: number }[];
   /** En una nota de crédito: el número de la factura que anula. */
   relatedNumberLabel: string | null;
@@ -51,6 +57,12 @@ export function formatInvoiceNumber(pointOfSale: number, number: number): string
 }
 
 /** «CUIT 20-11111111-2» a partir de once dígitos. */
+/** Nombre del PDF: «factura-c-00001-00000091.pdf». */
+export function invoicePdfFileName(view: Pick<InvoiceView, "kind" | "pointOfSale" | "number">): string {
+  const title = KIND_TITLE[view.kind].toLowerCase().replace(/ /g, "-").replace("é", "e");
+  return `${title}-${formatInvoiceNumber(view.pointOfSale, view.number ?? 0)}.pdf`;
+}
+
 export function formatCuit(cuit: string): string {
   const d = cuit.replace(/\D/g, "");
   return d.length === 11 ? `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}` : cuit;
@@ -107,6 +119,7 @@ export function buildInvoiceTicketHtml(view: InvoiceView): string {
     view.receiver.name ? line(`Cliente: ${view.receiver.name}`) : "",
     view.receiver.docLabel ? line(view.receiver.docLabel) : "",
     line(`IVA: ${view.receiver.ivaLabel}`),
+    view.receiver.address ? line(`Domicilio: ${view.receiver.address}`) : "",
     `<hr>`,
     ...items,
     `<hr>`,

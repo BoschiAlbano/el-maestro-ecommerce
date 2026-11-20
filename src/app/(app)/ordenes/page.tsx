@@ -6,10 +6,11 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireMlConnection } from "@/lib/mercadolibre/listings-view";
+import { INVOICE_STATE_LABELS, type OrderInvoiceState } from "@/lib/mercadolibre/orders/invoice-state";
 import { deadlineState } from "@/lib/mercadolibre/orders/order-alerts";
 import { ORDER_STATUS_LABELS } from "@/lib/mercadolibre/orders/order-status";
 import { fetchRecentOrdersSafely } from "@/lib/mercadolibre/orders/orders";
-import { loadOrders, ORDER_FILTERS, parseOrderFilter } from "@/lib/mercadolibre/orders/orders-view";
+import { INVOICE_FILTERS, loadOrders, ORDER_FILTERS, parseInvoiceFilter, parseOrderFilter } from "@/lib/mercadolibre/orders/orders-view";
 import { tucumanMidnightUtc, addDaysToDateKey } from "@/lib/analytics";
 import { FilterForm } from "@/components/filter-form";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,16 @@ function money(value: string) {
   return `$${Number(value).toLocaleString("es-AR", { maximumFractionDigits: 2 })}`;
 }
 
+/** La marca de la factura en la lista (specs/024, RF-21): lo que hay que mirar, resaltado. */
+const INVOICE_BADGE: Record<OrderInvoiceState, "default" | "secondary" | "outline" | "destructive"> = {
+  none: "outline",
+  pending: "destructive",
+  not_uploaded: "destructive",
+  uploaded: "secondary",
+  external: "secondary",
+  voided: "secondary",
+};
+
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Argentina/Tucuman" }).format(date);
 }
@@ -31,15 +42,16 @@ function formatDateTime(date: Date) {
 export default async function OrdenesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<{ estado?: string; factura?: string; desde?: string; hasta?: string }>;
 }) {
   const currentUser = await getCurrentUser();
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver")) {
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver las órdenes de Mercado Libre.</p>;
   }
 
-  const { estado, desde, hasta } = await searchParams;
+  const { estado, factura, desde, hasta } = await searchParams;
   const key = parseOrderFilter(estado);
+  const invoiceKey = parseInvoiceFilter(factura);
   const dateKey = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
   const from = dateKey(desde) ? tucumanMidnightUtc(dateKey(desde)!) : undefined;
   const to = dateKey(hasta) ? tucumanMidnightUtc(addDaysToDateKey(dateKey(hasta)!, 1)) : undefined;
@@ -50,7 +62,7 @@ export default async function OrdenesPage({
   if (connection.ok) after(() => fetchRecentOrdersSafely());
 
   const [rows, settings] = await Promise.all([
-    loadOrders({ key, from, to }),
+    loadOrders({ key, invoice: invoiceKey, from, to }),
     prisma.setting.findUnique({ where: { id: "singleton" }, select: { mlOrdersStartDate: true } }),
   ]);
   const now = new Date();
@@ -91,7 +103,7 @@ export default async function OrdenesPage({
 
       <FilterForm
         toggleBelow
-        activeCount={(estado && key !== "pendientes" ? 1 : 0) + (desde ? 1 : 0) + (hasta ? 1 : 0)}
+        activeCount={(estado && key !== "pendientes" ? 1 : 0) + (invoiceKey !== "todas" ? 1 : 0) + (desde ? 1 : 0) + (hasta ? 1 : 0)}
         search={
           <div className="flex flex-col gap-2">
             <Label htmlFor="estado">Estado</Label>
@@ -115,6 +127,21 @@ export default async function OrdenesPage({
         }
       >
         <div className="flex flex-col gap-2">
+          <Label htmlFor="factura">Factura</Label>
+          <Select name="factura" defaultValue={invoiceKey} items={INVOICE_FILTERS}>
+            <SelectTrigger id="factura" className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(INVOICE_FILTERS).map(([k, label]) => (
+                <SelectItem key={k} value={k}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="desde">Desde</Label>
           <Input id="desde" name="desde" type="date" defaultValue={dateKey(desde)} className="w-full sm:w-40" />
         </div>
@@ -132,6 +159,7 @@ export default async function OrdenesPage({
             <TableHead>Productos</TableHead>
             <TableHead className="text-right">Total</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead>Factura</TableHead>
             <TableHead>Despachar hasta</TableHead>
           </TableRow>
         </TableHeader>
@@ -168,6 +196,9 @@ export default async function OrdenesPage({
                   </Badge>
                 </TableCell>
                 <TableCell>
+                  <Badge variant={INVOICE_BADGE[row.invoiceState]}>{INVOICE_STATE_LABELS[row.invoiceState]}</Badge>
+                </TableCell>
+                <TableCell>
                   {row.dispatchDeadline ? (
                     <span
                       className={
@@ -191,7 +222,7 @@ export default async function OrdenesPage({
           })}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                 {key === "pendientes" ? "No hay compras por despachar." : "No hay compras para estos filtros."}
               </TableCell>
             </TableRow>

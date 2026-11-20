@@ -886,6 +886,10 @@ model Invoice {
   receiverName         String?
   /// Código de ARCA de la condición frente al IVA del comprador.
   receiverIvaCondition Int
+  /// Domicilio fiscal del comprador, cuando Mercado Libre lo informa (specs/024, RF-4).
+  receiverAddress      String?
+  /// El usuario corrigió a mano los datos que informó Mercado Libre (specs/024, RF-8).
+  receiverEdited       Boolean         @default(false)
 
   /// Datos del emisor al autorizarse: una reimpresión muestra lo que se
   /// emitió aunque después cambie la configuración.
@@ -1044,7 +1048,16 @@ model MercadoLibreOrder {
 
   labelPrintedAt       DateTime?
   labelPrintedByUserId String?
-  labelPrintedByUser   User?     @relation(fields: [labelPrintedByUserId], references: [id])
+
+  /// Factura de la orden en Mercado Libre (specs/024, RF-13 a RF-15).
+  invoiceUploadedAt  DateTime?
+  mlFiscalDocumentId String?
+  invoiceUploadError String?
+  /// Mientras se sube: la subida se reclama para no hacerla dos veces.
+  invoiceUploadingAt DateTime?
+  preparedAt         DateTime?
+  preparedByUserId   String?
+  labelPrintedByUser User?     @relation(fields: [labelPrintedByUserId], references: [id])
 
   /// Fecha de la compra en Mercado Libre.
   mlCreatedAt DateTime

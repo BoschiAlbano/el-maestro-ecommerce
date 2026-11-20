@@ -8,9 +8,19 @@ import { buildInvoicingAlerts, type LiveAlert } from "@/lib/facturacion/alerts";
 import { credentialDeps } from "@/lib/facturacion/credential-repo";
 import { getStatus } from "@/lib/facturacion/credential-service";
 import { getFiscalConfig } from "@/lib/facturacion/fiscal-data";
-import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
+import { canSeeNotificationType, presentNotification, typesToMarkRead, visibleNotificationTypes } from "@/lib/notification-types";
+import {
+  NOTIFICATION_ICON,
+  NOTIFICATION_TAB,
+  inTab,
+  isUrgentType,
+  type NotificationIcon,
+  type NotificationTab,
+  type NotificationTabFilter,
+} from "@/lib/notification-tabs";
 import { buildPendingSyncAlert, pendingAlertCutoff } from "@/lib/mercadolibre/alerts";
 import { buildOrderAlerts, DEADLINE_WARNING_HOURS } from "@/lib/mercadolibre/orders/order-alerts";
+import { EXTERNAL_INVOICE_NOTE } from "@/lib/mercadolibre/orders/invoice-state";
 
 export type NotificationItem = {
   id: string;
@@ -19,6 +29,10 @@ export type NotificationItem = {
   createdAt: Date;
   /** A dónde lleva el aviso al tocarlo; sin valor, es solo texto. */
   href?: string;
+  /** Pestaña, ícono y si se destaca en rojo (specs/013, sección 11). */
+  tab: NotificationTab;
+  icon: NotificationIcon;
+  urgent: boolean;
 };
 
 export type NotificationsSummary = {
@@ -27,6 +41,8 @@ export type NotificationsSummary = {
   liveAlerts: LiveAlert[];
   stockBajo: boolean;
   unreadCount: number;
+  /** Con pestañas solo si el usuario ve Mercado Libre (specs/013, RF-10). */
+  showTabs: boolean;
 };
 
 /**
@@ -75,15 +91,24 @@ async function loadMercadoLibreAlerts(currentUser: UserLike): Promise<LiveAlert[
     // Órdenes por despachar (specs/022, RF-17 y RF-18).
     const now = new Date();
     const pending = { status: { in: ["TO_PREPARE" as const, "READY_TO_SHIP" as const] } };
-    const [overdue, soon, fraud] = await Promise.all([
+    const [overdue, soon, fraud, shippedWithoutInvoice] = await Promise.all([
       prisma.mercadoLibreOrder.count({ where: { ...pending, dispatchDeadline: { lt: now } } }),
       prisma.mercadoLibreOrder.count({
         where: { ...pending, dispatchDeadline: { gte: now, lte: new Date(now.getTime() + DEADLINE_WARNING_HOURS * 3_600_000) } },
       }),
       prisma.mercadoLibreOrder.count({ where: { ...pending, fraudRisk: true } }),
+      // Las que ya tenían factura de otro medio en Mercado Libre no cuentan (specs/024, regla de transición).
+      prisma.mercadoLibreOrder.count({
+        where: {
+          status: { in: ["SHIPPED", "DELIVERED"] },
+          invoiceUploadedAt: null,
+          // Sin el `null` aparte, SQL deja afuera las que no tienen nota.
+          OR: [{ needsReview: null }, { NOT: { needsReview: { contains: EXTERNAL_INVOICE_NOTE } } }],
+        },
+      }),
     ]);
 
-    return [...(alert ? [alert] : []), ...buildOrderAlerts({ soon, overdue, fraud })];
+    return [...(alert ? [alert] : []), ...buildOrderAlerts({ soon, overdue, fraud, shippedWithoutInvoice })];
   } catch {
     return [];
   }
@@ -105,7 +130,13 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
           select: { id: true, type: true, message: true, createdAt: true },
           orderBy: { createdAt: "desc" },
         });
-  const items: NotificationItem[] = rows.map((row) => ({ ...row, href: NOTIFICATION_HREF[row.type] }));
+  const items: NotificationItem[] = rows.map((row) => ({
+    ...row,
+    ...presentNotification(currentUser, row.type, row.message),
+    tab: NOTIFICATION_TAB[row.type],
+    icon: NOTIFICATION_ICON[row.type],
+    urgent: isUrgentType(row.type),
+  }));
 
   const travelList = await loadTravelList(currentUser);
   const lowIds = (travelList ?? []).map((item) => item.id);
@@ -126,7 +157,24 @@ export async function loadNotificationsSummary(currentUser: UserLike): Promise<N
     liveAlerts,
     stockBajo,
     unreadCount: items.length + liveAlerts.length + (stockBajo ? 1 : 0),
+    showTabs: hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver"),
   };
+}
+
+/**
+ * «Marcar todas como leídas» en una pestaña (specs/013, RF-11): los avisos sin
+ * leer de esa pestaña que el usuario ve y, en Sistema o Todos, el de stock bajo.
+ * Los calculados no se tocan: desaparecen solos. Seguro de repetir.
+ */
+export async function markAllNotificationsRead(currentUser: UserLike, tab: NotificationTabFilter): Promise<{ error?: string }> {
+  const types = typesToMarkRead(currentUser, tab);
+  if (types.length > 0) {
+    await prisma.notification.updateMany({ where: { readAt: null, type: { in: types } }, data: { readAt: new Date() } });
+  }
+  if (inTab(tab, "sistema") && hasPermission(currentUser, ModuloNegocio.INVENTARIO, "ver")) {
+    await dismissStockAlert(currentUser);
+  }
+  return {};
 }
 
 export async function markNotificationRead(id: string, currentUser: UserLike): Promise<{ error?: string }> {

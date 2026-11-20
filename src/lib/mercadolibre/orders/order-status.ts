@@ -27,8 +27,9 @@ export function mapOrderStatus(input: {
       return "NOT_DELIVERED";
     case "shipped":
       return "SHIPPED";
-    case "cancelled":
-      return "CANCELLED";
+    // Un envío cancelado solo no cancela la compra: la cancelación la decide la
+    // orden (`cancelled`), que puede llegar un momento después (verificación
+    // de la spec 024). Quien llama conserva el estado que tenía.
     case "ready_to_ship":
       return input.shipmentSubstatus === "printed" ? "READY_TO_SHIP" : "TO_PREPARE";
     default:
@@ -43,8 +44,11 @@ export function mapOrderStatus(input: {
  */
 export function cancellationEffect(input: { shippedAt: Date | null; previousStatus: MlOrderStatus }): "return_stock" | "keep_stock" {
   if (input.shippedAt !== null) return "keep_stock";
-  return NOT_YET_SHIPPED.includes(input.previousStatus) ? "return_stock" : "keep_stock";
+  return AFTER_SHIPPING.includes(input.previousStatus) ? "keep_stock" : "return_stock";
 }
+
+/** Estados en los que la mercadería ya salió del local. */
+const AFTER_SHIPPING: MlOrderStatus[] = ["SHIPPED", "DELIVERED", "NOT_DELIVERED"];
 
 /**
  * Fechas que se guardan al pasar de estado. Si Mercado Libre informa la entrega

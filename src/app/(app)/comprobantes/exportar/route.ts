@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     "Número",
     "Estado",
     "Ambiente",
+    "Origen",
     "Comprador",
     "Documento",
     "Condición IVA",
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
       invoice.number !== null ? formatInvoiceNumber(invoice.pointOfSale, invoice.number) : "",
       STATUS_LABEL[invoice.status],
       invoice.environment === "PRODUCCION" ? "Real" : "Prueba",
+      invoice.origin === "MERCADO_LIBRE" ? "Mercado Libre" : "Local",
       invoice.receiverName ?? "Consumidor Final",
       invoice.receiverDocNumber ? `${invoice.receiverDocType} ${invoice.receiverDocNumber}` : "",
       ivaConditionLabel(invoice.receiverIvaCondition),
@@ -66,7 +68,7 @@ export async function GET(request: Request) {
         : "",
     ]);
   }
-  sheet.getColumn(9).numFmt = '"$"#,##0.00';
+  sheet.getColumn(10).numFmt = '"$"#,##0.00';
   sheet.columns.forEach((col) => (col.width = 20));
 
   const buffer = await workbook.xlsx.writeBuffer();

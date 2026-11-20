@@ -54,6 +54,8 @@ Si desactivás un producto en el catálogo, su publicación se pausa sola.
 
 ## Avisos
 
+La campanita separa los avisos en tres pestañas: **Todos**, **Sistema** (pedidos, caja, stock y facturación) y **Mercado Libre**. Cada una muestra cuántos tiene sin leer y tiene **Marcar todas como leídas**. Los urgentes (riesgo de fraude, venta sin stock, despacho vencido y conexión caída) se ven en rojo. Los avisos marcados «Ahora» se van solos cuando se resuelve lo que avisan.
+
 Cualquier cambio que se haga en Mercado Libre sobre una publicación vinculada (el precio, el SKU, pausarla, reactivarla, finalizarla, o que Mercado Libre la observe o la dé de baja) aparece como aviso en la campanita, con el detalle. Las pausas por falta de stock no avisan.
 
 La pantalla de publicaciones se actualiza sola cada minuto; también podés tocar **Actualizar**.
@@ -66,6 +68,7 @@ Cada compra pagada en Mercado Libre entra sola al sistema como una **venta de Me
 
 - **Desde cuándo:** en Configuración > Mercado Libre se carga la fecha desde la que se registran las compras. Sin fecha no entra ninguna; se carga el día que se empieza.
 - **Órdenes** (en el menú) muestra lo que hay que despachar, con la fecha límite. Las que vencen en menos de 4 horas se destacan y avisan en la campanita.
+- **Preparar envío** (en la orden): ver la sección siguiente, «Factura de las órdenes».
 - **Etiqueta:** en la orden, **Etiqueta 10 × 15** la abre lista para la impresora de etiquetas. Si algún día sale mal, **Etiqueta en hoja A4** da la de Mercado Libre tal cual.
 - **Carrito:** si alguien compra varios productos juntos, queda como una sola venta con un solo envío.
 - **Sin stock:** si entra una compra de algo que ya no hay, se registra igual y aparece un aviso destacado: conseguí el producto o cancelá la compra en Mercado Libre.
@@ -74,9 +77,23 @@ Cada compra pagada en Mercado Libre entra sola al sistema como una **venta de Me
 - **Buscar órdenes nuevas:** la pantalla busca sola las compras que falten cada vez que se abre; el botón lo hace en el momento.
 - **Analíticas:** el filtro **Origen** separa Local y Mercado Libre, y el margen descuenta lo que cobró Mercado Libre.
 
+## Factura de las órdenes
+
+Cada compra se factura cuando se prepara el paquete, con la facturación de ARCA del sistema (ver `guia-facturacion.md`).
+
+1. En la orden, apretá **Preparar envío**.
+2. La ventana muestra los datos de facturación que el comprador cargó en Mercado Libre: nombre, documento, condición frente al IVA y domicilio. Si algo está mal, corregilo ahí. Si el comprador no cargó datos y el monto es bajo, va a Consumidor Final; si el monto obliga a identificarlo, hay que cargar los datos a mano.
+3. **Confirmar y emitir la factura**: se emite en ARCA y se sube sola a la compra en Mercado Libre, donde el comprador la ve.
+4. Imprimí **Factura 10 × 15** y **Etiqueta 10 × 15** y pegá las dos en el paquete. Las dos también salen en hoja A4.
+
+- **Si ARCA no responde**, la factura queda pendiente: la etiqueta se puede imprimir igual, y en la orden está **Reintentar en ARCA**. Cuando se autoriza, se sube sola.
+- **Si falla la subida a Mercado Libre**, la orden queda «Emitida, sin subir» con el motivo y **Reintentar la subida**. Además, el sistema lo reintenta una vez por día.
+- **Una compra que ya tenía factura en Mercado Libre** (por ejemplo, del Facturador de Mercado Libre) no se factura otra vez: la orden lo explica.
+- **Si se cancela una compra facturada**, el sistema emite solo la nota de crédito. La nota no se sube a Mercado Libre: Mercado Libre admite un solo archivo por compra y no deja borrarlo.
+- **Seguimiento:** en **Órdenes**, el filtro **Factura** muestra las que no tienen factura, las pendientes y las que faltan subir. La campanita avisa si hay órdenes despachadas sin la factura subida. En **Comprobantes**, el filtro **Origen** separa las del local y las de Mercado Libre.
+
 ## Lo que todavía no hace
 
-Llega en las próximas etapas:
+Llega en la próxima etapa:
 
 - **Publicar un producto nuevo desde el sistema** (spec 025). Por ahora se publica en Mercado Libre y después se vincula.
-- **Facturar las ventas de Mercado Libre** (spec 024).

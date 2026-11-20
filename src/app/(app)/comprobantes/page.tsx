@@ -24,6 +24,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const STATUS_ITEMS = { all: "Todos", AUTHORIZED: "Emitidos", PENDING: "Pendientes" };
 const KIND_ITEMS = { all: "Todos", FACTURA_C: "Facturas", NOTA_CREDITO_C: "Notas de crédito" };
 const ENVIRONMENT_ITEMS = { HOMOLOGACION: "De prueba", PRODUCCION: "Reales", todos: "Todos" };
+const ORIGIN_ITEMS = { all: "Todos", LOCAL: "Local", MERCADO_LIBRE: "Mercado Libre" };
 
 const formatMoney = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -71,7 +72,9 @@ export default async function ComprobantesPage({
   const accumulated = await loadAccumulatedSummary(config.topeAnual);
   const query = filtersToQuery(filters);
   const exportHref = `/comprobantes/exportar${query.size > 0 ? `?${query}` : ""}`;
-  const activeFilters = [filters.status !== "all", filters.kind !== "all", filters.environment !== null].filter(Boolean).length;
+  const activeFilters = [filters.status !== "all", filters.kind !== "all", filters.origin !== "all", filters.environment !== null].filter(
+    Boolean,
+  ).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -165,6 +168,21 @@ export default async function ComprobantesPage({
           </Select>
         </div>
         <div className="flex flex-col gap-2">
+          <Label htmlFor="origen">Origen</Label>
+          <Select name="origen" defaultValue={filters.origin} items={ORIGIN_ITEMS}>
+            <SelectTrigger id="origen" className="w-full sm:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(ORIGIN_ITEMS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="ambiente">Ambiente</Label>
           <Select name="ambiente" defaultValue={environment === "all" ? "todos" : environment} items={ENVIRONMENT_ITEMS}>
             <SelectTrigger id="ambiente" className="w-full sm:w-40">
@@ -188,6 +206,7 @@ export default async function ComprobantesPage({
               <TableHead>Fecha</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Número</TableHead>
+              <TableHead>Origen</TableHead>
               <TableHead>Comprador</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead>Estado</TableHead>
@@ -211,6 +230,7 @@ export default async function ComprobantesPage({
                 <TableCell className="tabular-nums">
                   {invoice.number !== null ? formatInvoiceNumber(invoice.pointOfSale, invoice.number) : "—"}
                 </TableCell>
+                <TableCell>{invoice.origin === "MERCADO_LIBRE" ? "Mercado Libre" : "Local"}</TableCell>
                 <TableCell>{invoice.receiverName ?? "Consumidor Final"}</TableCell>
                 <TableCell className={cn("text-right tabular-nums", invoice.kind === "NOTA_CREDITO_C" && "text-destructive")}>
                   {invoice.kind === "NOTA_CREDITO_C" ? "−" : ""}
@@ -237,7 +257,7 @@ export default async function ComprobantesPage({
             ))}
             {invoices.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
                   No hay comprobantes para estos filtros.
                 </TableCell>
               </TableRow>

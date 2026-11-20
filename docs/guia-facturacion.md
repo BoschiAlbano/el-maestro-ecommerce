@@ -32,6 +32,10 @@ Anulá la venta como siempre. Si tenía factura emitida, el sistema emite solo l
 
 Al **Entregar** un pedido, el cobro también ofrece **Emitir factura**: sale por el total de lo que se entrega, sin descontar la seña. Aunque la seña cubra todo y no haya nada que cobrar, la ventana se abre igual para poder facturar.
 
+## Mercado Libre
+
+Las compras de Mercado Libre se facturan desde la orden, con **Preparar envío**. El paso a paso está en `guia-mercado-libre.md`, sección «Factura de las órdenes».
+
 ## El Dueño
 
 | Qué | Dónde |
