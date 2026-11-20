@@ -40,7 +40,7 @@ export default async function HomePage({
 
   const data = await loadHomeData(currentUser);
 
-  if (!data.caja && !data.pedidos && !data.stock) {
+  if (!data.caja && !data.pedidos && !data.stock && !data.mercadoLibre) {
     return (
       <Card className="max-w-md">
         <CardHeader>
@@ -54,7 +54,7 @@ export default async function HomePage({
     );
   }
 
-  const { caja, pedidos, stock } = data;
+  const { caja, pedidos, stock, mercadoLibre } = data;
   const turno = caja?.open ?? null;
 
   return (
@@ -115,7 +115,7 @@ export default async function HomePage({
               <StatCard
                 label="Ventas de hoy"
                 value={formatMoney(caja.today.ventas.total)}
-                hint={salesHint(caja.today.ventas.count)}
+                hint={`Local ${formatMoney(caja.today.ventas.local.total)} (${salesHint(caja.today.ventas.local.count)}) · Mercado Libre ${formatMoney(caja.today.ventas.mercadoLibre.total)} (${salesHint(caja.today.ventas.mercadoLibre.count)})`}
               />
             </div>
           </section>
@@ -129,6 +129,24 @@ export default async function HomePage({
             </Panel>
           </section>
         </>
+      )}
+
+      {mercadoLibre && (
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Mercado Libre</h2>
+            <Link href="/ordenes" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              Ir a Órdenes
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard
+              label="Órdenes para preparar"
+              value={String(mercadoLibre.toPrepare)}
+              hint={mercadoLibre.toPrepare === 0 ? "Nada pendiente de despacho" : "Pendientes de despacho"}
+            />
+          </div>
+        </section>
       )}
 
       {(pedidos || stock) && (

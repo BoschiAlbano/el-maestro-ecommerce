@@ -8,6 +8,7 @@ import { requireOwner, type PermisoEspecial } from "@/lib/permissions";
 import { getCurrentUser } from "@/lib/current-user";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { logAudit } from "@/lib/audit";
+import { SYSTEM_ROLE_ID } from "@/lib/mercadolibre/orders/system-user";
 
 export type ActionState = { error?: string };
 
@@ -79,6 +80,7 @@ export async function updateRole(
 ): Promise<ActionState> {
   const currentUser = await getCurrentUser();
   requireOwner(currentUser);
+  if (roleId === SYSTEM_ROLE_ID) return { error: "Ese rol lo usa el sistema para Mercado Libre: no se modifica." };
 
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) return { error: "El rol no existe." };
@@ -121,6 +123,7 @@ export async function updateRole(
 export async function deleteRole(roleId: string): Promise<ActionState> {
   const currentUser = await getCurrentUser();
   requireOwner(currentUser);
+  if (roleId === SYSTEM_ROLE_ID) return { error: "Ese rol lo usa el sistema para Mercado Libre: no se modifica." };
 
   const role = await prisma.role.findUnique({
     where: { id: roleId },

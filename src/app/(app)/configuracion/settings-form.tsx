@@ -23,7 +23,7 @@ type SettingsFormProps = {
   /** Solo el Dueño recibe el resumen y ve la pestaña "Sistema" (specs/017). */
   resetSummary?: ResetSummary;
   /** Pestaña "Mercado Libre" (specs/019): la ve quien tiene permiso "ver". */
-  mercadoLibre: { view: MlConnectionView; isOwner: boolean; result: MlConnectResult | null };
+  mercadoLibre: { view: MlConnectionView; isOwner: boolean; result: MlConnectResult | null; ordersStartDate: string | null };
   /** Pestaña "Facturación" (specs/023): la ve quien tiene permiso "ver"; el Dueño edita. */
   facturacion: { view: FacturacionView; isOwner: boolean };
   /** Pestaña con la que abre, si la dirección la pide y el usuario la puede ver. */

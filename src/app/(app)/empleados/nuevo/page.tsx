@@ -3,6 +3,7 @@ import { hasPermission, isOwner } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { EmployeeForm } from "./employee-form";
+import { SYSTEM_ROLE_ID, SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
 export default async function NuevoEmpleadoPage() {
   const currentUser = await getCurrentUser();
@@ -14,9 +15,9 @@ export default async function NuevoEmpleadoPage() {
   const canCreateUser = isOwner(currentUser);
 
   const [roles, availableUsers] = await Promise.all([
-    canCreateUser ? prisma.role.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
+    canCreateUser ? prisma.role.findMany({ where: { id: { not: SYSTEM_ROLE_ID } }, orderBy: { name: "asc" } }) : Promise.resolve([]),
     prisma.user.findMany({
-      where: { employee: null },
+      where: { employee: null, id: { not: SYSTEM_USER_ID } },
       select: { id: true, name: true, username: true },
       orderBy: { name: "asc" },
     }),

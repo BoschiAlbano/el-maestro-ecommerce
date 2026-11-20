@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
@@ -52,6 +53,7 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
       cashMovements: { include: { user: true }, orderBy: { createdAt: "asc" } },
       reprints: { include: { user: true }, orderBy: { createdAt: "asc" } },
       invoices: { orderBy: { createdAt: "asc" } },
+      mlOrder: { select: { id: true } },
     },
   });
   if (!sale) notFound();
@@ -72,7 +74,9 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
   const canCreateSales = hasPermission(currentUser, ModuloNegocio.VENTAS, "crear");
   let issue: { threshold: number } | null = null;
   let blockedReason: string | null = null;
-  if (!hasActiveInvoice && canCreateSales) {
+  const fromMercadoLibre = sale.channel === "MERCADO_LIBRE";
+  // La factura de una venta de Mercado Libre es la spec 024.
+  if (!hasActiveInvoice && canCreateSales && !fromMercadoLibre) {
     const availability = await loadInvoicingAvailability().catch(() => null);
     if (availability?.available) {
       blockedReason = invoiceBlocker(
@@ -87,7 +91,9 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
   const canReprint =
     hasPermission(currentUser, ModuloNegocio.VENTAS, "ver") &&
     hasSpecialPermission(currentUser, "reimprimirTickets");
+  // Una venta de Mercado Libre se cancela en Mercado Libre, no acá (specs/022, RF-21).
   const canVoid =
+    !fromMercadoLibre &&
     hasPermission(currentUser, ModuloNegocio.VENTAS, "anular") &&
     hasSpecialPermission(currentUser, "anularVentas");
 
@@ -106,7 +112,23 @@ export default async function DetalleVentaPage({ params }: { params: Promise<{ i
             <Badge variant={sale.voidedAt ? "destructive" : "secondary"}>{sale.voidedAt ? "Anulada" : "Activa"}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {formatDateTime(sale.createdAt)} · Atendió {sale.user.name}
+            {fromMercadoLibre ? (
+              <>
+                {formatDateTime(sale.createdAt)} · Venta de Mercado Libre, sin caja
+                {sale.mlOrder && (
+                  <>
+                    {" · "}
+                    <Link href={`/ordenes/${sale.mlOrder.id}`} className="underline">
+                      Ver la orden
+                    </Link>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {formatDateTime(sale.createdAt)} · Atendió {sale.user.name}
+              </>
+            )}
           </p>
         </div>
         <SaleActions

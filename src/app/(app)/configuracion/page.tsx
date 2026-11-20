@@ -5,6 +5,7 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { loadResetCounts } from "@/lib/system-reset-data";
 import { summarizeReset } from "@/lib/system-reset";
 import { loadMlConnectionView } from "@/lib/mercadolibre/connection";
+import { toTucumanDateKey } from "@/lib/analytics";
 import { loadFacturacionView } from "@/lib/facturacion/facturacion-view";
 import { ML_RESULT_PARAM, parseMlResult } from "@/lib/mercadolibre/connection-result";
 import { SettingsForm } from "./settings-form";
@@ -33,10 +34,13 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
   // desconectar son solo del Dueño y se validan en cada acción.
   const params = await searchParams;
   const initialTab = typeof params.tab === "string" ? params.tab : undefined;
+  const mlSettings = await prisma.setting.findUnique({ where: { id: "singleton" }, select: { mlOrdersStartDate: true } });
   const mercadoLibre = {
     view: await loadMlConnectionView(),
     isOwner: owner,
     result: parseMlResult(params[ML_RESULT_PARAM]),
+    // Fecha de inicio de las órdenes (specs/022, RF-9b), como día de Tucumán.
+    ordersStartDate: mlSettings?.mlOrdersStartDate ? toTucumanDateKey(mlSettings.mlOrdersStartDate) : null,
   };
 
   // La pestaña "Facturación" (specs/023) se ve con permiso "ver"; editar y los certificados son solo del Dueño.

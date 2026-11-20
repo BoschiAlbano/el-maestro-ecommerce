@@ -15,6 +15,7 @@ type PaymentTotal = { method: string; total: number; count: number };
 const chartConfig = {
   EFECTIVO: { label: "Efectivo", color: "var(--primary)" },
   TRANSFERENCIA: { label: "Transferencia", color: "var(--chart-2)" },
+  MERCADO_LIBRE: { label: "Mercado Libre", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 
 function formatMoney(n: number) {

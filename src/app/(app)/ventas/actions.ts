@@ -211,6 +211,10 @@ export async function voidSale(saleId: string, reason: string): Promise<VoidSale
   });
   if (!sale) return { error: "La venta no existe." };
   if (sale.voidedAt) return { error: "Esta venta ya estaba anulada." };
+  // Una venta de Mercado Libre sigue el estado de Mercado Libre: se cancela allá (specs/022, RF-21).
+  if (sale.channel === "MERCADO_LIBRE") {
+    return { error: "Las ventas de Mercado Libre no se anulan acá: se cancelan en Mercado Libre y el sistema lo refleja." };
+  }
 
   const shift = await prisma.cashShift.findFirst({ where: { closedAt: null } });
   if (!shift) return { error: "No hay una caja abierta para registrar la devolución." };

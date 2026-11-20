@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import { UsersTable } from "./users-table";
+import { SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -22,10 +23,13 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
   }
 
   const { pagina } = await searchParams;
-  const total = await prisma.user.count();
+  // El usuario «Sistema» de Mercado Libre no es una persona: no se lista (specs/022).
+  const notSystem = { id: { not: SYSTEM_USER_ID } };
+  const total = await prisma.user.count({ where: notSystem });
   const page = Math.min(parsePage(pagina), Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
   const users = await prisma.user.findMany({
+    where: notSystem,
     include: { role: true },
     orderBy: { name: "asc" },
     skip: (page - 1) * PAGE_SIZE,

@@ -66,6 +66,21 @@ describe("computeMarginSummary", () => {
   it("sin ítems, no divide por cero", () => {
     expect(computeMarginSummary([])).toEqual({ totalMargin: 0, marginPct: 0 });
   });
+
+  it("descuenta lo que cobra Mercado Libre por unidad (specs/022, RF-24)", () => {
+    // La billetera de la prueba técnica: se vendió a 2.500, costó 1.000, Mercado Libre cobró 1.730.
+    const result = computeMarginSummary([{ unitSalePrice: 2500, unitCost: 1000, quantity: 1, unitFee: 1730 }]);
+    expect(result.totalMargin).toBe(-230);
+    expect(result.marginPct).toBeCloseTo(-9.2, 5);
+  });
+
+  it("junta ventas del local (sin cargo) y de Mercado Libre", () => {
+    const result = computeMarginSummary([
+      { unitSalePrice: 100, unitCost: 60, quantity: 1 },
+      { unitSalePrice: 100, unitCost: 60, quantity: 1, unitFee: 15 },
+    ]);
+    expect(result.totalMargin).toBe(65);
+  });
 });
 
 describe("computeStockValuation", () => {
@@ -124,6 +139,7 @@ describe("parseAnalyticsFilters", () => {
       rubroId: undefined,
       channel: undefined,
       paymentMethod: undefined,
+      origin: undefined,
     });
   });
 
@@ -142,6 +158,13 @@ describe("parseAnalyticsFilters", () => {
   it("medio de pago inválido se ignora", () => {
     expect(parseAnalyticsFilters({ medioPago: "QR" }, now).paymentMethod).toBeUndefined();
     expect(parseAnalyticsFilters({ medioPago: "EFECTIVO" }, now).paymentMethod).toBe("EFECTIVO");
+  });
+
+  it("origen: Local, Mercado Libre o todas (specs/022, RF-22)", () => {
+    expect(parseAnalyticsFilters({ origen: "local" }, now).origin).toBe("LOCAL");
+    expect(parseAnalyticsFilters({ origen: "mercadolibre" }, now).origin).toBe("MERCADO_LIBRE");
+    expect(parseAnalyticsFilters({ origen: "__all__" }, now).origin).toBeUndefined();
+    expect(parseAnalyticsFilters({ origen: "otra" }, now).origin).toBeUndefined();
   });
 });
 

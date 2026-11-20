@@ -12,6 +12,7 @@ import { ML_RESULTS, type MlConnectResult } from "@/lib/mercadolibre/connection-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { OrdersStartDate } from "./orders-start-date";
 
 const dateFormat = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
@@ -55,6 +56,7 @@ export function MercadoLibreTab({
   isOwner,
   canEdit,
   result,
+  ordersStartDate,
 }: {
   view: MlConnectionView;
   isOwner: boolean;
@@ -62,6 +64,8 @@ export function MercadoLibreTab({
   canEdit: boolean;
   /** Resultado del retorno desde Mercado Libre, si se acaba de volver. */
   result: MlConnectResult | null;
+  /** Desde qué día se registran las compras (specs/022, RF-9b). */
+  ordersStartDate: string | null;
 }) {
   const [disconnectState, disconnectAction, disconnecting] = useActionState(disconnectMercadoLibre, initialState);
   const [fetchState, fetchAction, fetching] = useActionState(fetchMissedNotifications, initialState);
@@ -182,6 +186,8 @@ export function MercadoLibreTab({
           />
         </>
       )}
+
+      <OrdersStartDate value={ordersStartDate} canEdit={canEdit} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { requireOwner } from "@/lib/permissions";
 import { getCurrentUser } from "@/lib/current-user";
 import { logAudit } from "@/lib/audit";
 import { checkUsername } from "@/lib/username-check";
+import { SYSTEM_ROLE_ID, SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
 export type ActionState = { error?: string };
 
@@ -37,6 +38,7 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
   const usernameCheck = await checkUsername(String(formData.get("username") ?? ""));
   if ("error" in usernameCheck) return { error: usernameCheck.error };
 
+  if (roleId === SYSTEM_ROLE_ID) return { error: "Ese rol es del sistema: elegí otro." };
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) return { error: "El rol elegido no existe." };
 
@@ -90,6 +92,7 @@ export async function updateUser(
 ): Promise<ActionState> {
   const currentUser = await getCurrentUser();
   requireOwner(currentUser);
+  if (userId === SYSTEM_USER_ID) return { error: "Ese usuario lo usa el sistema para Mercado Libre: no se modifica." };
 
   const parsed = updateUserSchema.safeParse({
     name: formData.get("name"),
@@ -123,6 +126,7 @@ export async function updateUser(
     }
   }
 
+  if (roleId === SYSTEM_ROLE_ID) return { error: "Ese rol es del sistema: elegí otro." };
   const newRole = cambiaRol ? await prisma.role.findUnique({ where: { id: roleId } }) : target.role;
 
   const admin = createAdminClient();
@@ -193,6 +197,7 @@ export async function resetUserPassword(
 ): Promise<PasswordActionState> {
   const currentUser = await getCurrentUser();
   requireOwner(currentUser);
+  if (userId === SYSTEM_USER_ID) return { error: "Ese usuario lo usa el sistema para Mercado Libre: no se modifica." };
 
   const parsed = resetPasswordSchema.safeParse({
     password: formData.get("password"),
@@ -228,6 +233,7 @@ export async function resetUserPassword(
 export async function setUserActive(userId: string, active: boolean): Promise<ActionState> {
   const currentUser = await getCurrentUser();
   requireOwner(currentUser);
+  if (userId === SYSTEM_USER_ID) return { error: "Ese usuario lo usa el sistema para Mercado Libre: no se modifica." };
 
   if (!active) {
     if (userId === currentUser.id) {
