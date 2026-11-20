@@ -59,6 +59,7 @@ model User {
   employee          Employee?
   mlConnections     MercadoLibreConnection[]
   mlListingsLinked  MercadoLibreListing[]
+  mlLabelsPrinted   MercadoLibreOrder[]
   invoicesRequested Invoice[]
   arcaCredentials   ArcaCredential[]
   createdAt         DateTime                 @default(now())
@@ -111,14 +112,17 @@ model RolePermission {
 /// Datos del negocio y parámetros generales. Fila única (id fijo), no un
 /// key-value genérico — son 3 campos conocidos (specs/003, plan.md sección 1).
 model Setting {
-  id                     String   @id @default("singleton")
-  razonSocial            String   @default("")
+  id                     String    @id @default("singleton")
+  razonSocial            String    @default("")
   textoTicketAdicional   String?
-  stockMinimoDefault     Int      @default(5)
+  stockMinimoDefault     Int       @default(5)
   /// Productos que estaban bajo el mínimo cuando alguien marcó leído el aviso de
   /// stock bajo (specs/013). El aviso reaparece si queda bajo algún producto que no figure acá.
-  stockAlertDismissedIds String[] @default([])
-  updatedAt              DateTime @updatedAt
+  stockAlertDismissedIds String[]  @default([])
+  /// Desde cuándo se registran las compras de Mercado Libre (specs/022,
+  /// RF-9b). Sin fecha no se registra ninguna: se define el día del arranque.
+  mlOrdersStartDate      DateTime?
+  updatedAt              DateTime  @updatedAt
 
   @@map("settings")
 }
@@ -150,6 +154,8 @@ enum AuditAction {
   ML_LISTING_PAUSED
   ML_LISTING_ACTIVATED
   ML_LISTING_CLOSED
+  /// Mercadería de una compra de Mercado Libre que volvió al stock (specs/022, RF-20).
+  ML_ORDER_RESTOCKED
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
@@ -251,8 +257,9 @@ model Product {
   stockEntryItems StockEntryItem[]
   saleItems       SaleItem[]
   orderItems      OrderItem[]
-  mlListings      MercadoLibreListing[] @relation("MlListingProduct")
-  mlLinkedListing MercadoLibreListing?  @relation("MlListingLinkedProduct")
+  mlListings      MercadoLibreListing[]   @relation("MlListingProduct")
+  mlLinkedListing MercadoLibreListing?    @relation("MlListingLinkedProduct")
+  mlOrderItems    MercadoLibreOrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -447,12 +454,16 @@ model CashMovement {
 /// Una venta de mostrador (specs/008). Anulada si `voidedAt` no es `null`
 /// — nunca se borra ni se edita, igual criterio que el resto de la app.
 model Sale {
-  id           String    @id @default(uuid())
-  ticketNumber Int       @unique @default(autoincrement())
-  shiftId      String
-  shift        CashShift @relation(fields: [shiftId], references: [id])
+  id           String      @id @default(uuid())
+  ticketNumber Int         @unique @default(autoincrement())
+  /// Vacío solo en las ventas de Mercado Libre, que no pasan por la caja
+  /// (specs/022; constitución, regla 11).
+  shiftId      String?
+  shift        CashShift?  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  /// LOCAL: mostrador y pedidos por encargo; MERCADO_LIBRE: compras de Mercado Libre (specs/022).
+  channel      SaleChannel @default(LOCAL)
   userId       String
-  user         User      @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
 
   /// Redondeado al peso con `roundToPeso` (specs/001) — es un monto
   /// calculado, no uno que se carga a mano.
@@ -477,9 +488,11 @@ model Sale {
   stockMovements StockMovement[]
   cashMovements  CashMovement[]
   invoices       Invoice[]
+  mlOrder        MercadoLibreOrder?
 
   @@index([shiftId])
   @@index([orderId])
+  @@index([channel, createdAt])
   @@map("sales")
 }
 
@@ -496,6 +509,8 @@ model SaleItem {
   quantity      Int
   unitSalePrice Decimal @db.Decimal(12, 2)
   unitCost      Decimal @db.Decimal(12, 2)
+
+  mlOrderItem MercadoLibreOrderItem?
 
   @@index([saleId])
   @@map("sale_items")
@@ -609,6 +624,12 @@ enum NotificationType {
   /// Mercado Libre observó, pausó o dio de baja una publicación vinculada
   /// (specs/020, RF-14).
   ML_PUBLICACION
+  /// Órdenes de Mercado Libre (specs/022): venta nueva, venta que dejó el
+  /// stock en negativo, cancelación y riesgo de fraude.
+  ML_VENTA
+  ML_VENTA_SIN_STOCK
+  ML_CANCELACION
+  ML_FRAUDE
 }
 
 /// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
@@ -664,6 +685,8 @@ model MercadoLibreConnection {
   lastRefreshedAt    DateTime?
   lastNotificationAt DateTime?
   lastRecoveryAt     DateTime?
+  /// Última búsqueda de órdenes nuevas (specs/022, RF-14): como mucho una por minuto al abrir la pantalla.
+  lastOrdersFetchAt  DateTime?
 
   updatedAt DateTime @updatedAt
 
@@ -898,8 +921,11 @@ enum MlListingStatus {
 /// Publicación de Mercado Libre vinculada a un producto (specs/020). Deshacer
 /// el vínculo borra la fila; finalizarla la conserva como historial.
 model MercadoLibreListing {
-  id       String @id @default(uuid())
-  mlItemId String @unique
+  id            String  @id @default(uuid())
+  mlItemId      String  @unique
+  /// La única variante de la publicación, si tiene una (specs/020, cambio
+  /// 2026-11-19): precio, cantidad y SKU se leen y se mandan ahí.
+  mlVariationId String?
 
   /// De qué producto es. Se conserva aunque la publicación se finalice.
   productId       String
@@ -953,4 +979,127 @@ model MercadoLibreListing {
   @@index([pricePendingSince])
   @@index([quantityPendingSince])
   @@map("ml_listings")
+}
+
+/// Canal de una venta (specs/022, RF-22).
+enum SaleChannel {
+  LOCAL
+  MERCADO_LIBRE
+}
+
+/// Estado de una compra de Mercado Libre, como lo muestra el sistema (specs/022, RF-12).
+enum MlOrderStatus {
+  TO_PREPARE
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  NOT_DELIVERED
+  CANCELLED
+}
+
+/// Una compra de Mercado Libre (specs/022): una orden suelta o un paquete
+/// (carrito). Guarda lo que es de Mercado Libre; la venta, sus ítems y el
+/// stock van por `Sale`, como cualquier venta.
+model MercadoLibreOrder {
+  id         String   @id @default(uuid())
+  /// `pack:{id}` o `order:{id}`: la base garantiza que una compra se registre una sola vez (RF-8).
+  mlKey      String   @unique
+  mlOrderIds String[]
+  mlPackId   String?
+
+  saleId String? @unique
+  sale   Sale?   @relation(fields: [saleId], references: [id])
+
+  status            MlOrderStatus
+  mlShipmentId      String?
+  shipmentStatus    String?
+  shipmentSubstatus String?
+  /// Fecha límite de despacho, de `/shipments/{id}/sla` (RF-17).
+  dispatchDeadline  DateTime?
+
+  /// Lo mínimo para identificar el paquete. La dirección, el teléfono y el
+  /// documento no se guardan: viajan en la etiqueta (spec, sección 5).
+  buyerNickname   String
+  receiverName    String?
+  destinationCity String?
+
+  /// Lo que pagó el comprador por los productos, sin el envío que cobra Mercado Libre.
+  total              Decimal @db.Decimal(12, 2)
+  /// Lo que cobró Mercado Libre por la venta (RF-4).
+  mlFee              Decimal @db.Decimal(12, 2)
+  sellerShippingCost Decimal @default(0) @db.Decimal(12, 2)
+  net                Decimal @db.Decimal(12, 2)
+
+  /// Algún producto quedó con stock negativo al registrarla (RF-10b).
+  outOfStock  Boolean @default(false)
+  /// Mercado Libre la marcó con riesgo de fraude (RF-18).
+  fraudRisk   Boolean @default(false)
+  /// Motivo para revisarla: ítem sin vincular, devolución parcial (spec, sección 7).
+  needsReview String?
+
+  cancelReason String?
+  cancelledAt  DateTime?
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
+
+  labelPrintedAt       DateTime?
+  labelPrintedByUserId String?
+  labelPrintedByUser   User?     @relation(fields: [labelPrintedByUserId], references: [id])
+
+  /// Fecha de la compra en Mercado Libre.
+  mlCreatedAt DateTime
+
+  items  MercadoLibreOrderItem[]
+  events MercadoLibreOrderEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([dispatchDeadline])
+  @@index([mlShipmentId])
+  @@map("ml_orders")
+}
+
+/// Un producto de una compra de Mercado Libre (specs/022).
+model MercadoLibreOrderItem {
+  id      String            @id @default(uuid())
+  orderId String
+  order   MercadoLibreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// La orden de Mercado Libre del paquete a la que pertenece.
+  mlOrderId     String
+  mlItemId      String
+  mlVariationId String?
+  title         String
+  sku           String?
+  quantity      Int
+  unitPrice     Decimal @db.Decimal(12, 2)
+  /// Lo que cobra Mercado Libre por unidad (`sale_fee`).
+  saleFee       Decimal @db.Decimal(12, 2)
+
+  /// Vacío si la publicación no estaba vinculada: no descuenta stock (spec, sección 7).
+  productId  String?
+  product    Product?  @relation(fields: [productId], references: [id])
+  saleItemId String?   @unique
+  saleItem   SaleItem? @relation(fields: [saleItemId], references: [id])
+
+  /// Unidades que volvieron al stock después de una cancelación posterior al despacho (RF-20).
+  restockedQuantity Int @default(0)
+
+  @@index([orderId])
+  @@map("ml_order_items")
+}
+
+/// Historial de estados de una compra de Mercado Libre (specs/022, RF-15).
+model MercadoLibreOrderEvent {
+  id      String            @id @default(uuid())
+  orderId String
+  order   MercadoLibreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status  MlOrderStatus
+  detail  String?
+  at      DateTime          @default(now())
+
+  @@index([orderId])
+  @@map("ml_order_events")
 }
