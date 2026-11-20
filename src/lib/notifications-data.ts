@@ -11,6 +11,7 @@ import { getFiscalConfig } from "@/lib/facturacion/fiscal-data";
 import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
 import { buildPendingSyncAlert, pendingAlertCutoff } from "@/lib/mercadolibre/alerts";
 import { buildOrderAlerts, DEADLINE_WARNING_HOURS } from "@/lib/mercadolibre/orders/order-alerts";
+import { EXTERNAL_INVOICE_NOTE } from "@/lib/mercadolibre/orders/invoice-state";
 
 export type NotificationItem = {
   id: string;
@@ -75,15 +76,24 @@ async function loadMercadoLibreAlerts(currentUser: UserLike): Promise<LiveAlert[
     // Órdenes por despachar (specs/022, RF-17 y RF-18).
     const now = new Date();
     const pending = { status: { in: ["TO_PREPARE" as const, "READY_TO_SHIP" as const] } };
-    const [overdue, soon, fraud] = await Promise.all([
+    const [overdue, soon, fraud, shippedWithoutInvoice] = await Promise.all([
       prisma.mercadoLibreOrder.count({ where: { ...pending, dispatchDeadline: { lt: now } } }),
       prisma.mercadoLibreOrder.count({
         where: { ...pending, dispatchDeadline: { gte: now, lte: new Date(now.getTime() + DEADLINE_WARNING_HOURS * 3_600_000) } },
       }),
       prisma.mercadoLibreOrder.count({ where: { ...pending, fraudRisk: true } }),
+      // Las que ya tenían factura de otro medio en Mercado Libre no cuentan (specs/024, regla de transición).
+      prisma.mercadoLibreOrder.count({
+        where: {
+          status: { in: ["SHIPPED", "DELIVERED"] },
+          invoiceUploadedAt: null,
+          // Sin el `null` aparte, SQL deja afuera las que no tienen nota.
+          OR: [{ needsReview: null }, { NOT: { needsReview: { contains: EXTERNAL_INVOICE_NOTE } } }],
+        },
+      }),
     ]);
 
-    return [...(alert ? [alert] : []), ...buildOrderAlerts({ soon, overdue, fraud })];
+    return [...(alert ? [alert] : []), ...buildOrderAlerts({ soon, overdue, fraud, shippedWithoutInvoice })];
   } catch {
     return [];
   }

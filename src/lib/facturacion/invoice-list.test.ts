@@ -3,19 +3,33 @@ import { filtersToQuery, invoiceWhere, netTotal, parseInvoiceFilters } from "./i
 
 describe("parseInvoiceFilters", () => {
   it("sin parámetros no filtra nada y usa el ambiente de la configuración", () => {
-    expect(parseInvoiceFilters({})).toEqual({ from: null, to: null, status: "all", kind: "all", environment: null });
+    expect(parseInvoiceFilters({})).toEqual({ from: null, to: null, status: "all", kind: "all", origin: "all", environment: null });
   });
 
   it("lee fechas, estado, tipo y ambiente", () => {
     expect(
-      parseInvoiceFilters({ desde: "2026-11-01", hasta: "2026-11-30", estado: "PENDING", tipo: "NOTA_CREDITO_C", ambiente: "PRODUCCION" }),
-    ).toEqual({ from: "2026-11-01", to: "2026-11-30", status: "PENDING", kind: "NOTA_CREDITO_C", environment: "PRODUCCION" });
+      parseInvoiceFilters({
+        desde: "2026-11-01",
+        hasta: "2026-11-30",
+        estado: "PENDING",
+        tipo: "NOTA_CREDITO_C",
+        origen: "MERCADO_LIBRE",
+        ambiente: "PRODUCCION",
+      }),
+    ).toEqual({
+      from: "2026-11-01",
+      to: "2026-11-30",
+      status: "PENDING",
+      kind: "NOTA_CREDITO_C",
+      origin: "MERCADO_LIBRE",
+      environment: "PRODUCCION",
+    });
     expect(parseInvoiceFilters({ ambiente: "todos" }).environment).toBe("all");
   });
 
   it("ignora valores inventados en la dirección", () => {
-    const filters = parseInvoiceFilters({ desde: "ayer", hasta: "2026-13-45", estado: "DISCARDED", tipo: "X", ambiente: "otro" });
-    expect(filters).toEqual({ from: null, to: null, status: "all", kind: "all", environment: null });
+    const filters = parseInvoiceFilters({ desde: "ayer", hasta: "2026-13-45", estado: "DISCARDED", tipo: "X", origen: "Y", ambiente: "otro" });
+    expect(filters).toEqual({ from: null, to: null, status: "all", kind: "all", origin: "all", environment: null });
   });
 });
 
@@ -37,6 +51,11 @@ describe("invoiceWhere", () => {
     expect(range.lte.toISOString()).toBe("2026-12-01T02:59:59.999Z");
   });
 
+  it("filtra por origen (specs/024, RF-22)", () => {
+    expect(invoiceWhere({ ...base, origin: "MERCADO_LIBRE" }, "PRODUCCION")).toMatchObject({ origin: "MERCADO_LIBRE" });
+    expect(invoiceWhere(base, "PRODUCCION")).not.toHaveProperty("origin");
+  });
+
   it("un estado concreto reemplaza al 'no descartado'", () => {
     expect(invoiceWhere({ ...base, status: "PENDING" }, "PRODUCCION")).toMatchObject({ status: "PENDING", environment: "PRODUCCION" });
   });
@@ -44,7 +63,7 @@ describe("invoiceWhere", () => {
 
 describe("filtersToQuery", () => {
   it("ida y vuelta: lo que se escribe en la dirección se vuelve a leer igual", () => {
-    const filters = parseInvoiceFilters({ desde: "2026-11-01", estado: "AUTHORIZED", ambiente: "todos" });
+    const filters = parseInvoiceFilters({ desde: "2026-11-01", estado: "AUTHORIZED", origen: "LOCAL", ambiente: "todos" });
     const query = Object.fromEntries(filtersToQuery(filters));
     expect(parseInvoiceFilters(query)).toEqual(filters);
   });

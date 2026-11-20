@@ -1,5 +1,5 @@
 // Avisos calculados de las órdenes de Mercado Libre (specs/022, RF-17 y RF-18;
-// plan sección 3.6). Puro.
+// plan sección 3.6; specs/024, RF-23). Puro.
 import type { MlOrderStatus } from "@/generated/prisma/enums";
 import type { LiveAlert } from "@/lib/facturacion/alerts";
 import { NOT_YET_SHIPPED } from "./order-status";
@@ -22,7 +22,13 @@ function plural(count: number, one: string, many: string): string {
   return count === 1 ? one : many.replace("N", String(count));
 }
 
-export function buildOrderAlerts(counts: { soon: number; overdue: number; fraud: number }): LiveAlert[] {
+export function buildOrderAlerts(counts: {
+  soon: number;
+  overdue: number;
+  fraud: number;
+  /** Despachadas sin la factura subida a Mercado Libre (specs/024, RF-23). */
+  shippedWithoutInvoice?: number;
+}): LiveAlert[] {
   const alerts: LiveAlert[] = [];
   if (counts.overdue > 0) {
     alerts.push({
@@ -47,6 +53,18 @@ export function buildOrderAlerts(counts: { soon: number; overdue: number; fraud:
       key: "ml-fraude",
       message: plural(counts.fraud, "Hay 1 orden con riesgo de fraude: no la despaches.", "Hay N órdenes con riesgo de fraude: no las despaches."),
       href: "/ordenes",
+    });
+  }
+  const withoutInvoice = counts.shippedWithoutInvoice ?? 0;
+  if (withoutInvoice > 0) {
+    alerts.push({
+      key: "ml-despachada-sin-factura",
+      message: plural(
+        withoutInvoice,
+        "Hay 1 orden de Mercado Libre despachada sin la factura subida.",
+        "Hay N órdenes de Mercado Libre despachadas sin la factura subida.",
+      ),
+      href: "/ordenes?estado=despachadas&factura=sin-subir",
     });
   }
   return alerts;

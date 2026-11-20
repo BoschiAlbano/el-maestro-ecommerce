@@ -9,6 +9,7 @@ import { acceptNotifications, deleteOldNotifications, processPending, type Proce
 import { mlFetch } from "./client";
 import { getAppAccessToken } from "./tokens";
 import { syncAllListings, type SyncSummary } from "./listings";
+import { uploadPendingOrderInvoices } from "./orders/order-invoice";
 import { fetchRecentOrders, type FetchSummary } from "./orders/orders";
 
 // Recuperación de avisos perdidos y pasada de mantenimiento (specs/019, RF-13
@@ -51,6 +52,8 @@ export type MaintenanceSummary =
       deletedOld: number;
       /** Compras de Mercado Libre de los últimos días (specs/022, RF-14). */
       orders: FetchSummary | null;
+      /** Facturas de órdenes que quedaron sin subir a Mercado Libre (specs/024, RF-14). */
+      invoices: { tried: number; uploaded: number } | null;
       /** Control completo de las publicaciones vinculadas (specs/020 y 021). */
       listings: SyncSummary | null;
     };
@@ -102,6 +105,7 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
   // Antes, las compras que falten (specs/022, plan sección 3.5): así las ventas
   // ya bajaron el stock cuando se comparan las cantidades.
   const orders = connection.status === "CONNECTED" ? await fetchRecentOrders({ force: true }) : null;
+  const invoices = connection.status === "CONNECTED" ? await uploadPendingOrderInvoices() : null;
   const listings = connection.status === "CONNECTED" ? await syncAllListings() : null;
 
   await prisma.mercadoLibreConnection.updateMany({
@@ -117,6 +121,7 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
     process,
     deletedOld,
     orders,
+    invoices,
     listings,
   };
 }

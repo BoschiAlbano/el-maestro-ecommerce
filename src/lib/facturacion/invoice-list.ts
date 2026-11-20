@@ -9,6 +9,8 @@ export type InvoiceFilters = {
   to: string | null;
   status: "all" | "AUTHORIZED" | "PENDING";
   kind: "all" | "FACTURA_C" | "NOTA_CREDITO_C";
+  /** Del local o de una orden de Mercado Libre (specs/024, RF-22). */
+  origin: "all" | "LOCAL" | "MERCADO_LIBRE";
   /** `null` = el de la configuración (lo decide quien llama). */
   environment: "all" | "HOMOLOGACION" | "PRODUCCION" | null;
 };
@@ -28,11 +30,13 @@ export function parseInvoiceFilters(params: Params): InvoiceFilters {
   const status = single(params.estado);
   const kind = single(params.tipo);
   const environment = single(params.ambiente);
+  const origin = single(params.origen);
   return {
     from: isDay(from) ? from : null,
     to: isDay(to) ? to : null,
     status: status === "AUTHORIZED" || status === "PENDING" ? status : "all",
     kind: kind === "FACTURA_C" || kind === "NOTA_CREDITO_C" ? kind : "all",
+    origin: origin === "LOCAL" || origin === "MERCADO_LIBRE" ? origin : "all",
     environment:
       environment === "HOMOLOGACION" || environment === "PRODUCCION" ? environment : environment === "todos" ? "all" : null,
   };
@@ -47,6 +51,7 @@ export function invoiceWhere(filters: InvoiceFilters, defaultEnvironment: "HOMOL
   const where: Prisma.InvoiceWhereInput = { status: { not: "DISCARDED" } };
   if (filters.status !== "all") where.status = filters.status;
   if (filters.kind !== "all") where.kind = filters.kind;
+  if (filters.origin !== "all") where.origin = filters.origin;
 
   const environment = filters.environment ?? defaultEnvironment;
   if (environment !== "all") where.environment = environment;
@@ -67,6 +72,7 @@ export function filtersToQuery(filters: InvoiceFilters): URLSearchParams {
   if (filters.to) query.set("hasta", filters.to);
   if (filters.status !== "all") query.set("estado", filters.status);
   if (filters.kind !== "all") query.set("tipo", filters.kind);
+  if (filters.origin !== "all") query.set("origen", filters.origin);
   if (filters.environment === "all") query.set("ambiente", "todos");
   else if (filters.environment) query.set("ambiente", filters.environment);
   return query;

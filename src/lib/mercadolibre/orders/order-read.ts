@@ -11,7 +11,12 @@ export const mlOrderSchema = z.object({
   pack_id: id.nullable().optional(),
   date_created: z.string(),
   total_amount: z.number(),
-  buyer: z.object({ id, nickname: z.string().nullable().optional() }),
+  buyer: z.object({
+    id,
+    nickname: z.string().nullable().optional(),
+    /** Para pedir los datos fiscales (specs/024). */
+    billing_info: z.object({ id: id.nullable().optional() }).nullable().optional(),
+  }),
   shipping: z.object({ id: id.nullable().optional() }).nullable().optional(),
   cancel_detail: z
     .object({
@@ -93,6 +98,8 @@ export type OrderRead = {
   fraudRisk: boolean;
   createdAt: Date;
   buyerNickname: string;
+  /** Para pedir los datos fiscales del comprador (specs/024). */
+  billingInfoId: string | null;
   shipmentId: string | null;
   /** Lo que pagó el comprador por los productos, sin el envío. */
   total: string;
@@ -124,6 +131,7 @@ export function readOrder(order: MlOrder): OrderRead {
     fraudRisk: tags.some((t) => FRAUD_TAGS.has(t)),
     createdAt: new Date(order.date_created),
     buyerNickname: order.buyer.nickname ?? `Comprador ${order.buyer.id}`,
+    billingInfoId: order.buyer.billing_info?.id ?? null,
     shipmentId: order.shipping?.id ?? null,
     total: String(order.total_amount),
     items: order.order_items.map((i) => ({

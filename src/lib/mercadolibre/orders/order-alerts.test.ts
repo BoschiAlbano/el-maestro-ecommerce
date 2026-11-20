@@ -39,4 +39,14 @@ describe("buildOrderAlerts", () => {
     ]);
     expect(alerts.every((a) => a.href === "/ordenes")).toBe(true);
   });
+
+  it("despachadas sin la factura subida (specs/024, RF-23)", () => {
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 0 })).toEqual([]);
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 1 })).toEqual([
+      { key: "ml-despachada-sin-factura", message: "Hay 1 orden de Mercado Libre despachada sin la factura subida.", href: "/ordenes?estado=despachadas&factura=sin-subir" },
+    ]);
+    expect(buildOrderAlerts({ soon: 0, overdue: 0, fraud: 0, shippedWithoutInvoice: 3 })[0].message).toBe(
+      "Hay 3 órdenes de Mercado Libre despachadas sin la factura subida.",
+    );
+  });
 });

@@ -1,11 +1,10 @@
 import "server-only";
-import { renderToBuffer } from "@react-pdf/renderer";
 import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
-import { KIND_TITLE, formatInvoiceNumber } from "@/lib/facturacion/invoice-document";
+import { invoicePdfFileName } from "@/lib/facturacion/invoice-document";
+import { renderInvoicePdf } from "@/lib/facturacion/invoice-pdf";
 import { loadInvoiceView } from "@/lib/facturacion/invoice-view-data";
-import { InvoicePdfDocument } from "./document";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +24,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new Response("Este comprobante todavía no está emitido.", { status: 409 });
   }
 
-  const buffer = await renderToBuffer(InvoicePdfDocument({ view }));
-  const name = `${KIND_TITLE[view.kind].toLowerCase().replace(/ /g, "-").replace("é", "e")}-${formatInvoiceNumber(view.pointOfSale, view.number)}.pdf`;
+  const pdf = await renderInvoicePdf(view);
+  const name = invoicePdfFileName(view);
 
-  return new Response(new Uint8Array(buffer), {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${name}"`,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { mlFetch } from "../client";
 import { MlApiError, MlUnavailableError } from "../errors";
 import { getValidAccessToken } from "../tokens";
+import { billingInfoSchema, type BillingInfo } from "./billing-read";
 import {
   mlOrderSchema,
   mlPackSchema,
@@ -91,4 +92,66 @@ export async function getLabelPdf(shipmentId: string): Promise<Uint8Array | null
   }
   if (!(response.headers.get("content-type") ?? "").includes("pdf")) return null;
   return new Uint8Array(await response.arrayBuffer());
+}
+
+/** Datos fiscales del comprador, versión 2 de la API (specs/024, prueba técnica). `null` si no hay. */
+export async function getBillingInfo(billingInfoId: string): Promise<BillingInfo | null> {
+  const response = await authorizedFetch(`/orders/billing-info/MLA/${billingInfoId}`, { headers: { "x-version": "2" } });
+  if (response.status === 404) return null;
+  if (!response.ok) throw await apiError(response);
+  const parsed = billingInfoSchema.safeParse(await response.json());
+  return parsed.success ? parsed.data : null;
+}
+
+export type FiscalDocument = { id: string; filename: string | null };
+
+const fiscalDocumentsSchema = z.object({
+  fiscal_documents: z.array(z.object({ id: z.string(), filename: z.string().nullable().optional() })).nullable().optional(),
+});
+
+/** Las facturas cargadas en la compra. Mercado Libre responde 404 cuando no hay ninguna. */
+export async function listFiscalDocuments(packId: string): Promise<FiscalDocument[]> {
+  const response = await authorizedFetch(`/packs/${packId}/fiscal_documents`);
+  if (response.status === 404) return [];
+  if (!response.ok) throw await apiError(response);
+  const parsed = fiscalDocumentsSchema.safeParse(await response.json());
+  return (parsed.success ? (parsed.data.fiscal_documents ?? []) : []).map((d) => ({ id: d.id, filename: d.filename ?? null }));
+}
+
+/** Mercado Libre ya tiene un archivo en esa compra: admite uno solo, y no se borra ni se reemplaza. */
+export class FiscalDocumentExistsError extends Error {
+  constructor() {
+    super("La compra ya tiene una factura cargada en Mercado Libre.");
+    this.name = "FiscalDocumentExistsError";
+  }
+}
+
+/** Sube el PDF de la factura a la compra (specs/024, RF-13). Devuelve el id que da Mercado Libre. */
+export async function uploadFiscalDocument(packId: string, pdf: Uint8Array, filename: string): Promise<string> {
+  const form = new FormData();
+  form.append("fiscal_document", new Blob([new Uint8Array(pdf)], { type: "application/pdf" }), filename);
+  const response = await authorizedFetch(`/packs/${packId}/fiscal_documents`, { method: "POST", body: form });
+  if (response.status === 409) throw new FiscalDocumentExistsError();
+  if (!response.ok) throw await apiError(response);
+  const body = (await response.json().catch(() => null)) as { ids?: string[] } | null;
+  return body?.ids?.[0] ?? "";
+}
+
+async function authorizedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = await getValidAccessToken();
+  try {
+    return await fetch(`https://api.mercadolibre.com${path}`, {
+      ...init,
+      headers: { authorization: `Bearer ${token}`, ...(init.headers ?? {}) },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    throw new MlUnavailableError();
+  }
+}
+
+async function apiError(response: Response): Promise<Error> {
+  if (response.status >= 500) return new MlUnavailableError();
+  return new MlApiError(response.status, await response.text().catch(() => ""));
 }

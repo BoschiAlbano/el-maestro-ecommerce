@@ -28,7 +28,15 @@ export async function loadInvoiceView(invoiceId: string): Promise<InvoiceView | 
     where: { id: invoiceId },
     include: {
       relatedInvoice: { select: { pointOfSale: true, number: true } },
-      sale: { select: { ticketNumber: true, items: { include: { product: { select: { name: true } } } } } },
+      sale: {
+        select: {
+          ticketNumber: true,
+          channel: true,
+          items: { include: { product: { select: { name: true } } } },
+          // En una venta de Mercado Libre el detalle sale de la orden: un ítem sin vincular no tiene renglón de venta (specs/024).
+          mlOrder: { select: { items: { select: { title: true, quantity: true, unitPrice: true }, orderBy: { mlOrderId: "asc" } } } },
+        },
+      },
     },
   });
   if (!invoice) return null;
@@ -86,13 +94,22 @@ export async function loadInvoiceView(invoiceId: string): Promise<InvoiceView | 
       docLabel,
       name: invoice.receiverName,
       ivaLabel: ivaConditionLabel(invoice.receiverIvaCondition),
+      address: invoice.receiverAddress,
     },
-    items: invoice.sale.items.map((item) => ({
-      description: item.product.name,
-      quantity: item.quantity,
-      unitPrice: item.unitSalePrice.toNumber(),
-      subtotal: item.quantity * item.unitSalePrice.toNumber(),
-    })),
+    items:
+      invoice.sale.channel === "MERCADO_LIBRE" && invoice.sale.mlOrder
+        ? invoice.sale.mlOrder.items.map((item) => ({
+            description: item.title,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice.toNumber(),
+            subtotal: item.quantity * item.unitPrice.toNumber(),
+          }))
+        : invoice.sale.items.map((item) => ({
+            description: item.product.name,
+            quantity: item.quantity,
+            unitPrice: item.unitSalePrice.toNumber(),
+            subtotal: item.quantity * item.unitSalePrice.toNumber(),
+          })),
     relatedNumberLabel:
       invoice.relatedInvoice?.number != null
         ? formatInvoiceNumber(invoice.relatedInvoice.pointOfSale, invoice.relatedInvoice.number)

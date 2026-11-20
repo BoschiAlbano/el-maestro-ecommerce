@@ -2,6 +2,8 @@ import "server-only";
 import type { MlOrderStatus, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { registerStockMovement } from "@/lib/stock";
+import { authorizeAfterSale, createCreditNoteInTx } from "@/lib/facturacion/invoices";
+import { decideOnVoid } from "@/lib/facturacion/invoice-policy";
 import { pushPendingListingsSafely } from "../listings";
 import { getDispatchDeadline, getOrder, getPack, getSellerShippingCost, getShipment, searchOrderIds } from "./orders-api";
 import { readOrder, readShipment, purchaseKey, type OrderRead, type ShipmentRead } from "./order-read";
@@ -282,6 +284,9 @@ async function cancelPurchase(current: CurrentOrder, purchase: Purchase): Promis
   const productIds = [...new Set(current.items.flatMap((i) => (i.productId ? [i.productId] : [])))];
   const label = describePurchase(current.mlPackId ?? current.mlOrderIds[0], current.items);
 
+  // Comprobantes para autorizar en ARCA después de la transacción (specs/024, RF-20).
+  const toAuthorize: string[] = [];
+
   // Primero se reclama la cancelación con una actualización condicional: si
   // llegan varios avisos juntos, la base las ordena y solo la primera la hace.
   // Las demás no anulan, no devuelven stock ni avisan otra vez.
@@ -313,20 +318,43 @@ async function cancelPurchase(current: CurrentOrder, purchase: Purchase): Promis
         }
       }
     }
+
+    // La factura de la venta (specs/024, RF-19 y RF-20; regla de la spec 023): si ya existe en
+    // ARCA se anula con una nota de crédito; si quedó pendiente, se averigua en ARCA si llegó a
+    // autorizarse antes de descartarla. La nota de crédito no se sube a Mercado Libre.
+    let creditNote = false;
+    if (voided.count > 0 && current.sale) {
+      const invoice = await tx.invoice.findFirst({
+        where: { saleId: current.sale.id, kind: "FACTURA_C", status: { not: "DISCARDED" } },
+        select: { id: true, status: true },
+      });
+      const decision = decideOnVoid(invoice);
+      if (invoice && decision === "credit_note") {
+        toAuthorize.push(await createCreditNoteInTx(tx, { invoiceId: invoice.id, userId: SYSTEM_USER_ID }));
+        creditNote = true;
+      } else if (invoice && decision === "verify_then_decide") {
+        toAuthorize.push(invoice.id);
+      }
+    }
+    const invoiceNote = creditNote ? " La factura se anula con una nota de crédito." : "";
+
     await tx.mercadoLibreOrderEvent.create({
       data: {
         orderId: current.id,
         status: "CANCELLED",
-        detail: effect === "return_stock" ? `${reason} Se devolvió el stock.` : `${reason} Ya estaba despachada: el stock no volvió.`,
+        detail:
+          (effect === "return_stock" ? `${reason} Se devolvió el stock.` : `${reason} Ya estaba despachada: el stock no volvió.`) +
+          invoiceNote,
       },
     });
     await tx.notification.create({
       data: {
         type: "ML_CANCELACION",
         message:
-          effect === "return_stock"
+          (effect === "return_stock"
             ? `Se canceló la compra ${label} en Mercado Libre. Se devolvió el stock.`
-            : `Se canceló la compra ${label} después del despacho: cuando vuelva la mercadería, reingresala desde la orden.`,
+            : `Se canceló la compra ${label} después del despacho: cuando vuelva la mercadería, reingresala desde la orden.`) +
+          invoiceNote,
         targetType: "MercadoLibreOrder",
         targetId: current.id,
       },
@@ -334,6 +362,8 @@ async function cancelPurchase(current: CurrentOrder, purchase: Purchase): Promis
     return true;
   });
   if (claimed && effect === "return_stock" && productIds.length > 0) await pushPendingListingsSafely({ productIds });
+  // Nunca lanza: si ARCA no responde, la nota de crédito queda pendiente y se reintenta desde el comprobante.
+  for (const id of toAuthorize) await authorizeAfterSale(id);
 }
 
 /** Aviso `shipments`: actualiza la compra de ese envío (plan, sección 3.3). */

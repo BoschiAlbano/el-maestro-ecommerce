@@ -27,7 +27,12 @@ export type ReceiverInput = {
   docNumber?: string | null;
   name?: string | null;
   ivaCondition: number;
+  /** Domicilio fiscal, cuando Mercado Libre lo informa (specs/024, RF-4). */
+  address?: string | null;
 };
+
+/** De dónde viene la factura y si el usuario corrigió los datos que propuso Mercado Libre (specs/024). */
+export type InvoiceOriginInput = { origin?: "LOCAL" | "MERCADO_LIBRE"; receiverEdited?: boolean };
 
 export type InvoicingAvailability = {
   available: boolean;
@@ -79,12 +84,13 @@ export function receiverError(receiver: ReceiverInput, total: number, montoIdent
  */
 export async function createInvoiceInTx(
   tx: Prisma.TransactionClient,
-  input: { saleId: string; total: number; receiver: ReceiverInput; userId: string; config: FiscalConfigView },
+  input: { saleId: string; total: number; receiver: ReceiverInput; userId: string; config: FiscalConfigView } & InvoiceOriginInput,
 ): Promise<string> {
   const created = await tx.invoice.create({
     data: {
       kind: "FACTURA_C",
       environment: input.config.environment,
+      origin: input.origin ?? "LOCAL",
       saleId: input.saleId,
       pointOfSale: input.config.puntoDeVenta!,
       total: input.total,
@@ -92,6 +98,8 @@ export async function createInvoiceInTx(
       receiverDocNumber: input.receiver.docType === "NONE" ? null : (input.receiver.docNumber ?? "").replace(/\D/g, ""),
       receiverName: input.receiver.docType === "NONE" ? null : (input.receiver.name ?? "").trim(),
       receiverIvaCondition: input.receiver.ivaCondition,
+      receiverAddress: input.receiver.address?.trim() || null,
+      receiverEdited: input.receiverEdited ?? false,
       requestedByUserId: input.userId,
     },
     select: { id: true },
@@ -121,6 +129,7 @@ export async function createCreditNoteInTx(
       receiverDocNumber: invoice.receiverDocNumber,
       receiverName: invoice.receiverName,
       receiverIvaCondition: invoice.receiverIvaCondition,
+      receiverAddress: invoice.receiverAddress,
       requestedByUserId: input.userId,
     },
     select: { id: true },
@@ -187,7 +196,23 @@ export async function authorizeInvoiceById(id: string): Promise<AuthorizeResult>
     const creditNoteId = await prisma.$transaction((tx) => createCreditNoteInTx(tx, { invoiceId: id, userId: invoice.requestedByUserId }));
     await authorizeInvoiceById(creditNoteId);
   }
+
+  // La factura de una orden de Mercado Libre se sube a la compra apenas se autoriza (specs/024, RF-13).
+  if (result.status === "authorized") await uploadIfMercadoLibre(id);
   return result;
+}
+
+/** Nunca lanza: la factura ya está autorizada y la subida tiene sus reintentos. */
+async function uploadIfMercadoLibre(invoiceId: string): Promise<void> {
+  try {
+    const invoice = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId }, select: { kind: true, origin: true, saleId: true } });
+    if (invoice.kind !== "FACTURA_C" || invoice.origin !== "MERCADO_LIBRE") return;
+    // Import dinámico: Mercado Libre depende de la facturación, no al revés.
+    const { uploadInvoiceOfSale } = await import("@/lib/mercadolibre/orders/order-invoice");
+    await uploadInvoiceOfSale(invoice.saleId);
+  } catch (error) {
+    console.error("[facturacion] no se pudo subir la factura a Mercado Libre:", error instanceof Error ? error.name : "error");
+  }
 }
 
 /** Los comprobantes reales autorizados del último año, para sumar contra el tope. */
@@ -244,11 +269,9 @@ export type IssueForSaleResult =
  * Factura una venta ya hecha (RF-15 y RF-16): crea el comprobante y lo
  * autoriza. La factura lleva la fecha de hoy.
  */
-export async function issueInvoiceForExistingSale(input: {
-  saleId: string;
-  receiver: ReceiverInput;
-  userId: string;
-}): Promise<IssueForSaleResult> {
+export async function issueInvoiceForExistingSale(
+  input: { saleId: string; receiver: ReceiverInput; userId: string } & InvoiceOriginInput,
+): Promise<IssueForSaleResult> {
   const sale = await prisma.sale.findUnique({
     where: { id: input.saleId },
     select: {
@@ -278,7 +301,15 @@ export async function issueInvoiceForExistingSale(input: {
   let invoiceId: string;
   try {
     invoiceId = await prisma.$transaction((tx) =>
-      createInvoiceInTx(tx, { saleId: input.saleId, total, receiver: input.receiver, userId: input.userId, config: availability.config }),
+      createInvoiceInTx(tx, {
+        saleId: input.saleId,
+        total,
+        receiver: input.receiver,
+        userId: input.userId,
+        config: availability.config,
+        origin: input.origin,
+        receiverEdited: input.receiverEdited,
+      }),
     );
   } catch {
     // Dos pedidos a la vez: la base no deja una segunda factura para la misma venta.
