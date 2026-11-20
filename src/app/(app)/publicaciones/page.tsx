@@ -215,7 +215,7 @@ export default async function PublicacionesPage({
                   <p className="mt-1 max-w-56 text-xs text-muted-foreground">{row.statusReason}</p>
                 )}
                 {row.pausePending && <p className="text-xs text-amber-700 dark:text-amber-300">Pausa pendiente de enviar</p>}
-                {row.lastSyncError && (row.pricePending || row.pausePending || row.quantityPending) && (
+                {row.lastSyncError && (
                   <p className="max-w-56 text-xs text-destructive">{row.lastSyncError}</p>
                 )}
               </TableCell>

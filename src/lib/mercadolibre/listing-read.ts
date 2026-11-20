@@ -8,6 +8,14 @@ const attributeSchema = z.object({
   values: z.array(z.object({ name: z.string().nullable().optional() })).nullable().optional(),
 });
 
+/** Una variante de la publicación (specs/020, cambio 2026-11-19). */
+const variationSchema = z.object({
+  id: z.union([z.number(), z.string()]).transform(String),
+  price: z.number().nullable().optional(),
+  available_quantity: z.number().int().nullable().optional(),
+  attributes: z.array(attributeSchema).nullable().optional(),
+});
+
 export const mlItemSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -19,7 +27,7 @@ export const mlItemSchema = z.object({
   thumbnail: z.string().nullable().optional(),
   pictures: z.array(z.object({ secure_url: z.string().nullable().optional() })).nullable().optional(),
   category_id: z.string().nullable().optional(),
-  variations: z.array(z.unknown()).nullable().optional(),
+  variations: z.array(variationSchema).nullable().optional(),
   shipping: z.object({ logistic_type: z.string().nullable().optional() }).nullable().optional(),
   attributes: z.array(attributeSchema).nullable().optional(),
   last_updated: z.string().nullable().optional(),
@@ -42,12 +50,22 @@ export type ListingRead = {
   sku: string | null;
   /** Códigos universales (`GTIN`); puede haber varios. */
   gtins: string[];
+  /**
+   * La única variante, si la publicación tiene exactamente una: precio,
+   * cantidad, SKU y códigos salen de ahí y se mandan ahí (specs/020, cambio
+   * 2026-11-19). `null` sin variantes, o con dos o más.
+   */
+  variationId: string | null;
+  /** Cuántas variantes tiene: con dos o más el sistema no la administra. */
+  variationCount: number;
   /** Motivo por el que no se puede vincular, o `null` si se puede. */
   notLinkableReason: string | null;
 };
 
-function attributeValues(item: MlItem, id: string): string[] {
-  const attr = item.attributes?.find((a) => a.id === id);
+type Attribute = z.infer<typeof attributeSchema>;
+
+function attributeValues(attributes: Attribute[] | null | undefined, id: string): string[] {
+  const attr = attributes?.find((a) => a.id === id);
   if (!attr) return [];
   const fromValues = (attr.values ?? []).map((v) => v.name?.trim() ?? "").filter((v) => v !== "");
   if (fromValues.length > 0) return fromValues;
@@ -62,7 +80,9 @@ function httpsUrl(url: string | null | undefined): string | null {
 
 export function notLinkableReason(item: MlItem): string | null {
   if (item.status === "closed") return "La publicación está finalizada.";
-  if ((item.variations ?? []).length > 0) return "Tiene variantes (talles, colores): esta versión no las maneja.";
+  const variations = (item.variations ?? []).length;
+  // Una sola variante («variante principal») se trata como el producto.
+  if (variations > 1) return `Tiene ${variations} variantes (talles, colores): esta versión maneja publicaciones con una sola.`;
   if (item.shipping?.logistic_type === "fulfillment") {
     return "Se envía desde el depósito de Mercado Libre (Full): esta versión no lo maneja.";
   }
@@ -70,18 +90,25 @@ export function notLinkableReason(item: MlItem): string | null {
 }
 
 export function readListing(item: MlItem): ListingRead {
+  const variations = item.variations ?? [];
+  const single = variations.length === 1 ? variations[0] : null;
+  // Con una variante, el SKU y los códigos están en ella; si no, en la publicación.
+  const sku = attributeValues(single?.attributes, "SELLER_SKU")[0] ?? attributeValues(item.attributes, "SELLER_SKU")[0] ?? null;
+  const variantGtins = attributeValues(single?.attributes, "GTIN");
   return {
     mlItemId: item.id,
     title: item.title,
-    price: String(item.price),
+    price: String(single?.price ?? item.price),
     mlStatus: item.status,
     mlSubStatus: item.sub_status ?? [],
-    quantity: item.available_quantity ?? 0,
+    quantity: single?.available_quantity ?? item.available_quantity ?? 0,
     permalink: item.permalink,
     thumbnailUrl: httpsUrl(item.pictures?.[0]?.secure_url ?? item.thumbnail),
     categoryId: item.category_id ?? null,
-    sku: attributeValues(item, "SELLER_SKU")[0] ?? null,
-    gtins: attributeValues(item, "GTIN"),
+    sku,
+    gtins: variantGtins.length > 0 ? variantGtins : attributeValues(item.attributes, "GTIN"),
+    variationId: single?.id ?? null,
+    variationCount: variations.length,
     notLinkableReason: notLinkableReason(item),
   };
 }

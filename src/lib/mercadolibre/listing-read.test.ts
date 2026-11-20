@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import realItem from "./__fixtures__/item-modelo-nuevo.json";
+import oneVariationItem from "./__fixtures__/item-una-variante.json";
 import { itemIdFromResource, mlItemSchema, readListing, type MlItem } from "./listing-read";
 
 const base = mlItemSchema.parse(realItem);
@@ -22,8 +23,34 @@ describe("readListing", () => {
       categoryId: "MLA5338",
       sku: "ODOO-TEST-001",
       gtins: [],
+      variationId: null,
+      variationCount: 0,
       notLinkableReason: null,
     });
+  });
+
+  it("con una sola variante, toma de ella el precio, la cantidad, el SKU y el código (cuenta de prueba, modelo viejo)", () => {
+    const read = readListing(mlItemSchema.parse(oneVariationItem));
+    expect(read).toMatchObject({
+      mlItemId: "MLA2304418309",
+      price: "2500",
+      quantity: 1,
+      sku: "BIL-BLB-M902-NEG",
+      gtins: ["2150119432082"],
+      variationId: "208633027325",
+      variationCount: 1,
+      notLinkableReason: null,
+    });
+  });
+
+  it("con una variante, su precio y cantidad mandan sobre los de la publicación", () => {
+    const item = mlItemSchema.parse({
+      ...oneVariationItem,
+      price: 1,
+      available_quantity: 99,
+      variations: [{ ...oneVariationItem.variations[0], price: 3000, available_quantity: 7 }],
+    });
+    expect(readListing(item)).toMatchObject({ price: "3000", quantity: 7 });
   });
 
   it("sin SELLER_SKU, el SKU es null", () => {
@@ -49,8 +76,15 @@ describe("readListing", () => {
 });
 
 describe("se puede vincular", () => {
-  it("con variantes, no", () => {
-    expect(readListing(withChanges({ variations: [{ id: 1 }] })).notLinkableReason).toContain("variantes");
+  it("con una sola variante, sí", () => {
+    expect(readListing(withChanges({ variations: [{ id: "1" }] })).notLinkableReason).toBeNull();
+  });
+
+  it("con dos o más variantes, no", () => {
+    const read = readListing(withChanges({ variations: [{ id: "1" }, { id: "2" }] }));
+    expect(read.notLinkableReason).toContain("2 variantes");
+    expect(read.variationId).toBeNull();
+    expect(read.variationCount).toBe(2);
   });
 
   it("de Full, no", () => {

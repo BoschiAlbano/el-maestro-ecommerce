@@ -236,7 +236,7 @@ export async function updateProduct(
   // Primero Mercado Libre: si no responde, no se guarda nada (specs/020, sección 7).
   if (listing && skuResult.sku !== null) {
     try {
-      await updateListing(listing.mlItemId, { sku: skuResult.sku });
+      await updateListing(listing.mlItemId, { sku: skuResult.sku }, listing.mlVariationId);
     } catch (error) {
       return { error: `No se guardó ningún cambio. ${mlErrorMessage(error)}` };
     }

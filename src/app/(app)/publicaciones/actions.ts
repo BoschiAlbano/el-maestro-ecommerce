@@ -75,7 +75,7 @@ async function linkOne(pair: { mlItemId: string; productId: string }, userId: st
   let updated = item;
   if (Object.keys(changes).length > 0) {
     try {
-      updated = await updateListing(pair.mlItemId, changes);
+      updated = await updateListing(pair.mlItemId, changes, read.variationId);
     } catch (error) {
       return fail(mlErrorMessage(error));
     }
@@ -88,6 +88,7 @@ async function linkOne(pair: { mlItemId: string; productId: string }, userId: st
       const listing = await tx.mercadoLibreListing.create({
         data: {
           mlItemId: final.mlItemId,
+          mlVariationId: final.variationId,
           productId: product.id,
           linkedProductId: product.id,
           title: final.title,

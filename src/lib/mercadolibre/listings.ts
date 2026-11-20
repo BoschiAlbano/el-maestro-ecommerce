@@ -51,6 +51,31 @@ export async function applyListingRead(
     const { product } = listing;
 
     const read = readListing(item);
+    const now = new Date();
+
+    // Le agregaron una segunda variante en Mercado Libre: el sistema ya no sabe
+    // a cuál mandarle precio, SKU y cantidad. Solo se toma el estado, se cortan
+    // los envíos y se deja el motivo para que el dueño deshaga el vínculo
+    // (specs/020, sección 7, cambio 2026-11-19).
+    if (read.variationCount > 1) {
+      const mapped = mapListingStatus(read.mlStatus, read.mlSubStatus);
+      await tx.mercadoLibreListing.update({
+        where: { id: listing.id },
+        data: {
+          status: mapped.status,
+          mlStatus: read.mlStatus,
+          mlSubStatus: read.mlSubStatus,
+          statusReason: mapped.reason,
+          lastReadAt: now,
+          pricePendingSince: null,
+          pausePendingSince: null,
+          quantityPendingSince: null,
+          lastSyncError: `La publicación ahora tiene ${read.variationCount} variantes: el sistema ya no le cambia precio, SKU ni cantidad. Deshacé el vínculo.`,
+        },
+      });
+      return null;
+    }
+
     const incomingKey = read.sku ? skuKeyOf(read.sku) : null;
     const incomingSkuTakenByOther =
       incomingKey !== null && incomingKey !== product.skuKey
@@ -70,11 +95,11 @@ export async function applyListingRead(
       mode,
     });
 
-    const now = new Date();
     await tx.mercadoLibreListing.update({
       where: { id: listing.id },
       data: {
         ...result.listing,
+        mlVariationId: read.variationId,
         lastReadAt: now,
         ...(result.pushQuantity && listing.quantityPendingSince === null ? { quantityPendingSince: now } : {}),
         ...(result.closed
@@ -144,7 +169,7 @@ async function pushOne(listing: PendingListing): Promise<boolean> {
 
   let item: MlItem;
   try {
-    item = await updateListing(listing.mlItemId, changes);
+    item = await updateListing(listing.mlItemId, changes, listing.mlVariationId);
   } catch (error) {
     await prisma.mercadoLibreListing.update({ where: { id: listing.id }, data: { lastSyncError: mlErrorMessage(error) } });
     if (error instanceof MlReconnectRequiredError) throw error;

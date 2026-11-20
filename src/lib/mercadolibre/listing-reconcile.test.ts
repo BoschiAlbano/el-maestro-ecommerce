@@ -14,6 +14,8 @@ const read: ListingRead = {
   categoryId: "MLA5338",
   sku: "ABC-1",
   gtins: [],
+  variationId: null,
+  variationCount: 0,
   notLinkableReason: null,
 };
 

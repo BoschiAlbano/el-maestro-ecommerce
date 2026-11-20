@@ -3,6 +3,9 @@ import { z } from "zod";
 import { mlFetch } from "./client";
 import { MlApiError } from "./errors";
 import { mlItemSchema, type MlItem } from "./listing-read";
+import { buildUpdateBody, type ListingChanges } from "./update-body";
+
+export type { ListingChanges } from "./update-body";
 
 // Llamadas a Mercado Libre sobre las publicaciones de la cuenta conectada
 // (specs/020, plan sección 3.1). Las escrituras van todas por `PUT /items/{id}`
@@ -62,21 +65,9 @@ export function getListing(id: string): Promise<MlItem> {
   return mlFetch(`/items/${id}?include_attributes=all`, { schema: mlItemSchema });
 }
 
-export type ListingChanges = {
-  /** Precio en pesos, como texto de un `Decimal`. */
-  price?: string;
-  quantity?: number;
-  sku?: string;
-  status?: "active" | "paused" | "closed";
-};
-
 /** Cambia la publicación en una sola llamada y devuelve cómo quedó. */
-export async function updateListing(id: string, changes: ListingChanges): Promise<MlItem> {
-  const body: Record<string, unknown> = {};
-  if (changes.price !== undefined) body.price = Number(changes.price);
-  if (changes.quantity !== undefined) body.available_quantity = changes.quantity;
-  if (changes.sku !== undefined) body.attributes = [{ id: "SELLER_SKU", value_name: changes.sku }];
-  if (changes.status !== undefined) body.status = changes.status;
+export async function updateListing(id: string, changes: ListingChanges, variationId: string | null = null): Promise<MlItem> {
+  const body = buildUpdateBody(changes, variationId);
   // La respuesta trae la publicación completa, con el SKU (prueba técnica).
   return mlFetch(`/items/${id}`, { method: "PUT", json: body, schema: mlItemSchema });
 }
