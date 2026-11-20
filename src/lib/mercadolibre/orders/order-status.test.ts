@@ -9,7 +9,8 @@ describe("mapOrderStatus (plan, sección 3.3)", () => {
     [{ cancelled: false, shipmentStatus: "shipped", shipmentSubstatus: null }, "SHIPPED"],
     [{ cancelled: false, shipmentStatus: "delivered", shipmentSubstatus: null }, "DELIVERED"],
     [{ cancelled: false, shipmentStatus: "not_delivered", shipmentSubstatus: null }, "NOT_DELIVERED"],
-    [{ cancelled: false, shipmentStatus: "cancelled", shipmentSubstatus: null }, "CANCELLED"],
+    // Un envío cancelado solo no cancela la compra (verificación de la spec 024).
+    [{ cancelled: false, shipmentStatus: "cancelled", shipmentSubstatus: null }, "TO_PREPARE"],
     [{ cancelled: false, shipmentStatus: "pending", shipmentSubstatus: null }, "TO_PREPARE"],
     [{ cancelled: false, shipmentStatus: null, shipmentSubstatus: null }, "TO_PREPARE"],
   ])("%j → %s", (input, expected) => {
@@ -21,6 +22,10 @@ describe("cancellationEffect (RF-19, RF-20)", () => {
   it("antes de despachar devuelve el stock", () => {
     expect(cancellationEffect({ shippedAt: null, previousStatus: "TO_PREPARE" })).toBe("return_stock");
     expect(cancellationEffect({ shippedAt: null, previousStatus: "READY_TO_SHIP" })).toBe("return_stock");
+  });
+
+  it("una compra que quedó marcada como cancelada sin procesar, y nunca salió, devuelve el stock", () => {
+    expect(cancellationEffect({ shippedAt: null, previousStatus: "CANCELLED" })).toBe("return_stock");
   });
 
   it("después de despachar no lo devuelve", () => {

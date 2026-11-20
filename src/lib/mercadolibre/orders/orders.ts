@@ -205,7 +205,9 @@ async function updatePurchase(orderId: string, purchase: Purchase): Promise<void
     where: { id: orderId },
     include: { items: true, sale: { select: { id: true, voidedAt: true } } },
   });
-  if (current.status === "CANCELLED") return;
+  // Ya cancelada y procesada: no cambia más. (Una que quedó marcada como
+  // cancelada sin `cancelledAt` se procesa abajo, si la orden lo confirma.)
+  if (current.cancelledAt) return;
 
   if (isPurchaseCancelled(purchase.orders)) {
     await cancelPurchase(current, purchase);
@@ -213,11 +215,18 @@ async function updatePurchase(orderId: string, purchase: Purchase): Promise<void
   }
 
   const { shipment, deadline } = await loadShipment(current.mlShipmentId);
-  const status = mapOrderStatus({
-    cancelled: false,
-    shipmentStatus: shipment?.status ?? null,
-    shipmentSubstatus: shipment?.substatus ?? null,
-  });
+  // Un envío cancelado sin la orden cancelada no cambia el estado: la
+  // cancelación llega con la orden.
+  const status =
+    shipment?.status === "cancelled"
+      ? current.status === "CANCELLED"
+        ? "TO_PREPARE"
+        : current.status
+      : mapOrderStatus({
+          cancelled: false,
+          shipmentStatus: shipment?.status ?? null,
+          shipmentSubstatus: shipment?.substatus ?? null,
+        });
   const fraudRisk = purchase.orders.some((o) => o.fraudRisk);
   const partial = isPartiallyCancelled(purchase.orders);
   const now = new Date();
@@ -278,7 +287,7 @@ async function cancelPurchase(current: CurrentOrder, purchase: Purchase): Promis
   // Las demás no anulan, no devuelven stock ni avisan otra vez.
   const claimed = await prisma.$transaction(async (tx) => {
     const claim = await tx.mercadoLibreOrder.updateMany({
-      where: { id: current.id, status: { not: "CANCELLED" } },
+      where: { id: current.id, cancelledAt: null },
       data: { status: "CANCELLED", cancelReason: reason, cancelledAt },
     });
     if (claim.count === 0) return false;
