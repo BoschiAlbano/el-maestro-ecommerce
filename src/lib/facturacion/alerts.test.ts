@@ -24,4 +24,9 @@ describe("buildInvoicingAlerts", () => {
     const alerts = buildInvoicingAlerts({ pendingCount: 2, certificateDaysLeft: 5 });
     expect(alerts.map((a) => a.href)).toEqual(["/comprobantes?estado=PENDING", "/configuracion?tab=facturacion"]);
   });
+
+  it("van a la pestaña Sistema, con el ícono de factura (specs/013, sección 11)", () => {
+    const alerts = buildInvoicingAlerts({ pendingCount: 2, certificateDaysLeft: 5 });
+    expect(alerts.every((a) => a.tab === "sistema" && a.icon === "factura" && !a.urgent)).toBe(true);
+  });
 });

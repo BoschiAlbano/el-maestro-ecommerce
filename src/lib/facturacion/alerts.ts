@@ -1,7 +1,16 @@
 // Avisos de la campanita que NO se guardan: se calculan cada vez y desaparecen
 // solos cuando el problema se resuelve (specs/023, RF-26). Pura.
+import type { NotificationIcon, NotificationTab } from "@/lib/notification-tabs";
 
-export type LiveAlert = { key: string; message: string; href: string };
+export type LiveAlert = {
+  key: string;
+  message: string;
+  href: string;
+  /** Pestaña, ícono y si se destaca en rojo (specs/013, sección 11). Obligatorios: un aviso nuevo tiene que decidirlos. */
+  tab: NotificationTab;
+  icon: NotificationIcon;
+  urgent: boolean;
+};
 
 /** Con cuántos días de margen se avisa que el certificado está por vencer. */
 export const CERTIFICATE_WARNING_DAYS = 30;
@@ -22,6 +31,9 @@ export function buildInvoicingAlerts(input: {
           ? "Hay 1 comprobante pendiente de emitir en ARCA."
           : `Hay ${input.pendingCount} comprobantes pendientes de emitir en ARCA.`,
       href: "/comprobantes?estado=PENDING",
+      tab: "sistema",
+      icon: "factura",
+      urgent: false,
     });
   }
 
@@ -36,6 +48,9 @@ export function buildInvoicingAlerts(input: {
             ? "El certificado de ARCA vence hoy. Renovalo para seguir facturando."
             : `El certificado de ARCA vence en ${days} ${days === 1 ? "día" : "días"}. Renovalo para seguir facturando.`,
       href: "/configuracion?tab=facturacion",
+      tab: "sistema",
+      icon: "factura",
+      urgent: false,
     });
   }
   return alerts;

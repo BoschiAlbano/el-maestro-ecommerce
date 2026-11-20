@@ -23,5 +23,8 @@ export function buildPendingSyncAlert(pendingCount: number): LiveAlert | null {
         ? "Hay 1 publicación con cambios sin enviar a Mercado Libre."
         : `Hay ${pendingCount} publicaciones con cambios sin enviar a Mercado Libre.`,
     href: "/publicaciones",
+    tab: "mercadolibre",
+    icon: "publicacion",
+    urgent: false,
   };
 }

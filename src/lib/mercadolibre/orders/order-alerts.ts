@@ -35,6 +35,9 @@ export function buildOrderAlerts(counts: {
       key: "ml-despacho-vencido",
       message: plural(counts.overdue, "Hay 1 orden de Mercado Libre con el despacho vencido.", "Hay N órdenes de Mercado Libre con el despacho vencido."),
       href: "/ordenes",
+      tab: "mercadolibre",
+      icon: "envio",
+      urgent: true,
     });
   }
   if (counts.soon > 0) {
@@ -46,6 +49,9 @@ export function buildOrderAlerts(counts: {
         `Hay N órdenes de Mercado Libre que vencen en menos de ${DEADLINE_WARNING_HOURS} horas.`,
       ),
       href: "/ordenes",
+      tab: "mercadolibre",
+      icon: "envio",
+      urgent: false,
     });
   }
   if (counts.fraud > 0) {
@@ -53,6 +59,9 @@ export function buildOrderAlerts(counts: {
       key: "ml-fraude",
       message: plural(counts.fraud, "Hay 1 orden con riesgo de fraude: no la despaches.", "Hay N órdenes con riesgo de fraude: no las despaches."),
       href: "/ordenes",
+      tab: "mercadolibre",
+      icon: "fraude",
+      urgent: true,
     });
   }
   const withoutInvoice = counts.shippedWithoutInvoice ?? 0;
@@ -65,6 +74,9 @@ export function buildOrderAlerts(counts: {
         "Hay N órdenes de Mercado Libre despachadas sin la factura subida.",
       ),
       href: "/ordenes?estado=despachadas&factura=sin-subir",
+      tab: "mercadolibre",
+      icon: "factura",
+      urgent: false,
     });
   }
   return alerts;

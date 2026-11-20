@@ -11,6 +11,9 @@ describe("buildPendingSyncAlert (specs/021, RF-7)", () => {
       key: "mercadolibre-pendientes",
       message: "Hay 1 publicación con cambios sin enviar a Mercado Libre.",
       href: "/publicaciones",
+      tab: "mercadolibre",
+      icon: "publicacion",
+      urgent: false,
     });
     expect(buildPendingSyncAlert(3)?.message).toBe("Hay 3 publicaciones con cambios sin enviar a Mercado Libre.");
   });
