@@ -1,0 +1,54 @@
+{
+  "id": 2000019667675372,
+  "status": "paid",
+  "status_detail": null,
+  "tags": [
+    "paid",
+    "not_delivered",
+    "test_order"
+  ],
+  "pack_id": null,
+  "date_created": "2026-11-19T18:54:46.000-04:00",
+  "date_closed": "2026-11-19T19:01:04.000-04:00",
+  "total_amount": 2500,
+  "paid_amount": 13990,
+  "currency_id": "ARS",
+  "buyer": {
+    "id": 1510889899,
+    "nickname": "TESTUSER1090254404"
+  },
+  "shipping": {
+    "id": 48579990710
+  },
+  "cancel_detail": null,
+  "order_items": [
+    {
+      "item": {
+        "id": "MLA2304418309",
+        "title": "Billetera Negra Para Hombre Diseño Clásico",
+        "variation_id": 208633027325,
+        "seller_sku": "BIL-BLB-M902-NEG"
+      },
+      "quantity": 1,
+      "unit_price": 2500,
+      "sale_fee": 1730,
+      "listing_type_id": "gold_special"
+    }
+  ],
+  "payments": [
+    {
+      "status": "rejected",
+      "status_detail": "cc_rejected_other_reason",
+      "transaction_amount": 2500,
+      "total_paid_amount": 13990,
+      "shipping_cost": 11490
+    },
+    {
+      "status": "approved",
+      "status_detail": "accredited",
+      "transaction_amount": 2500,
+      "total_paid_amount": 13990,
+      "shipping_cost": 11490
+    }
+  ]
+}

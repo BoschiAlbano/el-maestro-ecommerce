@@ -10,6 +10,7 @@ import { getStatus } from "@/lib/facturacion/credential-service";
 import { getFiscalConfig } from "@/lib/facturacion/fiscal-data";
 import { NOTIFICATION_HREF, canSeeNotificationType, visibleNotificationTypes } from "@/lib/notification-types";
 import { buildPendingSyncAlert, pendingAlertCutoff } from "@/lib/mercadolibre/alerts";
+import { buildOrderAlerts, DEADLINE_WARNING_HOURS } from "@/lib/mercadolibre/orders/order-alerts";
 
 export type NotificationItem = {
   id: string;
@@ -70,7 +71,19 @@ async function loadMercadoLibreAlerts(currentUser: UserLike): Promise<LiveAlert[
       },
     });
     const alert = buildPendingSyncAlert(pendingCount);
-    return alert ? [alert] : [];
+
+    // Órdenes por despachar (specs/022, RF-17 y RF-18).
+    const now = new Date();
+    const pending = { status: { in: ["TO_PREPARE" as const, "READY_TO_SHIP" as const] } };
+    const [overdue, soon, fraud] = await Promise.all([
+      prisma.mercadoLibreOrder.count({ where: { ...pending, dispatchDeadline: { lt: now } } }),
+      prisma.mercadoLibreOrder.count({
+        where: { ...pending, dispatchDeadline: { gte: now, lte: new Date(now.getTime() + DEADLINE_WARNING_HOURS * 3_600_000) } },
+      }),
+      prisma.mercadoLibreOrder.count({ where: { ...pending, fraudRisk: true } }),
+    ]);
+
+    return [...(alert ? [alert] : []), ...buildOrderAlerts({ soon, overdue, fraud })];
   } catch {
     return [];
   }

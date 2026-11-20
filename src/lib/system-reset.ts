@@ -14,6 +14,8 @@ export const RESET_PHRASE = "REINICIAR EL SISTEMA";
  * tratan aparte. Los comprobantes (`invoices`) sí se vacían, con una advertencia
  * fuerte si hay reales. Los vínculos con Mercado Libre (`ml_listings`, specs/020)
  * también: sus productos se borran, y las publicaciones siguen en Mercado Libre.
+ * Las compras de Mercado Libre (`ml_orders` y sus ítems y eventos, specs/022) se
+ * borran con las ventas. El usuario y el rol «Sistema» se conservan.
  */
 export const BUSINESS_TABLES = [
   "audit_logs",
@@ -21,6 +23,9 @@ export const BUSINESS_TABLES = [
   "ml_notifications",
   "ticket_reprints",
   "invoices",
+  "ml_order_events",
+  "ml_order_items",
+  "ml_orders",
   "sale_items",
   "sales",
   "order_items",

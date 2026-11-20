@@ -9,6 +9,7 @@ import { acceptNotifications, deleteOldNotifications, processPending, type Proce
 import { mlFetch } from "./client";
 import { getAppAccessToken } from "./tokens";
 import { syncAllListings, type SyncSummary } from "./listings";
+import { fetchRecentOrders, type FetchSummary } from "./orders/orders";
 
 // Recuperación de avisos perdidos y pasada de mantenimiento (specs/019, RF-13
 // y RF-14; plan, sección 3.5). La corre la tarea diaria y el botón "Buscar
@@ -48,6 +49,8 @@ export type MaintenanceSummary =
       ignoredOtherAccount: number;
       process: ProcessSummary;
       deletedOld: number;
+      /** Compras de Mercado Libre de los últimos días (specs/022, RF-14). */
+      orders: FetchSummary | null;
       /** Control completo de las publicaciones vinculadas (specs/020 y 021). */
       listings: SyncSummary | null;
     };
@@ -96,6 +99,9 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
   // Control completo de las publicaciones vinculadas (specs/021, RF-8): va
   // después de procesar los avisos, para que las ventas de Mercado Libre
   // (spec 022) ya hayan bajado el stock antes de comparar.
+  // Antes, las compras que falten (specs/022, plan sección 3.5): así las ventas
+  // ya bajaron el stock cuando se comparan las cantidades.
+  const orders = connection.status === "CONNECTED" ? await fetchRecentOrders({ force: true }) : null;
   const listings = connection.status === "CONNECTED" ? await syncAllListings() : null;
 
   await prisma.mercadoLibreConnection.updateMany({
@@ -110,6 +116,7 @@ export async function runMaintenance(): Promise<MaintenanceSummary> {
     ignoredOtherAccount: found.length - mine.length,
     process,
     deletedOld,
+    orders,
     listings,
   };
 }

@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BUSINESS_TABLES, type ResetCounts } from "@/lib/system-reset";
+import { SYSTEM_ROLE_ID, SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
 
 /** Cantidades de lo que se va a borrar, para el resumen previo (RF-3). */
@@ -33,8 +34,8 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     prisma.stockEntry.count(),
     prisma.cashShift.count(),
     prisma.employee.count(),
-    prisma.user.count({ where: { id: { not: ownerUserId } } }),
-    prisma.role.count({ where: { isOwnerRole: false } }),
+    prisma.user.count({ where: { id: { notIn: [ownerUserId, SYSTEM_USER_ID] } } }),
+    prisma.role.count({ where: { isOwnerRole: false, id: { not: SYSTEM_ROLE_ID } } }),
     prisma.auditLog.count(),
     prisma.invoice.count(),
     prisma.invoice.count({ where: { status: "AUTHORIZED", environment: "PRODUCCION" } }),
@@ -87,7 +88,8 @@ export async function wipeBusinessData(tx: Prisma.TransactionClient, ownerUserId
     data: { uploadedByUserId: ownerUserId },
   });
 
-  await tx.user.deleteMany({ where: { id: { not: ownerUserId } } });
+  // El usuario y el rol «Sistema» de Mercado Libre se conservan (specs/022, RF-7).
+  await tx.user.deleteMany({ where: { id: { notIn: [ownerUserId, SYSTEM_USER_ID] } } });
   await tx.rolePermission.deleteMany({ where: { role: { isOwnerRole: false } } });
-  await tx.role.deleteMany({ where: { isOwnerRole: false } });
+  await tx.role.deleteMany({ where: { isOwnerRole: false, id: { not: SYSTEM_ROLE_ID } } });
 }

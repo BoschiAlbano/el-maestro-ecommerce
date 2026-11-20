@@ -7,6 +7,7 @@ import { isOwner } from "@/lib/permissions";
 import { readMlConfig } from "@/lib/mercadolibre/config";
 import { saveMlConnection } from "@/lib/mercadolibre/connection";
 import { syncAllListingsSafely } from "@/lib/mercadolibre/listings";
+import { fetchRecentOrdersSafely } from "@/lib/mercadolibre/orders/orders";
 import { mlResultPath, type MlConnectResult } from "@/lib/mercadolibre/connection-result";
 import { MlConfigError, MlTokenRequestError, MlUnavailableError } from "@/lib/mercadolibre/errors";
 import { exchangeCode, mlHttp } from "@/lib/mercadolibre/http";
@@ -59,8 +60,12 @@ async function completeConnection(request: NextRequest): Promise<MlConnectResult
       authorization: { ...authorization, refreshToken },
     });
     if (saved !== "saved") return "otra_cuenta";
-    // Al reconectar se corrige lo que haya quedado mientras estaba desconectada (specs/021, sección 7).
-    after(syncAllListingsSafely);
+    // Al reconectar se corrige lo que haya quedado mientras estaba desconectada:
+    // primero las compras que falten (specs/022), después las cantidades (specs/021).
+    after(async () => {
+      await fetchRecentOrdersSafely({ force: true });
+      await syncAllListingsSafely();
+    });
     return "conectada";
   } catch (error) {
     if (error instanceof MlConfigError) return "sin_configurar";

@@ -126,6 +126,12 @@ describe("BUSINESS_TABLES", () => {
     expect(BUSINESS_TABLES).toContain("ml_notifications");
   });
 
+  it("vacía las compras de Mercado Libre junto con las ventas (specs/022)", () => {
+    for (const table of ["ml_orders", "ml_order_items", "ml_order_events", "sales"]) {
+      expect(BUSINESS_TABLES).toContain(table);
+    }
+  });
+
   it("vacía los vínculos con Mercado Libre junto con los productos (specs/020)", () => {
     expect(BUSINESS_TABLES).toContain("ml_listings");
     expect(BUSINESS_TABLES).toContain("products");

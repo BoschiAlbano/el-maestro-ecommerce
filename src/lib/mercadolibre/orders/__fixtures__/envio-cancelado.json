@@ -1,0 +1,20 @@
+{
+  "id": 48579990710,
+  "status": "cancelled",
+  "substatus": null,
+  "mode": "me2",
+  "logistic_type": "xd_drop_off",
+  "tags": [
+    "test_shipment"
+  ],
+  "order_id": 2000019667675372,
+  "receiver_address": {
+    "receiver_name": "Comprador de Prueba",
+    "city": {
+      "name": "San Miguel de Tucumán"
+    },
+    "state": {
+      "name": "Tucumán"
+    }
+  }
+}

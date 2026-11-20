@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getListing } from "./listings-api";
 import { applyListingRead, pushPendingListings } from "./listings";
 import { itemIdFromResource } from "./listing-read";
+import { idFromResource } from "./orders/order-read";
+import { syncOrder, syncShipment } from "./orders/orders";
 
 // Qué hace el sistema con cada tema de aviso de Mercado Libre (specs/019,
 // RF-15). Los temas sin función quedan como "sin acción". Cada spec agrega
@@ -47,7 +49,21 @@ async function handleItemChanged({ resource }: NotificationContext): Promise<voi
   if (result?.pushPendingPrice || result?.pushQuantity) await pushPendingListings({ listingIds: [listing.id] });
 }
 
+/** Una compra de Mercado Libre: se registra o se actualiza (specs/022, plan sección 3.2). */
+async function handleOrder({ resource }: NotificationContext): Promise<void> {
+  const id = idFromResource(resource, "orders");
+  if (id) await syncOrder(id);
+}
+
+/** El envío de una compra cambió de estado (specs/022, plan sección 3.3). */
+async function handleShipment({ resource }: NotificationContext): Promise<void> {
+  const id = idFromResource(resource, "shipments");
+  if (id) await syncShipment(id);
+}
+
 export const notificationHandlers: Record<string, NotificationHandler> = {
   items: handleItemChanged,
   items_prices: handleItemChanged,
+  orders_v2: handleOrder,
+  shipments: handleShipment,
 };
