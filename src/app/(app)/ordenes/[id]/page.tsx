@@ -4,12 +4,16 @@ import { ExternalLink, TriangleAlert } from "lucide-react";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
+import { formatInvoiceNumber } from "@/lib/facturacion/invoice-document";
+import { INVOICE_STATE_LABELS } from "@/lib/mercadolibre/orders/invoice-state";
 import { deadlineState } from "@/lib/mercadolibre/orders/order-alerts";
 import { NOT_YET_SHIPPED, ORDER_STATUS_LABELS } from "@/lib/mercadolibre/orders/order-status";
 import { loadOrderDetail } from "@/lib/mercadolibre/orders/orders-view";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { InvoicePrintButtons, RetryInvoiceButton } from "./invoice-buttons";
 import { LabelButtons } from "./label-buttons";
+import { PrepareShipmentDialog } from "./prepare-shipment-dialog";
 import { RestockForm } from "./restock-form";
 
 function money(value: { toString(): string } | string) {
@@ -32,11 +36,14 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
 
   const number = order.mlPackId ?? order.mlOrderIds[0];
   const deadline = deadlineState(order, new Date());
-  const canPrint =
-    hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "editar") &&
-    !order.fraudRisk &&
-    order.mlShipmentId !== null &&
-    NOT_YET_SHIPPED.includes(order.status);
+  const canEdit = hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "editar");
+  const canPrint = canEdit && !order.fraudRisk && order.mlShipmentId !== null && NOT_YET_SHIPPED.includes(order.status);
+  // «Preparar envío» (specs/024, RF-1 y RF-2): el servidor vuelve a validar todo al abrir la ventana.
+  const canPrepare =
+    canEdit && !order.fraudRisk && order.sale !== null && NOT_YET_SHIPPED.includes(order.status) && order.invoiceState !== "external";
+  const invoice = order.invoice;
+  const creditNote = invoice?.creditNotes[0] ?? null;
+  const invoicePrintable = invoice?.status === "AUTHORIZED";
   const restockable = order.items.filter((i) => i.productId && i.quantity > i.restockedQuantity);
   const canRestock =
     (order.status === "CANCELLED" || order.status === "NOT_DELIVERED") &&
@@ -76,7 +83,14 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
             )}
           </p>
         </div>
-        {canPrint && <LabelButtons orderId={order.id} />}
+        {canPrepare ? (
+          <div className="flex flex-wrap gap-2">
+            <PrepareShipmentDialog orderId={order.id} hasLabel={order.mlShipmentId !== null} />
+            {canPrint && <LabelButtons orderId={order.id} primary={false} />}
+          </div>
+        ) : (
+          canPrint && <LabelButtons orderId={order.id} />
+        )}
       </div>
 
       {order.fraudRisk && (
@@ -90,7 +104,7 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
       {order.needsReview && <Warning>{order.needsReview}</Warning>}
       {order.cancelReason && <Warning>{order.cancelReason}</Warning>}
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Info label="Despachar hasta">
           {order.dispatchDeadline ? (
             <span className={deadline === "overdue" ? "text-destructive" : deadline === "soon" ? "text-amber-700 dark:text-amber-300" : undefined}>
@@ -112,7 +126,38 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
             ? `Descargada el ${formatDateTime(order.labelPrintedAt)}${order.labelPrintedByUser ? ` por ${order.labelPrintedByUser.name}` : ""}`
             : "Todavía no se descargó"}
         </Info>
+        <Info label="Factura">
+          <div className="flex flex-col gap-2">
+            <span>
+              {INVOICE_STATE_LABELS[order.invoiceState]}
+              {invoice?.number != null && ` · Nº ${formatInvoiceNumber(invoice.pointOfSale, invoice.number)}`}
+            </span>
+            {order.invoiceUploadedAt && (
+              <p className="text-xs text-muted-foreground">Subida a Mercado Libre el {formatDateTime(order.invoiceUploadedAt)}</p>
+            )}
+            {creditNote && (
+              <p className="text-xs text-muted-foreground">
+                Nota de crédito
+                {creditNote.number != null ? ` Nº ${formatInvoiceNumber(creditNote.pointOfSale, creditNote.number)}` : " pendiente de ARCA"}
+                {" · no se sube a Mercado Libre"}
+              </p>
+            )}
+            {order.invoiceState === "pending" && invoice?.lastError && <p className="text-xs text-destructive">{invoice.lastError}</p>}
+            {order.invoiceState === "not_uploaded" && order.invoiceUploadError && (
+              <p className="text-xs text-destructive">{order.invoiceUploadError}</p>
+            )}
+            {canEdit && order.invoiceState === "pending" && <RetryInvoiceButton orderId={order.id} label="Reintentar en ARCA" />}
+            {canEdit && order.invoiceState === "not_uploaded" && <RetryInvoiceButton orderId={order.id} label="Reintentar la subida" />}
+          </div>
+        </Info>
       </section>
+
+      {invoicePrintable && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Imprimir la factura</h2>
+          <InvoicePrintButtons orderId={order.id} />
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">Productos</h2>
