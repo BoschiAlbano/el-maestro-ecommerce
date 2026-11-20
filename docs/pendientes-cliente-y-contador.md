@@ -60,14 +60,15 @@ Sirven tanto para cargar la publicación a mano ahora como para publicarla despu
 **5. Confirmar con qué impresoras cuenta el local.**
 La etiqueta de envío de Mercado Libre y la factura que va dentro del paquete se imprimen en hoja común (A4). La impresora de tickets no sirve para eso.
 
-- [ ] Hay una impresora común en el local: sí / no
+- [x] *(Respondido 2026-11-19)* Tiene una impresora de etiquetas de 10 × 15 cm (3nStar POSVENT), ya configurada: ahí sale la etiqueta de envío.
+- [ ] Hay una impresora común en el local, para la factura que va dentro del paquete (spec 024): sí / no
 
 ### Preguntas
 
 **6. ¿Cómo va a despachar los envíos?**
 Mercado Libre ofrece varias formas: llevar el paquete a una sucursal de correo, que pasen a retirarlo por el local, o entregarlo usted en el día. También puede ofrecer retiro en el local.
 
-Respuesta: ______________________
+Respuesta: *(2026-11-19)* Con Mercado Envíos, despachando con etiqueta en un correo o una sucursal de Mercado Libre. El sistema avisa 4 horas antes de que venza el plazo de despacho.
 
 **7. ¿Qué garantía ofrece por los productos y por cuánto tiempo?**
 Mercado Libre la pide en cada publicación.

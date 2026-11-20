@@ -12,6 +12,14 @@ Hecha el 2026-11-16 con la publicación de prueba; el detalle está en `prueba-t
 4. **Finalizar no se probó** (irreversible). Se sigue la documentación: `{ status: "closed" }`.
 5. **Variantes y catálogo no se pudieron ver.** Las variantes se detectan por `variations` no vacío y se excluyen (spec, sección 2). Una publicación de catálogo sin variantes se trata como cualquier otra.
 
+**Agregado 2026-11-19 (cambio de spec aprobado): publicaciones con una sola variante.** Probado con la cuenta de prueba vendedora (modelo viejo), en una publicación con la variante «Negro / Liso»:
+
+- El SKU (`SELLER_SKU`), el código universal (`GTIN`), la cantidad y el precio están **en la variante**, no en la publicación.
+- `PUT /items/{id}` con `price` o `available_quantity` en la publicación se **rechaza** (`item.price.not_modifiable`, `field_not_updatable`). Se mandan en `variations: [{ id, price, available_quantity, attributes: [SELLER_SKU] }]`, todo en una llamada; el código universal queda intacto.
+- Pausar, reactivar y finalizar siguen siendo `status` en la publicación.
+
+Cambios: `ml_listings.mlVariationId` (texto, opcional); `readListing` toma de la variante el SKU, los códigos, la cantidad y el precio cuando hay exactamente una; `updateListing` recibe el identificador de la variante y arma el cuerpo según corresponda. Si después aparece una segunda variante, `applyListingRead` no concilia precio, SKU ni cantidad y deja el motivo en `lastSyncError`.
+
 ## 1. Modelo de datos
 
 **`Product`, campos nuevos** (spec 004)

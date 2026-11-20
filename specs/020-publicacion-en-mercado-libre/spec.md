@@ -35,7 +35,7 @@ Las publicaciones se crean, por ahora, directamente en Mercado Libre. El sistema
 - La cantidad disponible que se publica y su actualización (spec 021). Esta spec solo la envía una vez, al vincular.
 - Las ventas que llegan por la publicación (spec 022).
 - Crear productos en el catálogo del sistema a partir de publicaciones de Mercado Libre: el producto tiene que existir antes en el sistema.
-- Publicaciones con variantes (talles, colores) y publicaciones con envío desde el depósito de Mercado Libre (Full).
+- Publicaciones con **dos o más** variantes (talles, colores) y publicaciones con envío desde el depósito de Mercado Libre (Full). *(Cambio 2026-11-19, aprobado por el cliente: una publicación con **una sola** variante sí se vincula. En el modelo viejo de publicación, Mercado Libre arma muchas publicaciones con una «variante principal» que no se puede quitar; la variante se trata como el producto: su SKU, su código universal, su cantidad y su precio son los de la publicación.)*
 - Cargar el SKU desde la importación de productos por Excel.
 - Promociones, cupones, publicidad, preguntas de compradores y el resto de lo listado en "Fuera de alcance" de `docs/PROJECT.md`.
 
@@ -119,7 +119,8 @@ Esta spec agrega el módulo **Mercado Libre** a la matriz de permisos (spec 002)
 - **Al vincular, el producto y la publicación tienen SKU o precio distintos:** manda el del sistema y se envía a Mercado Libre; la pantalla lo muestra antes de confirmar.
 - **El SKU que llega de Mercado Libre ya lo usa otro producto, o no cumple el RF-1** (por ejemplo, tiene espacios): no se toma; se señala en la pantalla de publicaciones (RF-3).
 - **Publicación finalizada en Mercado Libre:** no aparece para vincular.
-- **Publicación con variantes o con envío desde el depósito de Mercado Libre:** no se puede vincular; la pantalla lo indica y la deja fuera.
+- **Publicación con dos o más variantes o con envío desde el depósito de Mercado Libre:** no se puede vincular; la pantalla lo indica y la deja fuera. Con una sola variante se vincula (sección 2).
+- **A una publicación vinculada le agregan una segunda variante en Mercado Libre:** el sistema deja de cambiarle precio, SKU y cantidad, y la pantalla de publicaciones lo señala para que el dueño deshaga el vínculo.
 - **La cuenta tiene muchas publicaciones:** la pantalla las trae por tandas.
 - **Se vincula con el stock del sistema desactualizado:** la advertencia del RF-8 muestra el cambio de cantidad antes de confirmar.
 - **El precio cambia en los dos lados casi al mismo tiempo:** queda el último que llega. Los dos cambios quedan registrados (RF-15).
@@ -137,7 +138,8 @@ Esta spec agrega el módulo **Mercado Libre** a la matriz de permisos (spec 002)
 - [x] Una publicación sin SKU propone el vínculo por el código de barras, si coincide. *(Prueba unitaria: la cuenta no tiene publicaciones sin SKU.)*
 - [x] Una publicación sin coincidencia se vincula a mano. *(Script: el buscador encuentra productos libres y marca los vinculados; vincular usa la misma acción que la propuesta.)*
 - [x] Al vincular, la publicación queda con el precio de venta, el SKU y la cantidad del sistema, y la pantalla muestra lo que cambia antes de confirmar. *(Usuario y script.)*
-- [x] Una publicación con variantes no se puede vincular. *(Prueba unitaria: la cuenta no tiene publicaciones con variantes.)*
+- [x] Una publicación con variantes no se puede vincular. *(Prueba unitaria: la cuenta no tiene publicaciones con variantes.)* *(Cambio 2026-11-19: ahora vale para dos o más variantes.)*
+- [x] Una publicación con una sola variante se vincula, y el precio, la cantidad y el SKU se cambian en la variante. *(Usuario con la billetera de la cuenta de prueba, y script.)*
 - [x] Deshacer un vínculo deja la publicación intacta en Mercado Libre y sin administrar. *(Script.)*
 - [x] Cambiar el precio de venta en el sistema (ficha o ingreso de mercadería) lo cambia en Mercado Libre y queda registrado. *(Usuario y script, desde la ficha. El ingreso usa la misma bandeja de envíos.)*
 - [x] Cambiar el precio o el SKU directamente en Mercado Libre los cambia en el sistema, y el cambio queda registrado como hecho en Mercado Libre. *(Usuario y script.)*

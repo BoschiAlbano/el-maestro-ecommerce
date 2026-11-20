@@ -10,6 +10,8 @@
 
 Que el dueño cree usuarios y roles, y controle qué puede ver y hacer cada uno en cada módulo.
 
+
+*(Agregado 2026-11-19, spec 022.)* El sistema tiene un usuario «Mercado Libre (automático)» con el rol «Sistema», a cuyo nombre quedan las ventas de Mercado Libre. Está inactivo, no puede iniciar sesión y no aparece en Usuarios, Roles ni Empleados; no se puede editar ni asignar ese rol, tampoco llamando directo al servidor.
 ## 2. Alcance
 
 **Incluye:**

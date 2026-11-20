@@ -10,6 +10,8 @@
 
 Avisar en pantalla, desde cualquier parte del sistema, lo que requiere atención: un pedido nuevo, una diferencia al cerrar la caja, o productos por debajo del stock que hace falta.
 
+
+*(Agregado 2026-11-19, spec 022.)* Avisos de órdenes de Mercado Libre: venta nueva, venta que dejó el stock en negativo (destacado), cancelación y riesgo de fraude. Además, avisos calculados que desaparecen solos: órdenes que vencen en menos de 4 horas, con el despacho vencido y con riesgo de fraude sin resolver. Los ve quien tiene «ver» en Mercado Libre.
 ## 2. Alcance
 
 **Incluye:**

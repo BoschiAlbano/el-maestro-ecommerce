@@ -88,6 +88,10 @@
   - Hecho cuando: un precio, un SKU o un cambio de estado hecho en Mercado Libre genera un aviso con el detalle; los cambios propios y las pausas por falta de stock no.
   - Hecho el 2026-11-16: `statusChangeNote` reemplaza a la regla anterior, y `reconcile` arma una sola frase por publicación con todo lo que cambió. Un conflicto de SKU ya señalado no vuelve a avisar. **Corregido de paso:** la pausa que manda el sistema al desactivar un producto se habría tomado como hecha en Mercado Libre; ahora se guarda el estado antes de aplicar la lectura. `auto-refresh.tsx` en la pantalla; por pedido del usuario, cada actualización (sola o con el botón) refresca también la campanita, con un evento que la campanita escucha. La campanita sigue consultando cada 60 segundos. 603 pruebas pasando. Verificado por el usuario el 2026-11-19.
 
+- [x] **T-023** Publicaciones con una sola variante (cambio de spec aprobado el 2026-11-19).
+  - Hecho cuando: la billetera de la cuenta de prueba (una variante) se vincula, y precio, cantidad y SKU se cambian en la variante.
+  - Hecho el 2026-11-19 en el código: `mlVariationId` en `ml_listings` (migración `20261119230000_add_ml_listing_variation`), `readListing` toma de la variante precio, cantidad, SKU y códigos, `buildUpdateBody` (módulo puro, 3 pruebas) arma el cuerpo con la variante, y una publicación que pasa a tener dos o más variantes deja de recibir cambios y muestra el motivo. Probado contra la billetera: el código escribe en la variante sin cambiar nada. El usuario la vinculó y la usó en las pruebas de las specs 021 y 022 (cantidad y precio en la variante).
+
 ## Verificación final
 
 - [x] **T-021** **(D)** Verificación manual con la publicación de prueba, siguiendo el plan, sección 6. Finalizar se prueba con una segunda publicación creada para eso.

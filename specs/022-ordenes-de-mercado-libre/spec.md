@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Estado** | Borrador |
-| **Depende de** | 008, 011, 013, 021 |
+| **Estado** | Verificada (2026-11-19) |
+| **Depende de** | 008, 011, 013, 020, 021 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 ("Ampliación de alcance"); `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`, sección 1.6 |
 
 ## 1. Objetivo
@@ -46,7 +46,7 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 **Ingreso de la compra**
 
 - **RF-1.** Cuando Mercado Libre informa una compra **pagada**, el sistema la registra como una venta del canal Mercado Libre. En una sola operación guarda la venta, sus ítems y el movimiento de stock de cada ítem.
-- **RF-2.** Una compra de Mercado Libre puede traer varios productos (un carrito). El sistema la trata como **una sola venta**, con un solo envío.
+- **RF-2.** Una compra de Mercado Libre puede traer varios productos (un carrito). El sistema la trata como **una sola venta**, con un solo envío. *(Aclarado 2026-11-19.)* En un carrito, Mercado Libre crea una orden por producto y las agrupa en un paquete: el sistema las junta por el número de paquete.
 - **RF-3.** Cada ítem guarda el precio al que se vendió en Mercado Libre y el costo vigente del producto en ese momento, como en cualquier venta.
 - **RF-4.** La venta guarda, como datos informativos: el número de la compra en Mercado Libre, lo que Mercado Libre cobró por la venta, el costo de envío a cargo del vendedor si lo hay, y el importe neto que resulta.
 - **RF-5.** La venta guarda del comprador el nombre o apodo y los datos de entrega necesarios para preparar el paquete.
@@ -56,6 +56,7 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 - **RF-9.** Las compras que todavía no están pagadas no se registran.
 - **RF-9b.** *(Agregado 2026-11-11.)* Solo se registran las compras hechas **desde la fecha de inicio** que el dueño define en Configuración > Mercado Libre al poner en marcha el sistema. Las anteriores, que el cliente gestionó directamente en Mercado Libre, no se traen: no descuentan stock ni aparecen en analíticas.
 - **RF-10.** Al entrar una compra se genera un aviso de "venta de Mercado Libre" en la campanita.
+- **RF-10b.** *(Agregado 2026-11-19.)* Si la compra deja el stock de algún producto en negativo, la orden se marca **sin stock** y se genera un aviso propio, distinto del de venta nueva y destacado, para que el dueño consiga el producto o cancele la compra en Mercado Libre a tiempo.
 
 **Pantalla de órdenes**
 
@@ -67,8 +68,8 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 
 **Preparación y envío**
 
-- **RF-16.** Desde una orden para preparar se descarga la etiqueta de envío de Mercado Libre para imprimirla. El sistema registra quién la descargó y cuándo, y permite volver a descargarla.
-- **RF-17.** Una orden cuya fecha límite de despacho vence en las próximas horas se destaca en la lista. Si vence sin haberse despachado, se genera un aviso en la campanita.
+- **RF-16.** Desde una orden para preparar se descarga la etiqueta de envío de Mercado Libre para imprimirla. El sistema registra quién la descargó y cuándo, y permite volver a descargarla. *(Decisión del cliente, 2026-11-19.)* El local despacha con Mercado Envíos en un correo o una sucursal de Mercado Libre, e imprime en una impresora de etiquetas de 10 × 15 cm (3nStar POSVENT) ya configurada: la etiqueta se pide a Mercado Libre en ese formato.
+- **RF-17.** Una orden cuya fecha límite de despacho vence en las **próximas 4 horas** *(decisión del cliente, 2026-11-19)* se destaca en la lista y genera un aviso en la campanita. Si vence sin haberse despachado, se genera otro aviso.
 - **RF-18.** Una orden marcada por Mercado Libre con **riesgo de fraude** se muestra con una advertencia de no despachar, no permite descargar la etiqueta y genera un aviso en la campanita.
 
 **Cancelaciones**
@@ -82,7 +83,7 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 - **RF-22.** Las analíticas (spec 011) incluyen las ventas de Mercado Libre en sus totales y suman un filtro **Origen** con tres valores: **Todas**, **Local** y **Mercado Libre**. "Local" agrupa las ventas de mostrador y las entregas de pedidos por encargo.
 - **RF-23.** En los agrupados de analíticas, Mercado Libre aparece como un canal propio, como un medio de cobro propio y, en ventas por empleado, como "Mercado Libre (automático)".
 - **RF-24.** Para quien tenga el permiso "ver costos y márgenes", el margen de las ventas de Mercado Libre descuenta además lo que cobró Mercado Libre (RF-4).
-- **RF-25.** Las exportaciones de analíticas respetan el filtro Origen e incluyen una columna con el origen.
+- **RF-25.** Las exportaciones de analíticas respetan el filtro Origen e incluyen una columna con el origen. *(Ajuste 2026-11-19: las exportaciones son resúmenes, sin una fila por venta; en lugar de una columna llevan la tabla «Ventas por origen».)*
 - **RF-26.** El inicio del dueño (spec 012) muestra cuántas órdenes de Mercado Libre hay para preparar, con acceso a la pantalla de órdenes.
 
 ## 5. Reglas de negocio
@@ -92,7 +93,8 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 - **Todo o nada** (constitución, regla 10): la venta, sus ítems y los movimientos de stock se guardan juntos.
 - **Precio y costo como foto del momento** (regla 8).
 - **El stock se descuenta al entrar la compra pagada**, no al despachar.
-- **El stock puede quedar negativo** (spec 005). Si una compra entra por una unidad que ya se vendió en el mostrador, se registra igual, el stock queda negativo y la orden se marca "sin stock" para que el dueño decida: conseguir el producto o cancelar en Mercado Libre.
+- **El stock puede quedar negativo** (spec 005). Si una compra entra por una unidad que ya se vendió en el mostrador, se registra igual, el stock queda negativo y la orden se marca "sin stock" para que el dueño decida: conseguir el producto o cancelar en Mercado Libre (RF-10b). Sin stock de reserva (spec 021) este es el caso esperable de una venta doble.
+- **El stock de la compra baja por el camino de siempre** (spec 005), así que la cantidad en Mercado Libre se actualiza sola (spec 021). Coincide con lo que Mercado Libre ya descontó: no se descuenta dos veces. Cuando una cancelación devuelve el stock, la cantidad en Mercado Libre vuelve a subir de la misma forma.
 - **Lo que cobra Mercado Libre es informativo.** El total de la venta es lo que pagó el comprador por los productos. La comisión no es un egreso de caja.
 - **El envío que paga el comprador no es parte de la venta** cuando lo cobra Mercado Libre.
 - **Un aviso de Mercado Libre no es un dato** (spec 019): el sistema siempre consulta la compra antes de registrar o cambiar algo.
@@ -116,7 +118,7 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 ## 7. Casos borde y errores
 
 - **Llega dos veces el aviso de la misma compra:** se registra una sola vez (RF-8).
-- **La compra trae un producto de una publicación que el sistema no conoce:** la venta se registra con ese ítem marcado "sin vincular", sin movimiento de stock, y se avisa para revisarlo. Es el caso de una publicación creada directamente en Mercado Libre que todavía no se vinculó (spec 020, RF-19 a RF-28).
+- **La compra trae un producto de una publicación que el sistema no conoce:** la venta se registra con ese ítem marcado "sin vincular", sin movimiento de stock, y se avisa para revisarlo. Es el caso de una publicación creada directamente en Mercado Libre que todavía no se vinculó (spec 020, vincular publicaciones).
 - **Compra anterior a la fecha de inicio que cambia de estado después** (se despacha, se entrega o se cancela): se ignora (RF-9b).
 - **El producto fue desactivado o su publicación finalizada después de la compra:** la venta se registra igual.
 - **Compra por más unidades que el stock:** se registra, el stock queda negativo y la orden se marca "sin stock".
@@ -132,21 +134,21 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 
 ## 8. Criterios de aceptación
 
-- [ ] Una compra de prueba pagada aparece como venta de Mercado Libre, con sus ítems, y baja el stock.
-- [ ] La venta se registra con la caja cerrada.
-- [ ] La venta no aparece en la caja por turnos ni en la caja del día, y no cambia el efectivo esperado.
-- [ ] Una compra con dos productos distintos queda como una sola venta.
-- [ ] El mismo aviso recibido dos veces no duplica la venta ni el descuento de stock.
-- [ ] Se genera el aviso de venta nueva en la campanita.
-- [ ] Se descarga la etiqueta de envío y queda registrado quién y cuándo.
-- [ ] El estado de la orden avanza cuando Mercado Libre informa el despacho y la entrega.
-- [ ] Cancelar la compra antes del despacho anula la venta y devuelve el stock.
-- [ ] Cancelar después del despacho no devuelve el stock; "Reingresar al stock" lo hace, con el permiso especial.
-- [ ] Una orden con riesgo de fraude muestra la advertencia y no permite descargar la etiqueta.
-- [ ] "Buscar órdenes nuevas" registra una compra cuyo aviso no llegó.
-- [ ] En analíticas, el filtro Origen separa Local y Mercado Libre, y "Todas" suma las dos.
-- [ ] El margen de una venta de Mercado Libre descuenta lo que cobró Mercado Libre, y solo lo ve quien tiene el permiso.
-- [ ] Hay pruebas unitarias de: registro único de una compra, armado de la venta desde un carrito, decisión de devolver o no el stock según el momento de la cancelación, y cálculo del importe neto y del margen.
+- [x] Una compra de prueba pagada aparece como venta de Mercado Libre, con sus ítems, y baja el stock. *(Usuario, con las cuentas de prueba.)*
+- [x] La venta se registra con la caja cerrada. *(Usuario y script: las ventas de Mercado Libre no tienen caja.)*
+- [x] La venta no aparece en la caja por turnos ni en la caja del día, y no cambia el efectivo esperado. *(Usuario.)*
+- [x] Una compra con dos productos distintos queda como una sola venta. *(Usuario y script, con el carrito.)*
+- [x] El mismo aviso recibido dos veces no duplica la venta ni el descuento de stock. *(Script: la segunda búsqueda no registró nada; restricción única de la compra. La cancelación con tres avisos juntos se triplicaba y se corrigió: ver tareas, T-006.)*
+- [x] Se genera el aviso de venta nueva en la campanita. *(Usuario.)*
+- [x] Se descarga la etiqueta de envío y queda registrado quién y cuándo. *(Usuario: 10 × 15 y A4; queda en el historial de la orden.)*
+- [x] El estado de la orden avanza cuando Mercado Libre informa el despacho y la entrega. *(Prueba unitaria de la tabla de estados. Con cuentas de prueba solo se vio el paso de «para preparar» a «lista para despachar» al imprimir la etiqueta: despachar y entregar no se pueden provocar.)*
+- [x] Cancelar la compra antes del despacho anula la venta y devuelve el stock. *(Usuario, con una compra y con el carrito.)*
+- [x] Cancelar después del despacho no devuelve el stock; "Reingresar al stock" lo hace, con el permiso especial. *(Prueba unitaria de la decisión y revisión del código del reingreso; no se puede despachar con cuentas de prueba.)*
+- [x] Una orden con riesgo de fraude muestra la advertencia y no permite descargar la etiqueta. *(Prueba unitaria de la detección y revisión de la ruta de la etiqueta; no se puede provocar con cuentas de prueba.)*
+- [x] "Buscar órdenes nuevas" registra una compra cuyo aviso no llegó. *(Script: registró el carrito, cuyos avisos habían llegado antes de que existiera la 022.)*
+- [x] En analíticas, el filtro Origen separa Local y Mercado Libre, y "Todas" suma las dos. *(Usuario y pruebas unitarias.)*
+- [x] El margen de una venta de Mercado Libre descuenta lo que cobró Mercado Libre, y solo lo ve quien tiene el permiso. *(Pruebas unitarias; el permiso es el mismo control de siempre de analíticas.)*
+- [x] Hay pruebas unitarias de: registro único de una compra, armado de la venta desde un carrito, decisión de devolver o no el stock según el momento de la cancelación, y cálculo del importe neto y del margen.
 - [ ] Cobertura E2E: pendiente para la pasada de endurecimiento (ver `AGENTS.md`).
 
 ## 9. Cambio en la constitución (aprobado el 2026-11-10)
@@ -163,9 +165,21 @@ La regla 10 queda igual: cuando una venta no tiene caja, lo que se guarda junto 
 
 ## 10. Preguntas abiertas
 
-1. **Pedidos por encargo en el filtro Origen.** La propuesta es que "Local" agrupe mostrador y pedidos por encargo. ¿O el cliente quiere tres opciones separadas?
-2. **Margen con comisión.** El RF-24 propone descontar lo que cobra Mercado Libre. ¿El dueño quiere ver el margen así, o sin descontar?
-3. **Impresora para la etiqueta.** La etiqueta de Mercado Libre es un PDF pensado para hoja común o para impresora de etiquetas de 10 × 15 cm. La impresora de tickets de 58 mm no sirve. ¿Con qué impresora cuenta el local?
-4. **Modalidad de envío** (misma pregunta que en la spec 025): define si hay etiqueta, quién retira y los plazos de despacho.
-5. **Aviso de despacho por vencer.** ¿Con cuántas horas de anticipación?
-6. **Sin stock.** Cuando entra una compra sin stock, ¿alcanza con marcarla y avisar, o el dueño quiere además un aviso distinto y más visible?
+**Respondidas (2026-11-19):**
+
+- **Modalidad de envío:** Mercado Envíos, despachando en un correo o una sucursal de Mercado Libre (RF-16).
+- **Impresora:** de etiquetas de 10 × 15 cm (3nStar POSVENT), ya configurada (RF-16).
+- **Aviso de despacho por vencer:** 4 horas antes (RF-17).
+- **Fecha de inicio** (RF-9b): se define el día que arranca el cliente.
+- **Filtro Origen:** "Local" agrupa mostrador y pedidos por encargo (RF-22), como estaba propuesto.
+- **Margen:** descuenta lo que cobra Mercado Libre (RF-24), como estaba propuesto.
+- **Compra sin stock:** aviso propio y destacado (RF-10b).
+
+**Para la prueba técnica**, con una cuenta de prueba vendedora conectada y otra cuenta de prueba compradora (las cuentas de prueba solo operan entre ellas; una cuenta real no puede comprarles):
+
+1. Que la cuenta de prueba vendedora tenga Mercado Envíos y se pueda publicar con envío.
+2. Qué aviso llega al comprar (tema `orders_v2`) y la forma de la orden: ítems, precio, lo que cobra Mercado Libre, comprador, paquete y envío.
+3. Un carrito de dos productos: cómo se ve el paquete.
+4. El envío: estados, fecha límite de despacho y la etiqueta en PDF de 10 × 15 cm.
+5. Cómo se marca el riesgo de fraude.
+6. Cancelar la compra antes del despacho: qué aviso llega y cómo queda la orden.

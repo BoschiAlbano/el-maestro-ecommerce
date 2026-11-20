@@ -58,7 +58,7 @@ Que la cantidad disponible de cada publicación de Mercado Libre sea siempre el 
 - **Los pedidos por encargo no restan** de la cantidad publicada (decisión 0002).
 - **Los cambios de cantidad no avisan en la campanita**, igual que las pausas por falta de stock (spec 020, RF-14): los provoca el propio sistema.
 - **Sin stock de reserva se acepta un riesgo chico de vender dos veces la última unidad** *(decisión del cliente, 2026-11-19)*. Entre una venta de mostrador y la actualización en Mercado Libre pasan unos segundos en los que alguien puede comprar la misma unidad, y al revés. Qué pasa cuando ocurre lo define la spec 022.
-- **No vender por Mercado Libre con esta spec andando y sin la 022.** Hasta que existan las órdenes, el sistema no se entera de las ventas de Mercado Libre: su stock no baja y el control diario volvería a ofrecer unidades ya vendidas.
+- **No vender por Mercado Libre con esta spec andando y sin la 022.** Hasta que existan las órdenes, el sistema no se entera de las ventas de Mercado Libre: su stock no baja y el control diario volvería a ofrecer unidades ya vendidas. *(Resuelto el 2026-11-19 con la spec 022: las compras de Mercado Libre bajan el stock solas.)*
 - **Plan gratuito de hosting** (`docs/PROJECT.md`, sección 10): el control completo automático corre una vez por día. Una publicación pendiente puede pasar horas con una cantidad equivocada si nadie mueve el producto ni toca "Sincronizar ahora". El aviso del RF-7 existe para que eso no pase desapercibido.
 
 ## 6. Permisos

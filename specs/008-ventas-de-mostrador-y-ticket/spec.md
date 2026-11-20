@@ -10,6 +10,8 @@
 
 Vender productos por mostrador, cobrando una o varias formas de pago, con ticket impreso, de forma que el stock y la caja queden siempre al día sin que alguien tenga que corregirlos a mano después.
 
+
+*(Agregado 2026-11-19, spec 022.)* Las compras de Mercado Libre se registran solas como ventas del canal «Mercado Libre», sin caja y a nombre del usuario «Mercado Libre (automático)». Aparecen en el historial de ventas con su canal y un enlace a la orden. No se pueden anular desde acá: se cancelan en Mercado Libre y el sistema lo refleja.
 ## 2. Alcance
 
 **Incluye:**

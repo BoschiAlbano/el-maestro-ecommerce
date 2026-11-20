@@ -60,9 +60,23 @@ La pantalla de publicaciones se actualiza sola cada minuto; también podés toca
 
 Si hay publicaciones activas en Mercado Libre que no están vinculadas, la pantalla lo advierte: sus ventas no descuentan stock del sistema.
 
+## Órdenes
+
+Cada compra pagada en Mercado Libre entra sola al sistema como una **venta de Mercado Libre**: descuenta el stock y avisa en la campanita. No pasa por la caja, porque el dinero lo cobra Mercado Libre.
+
+- **Desde cuándo:** en Configuración > Mercado Libre se carga la fecha desde la que se registran las compras. Sin fecha no entra ninguna; se carga el día que se empieza.
+- **Órdenes** (en el menú) muestra lo que hay que despachar, con la fecha límite. Las que vencen en menos de 4 horas se destacan y avisan en la campanita.
+- **Etiqueta:** en la orden, **Etiqueta 10 × 15** la abre lista para la impresora de etiquetas. Si algún día sale mal, **Etiqueta en hoja A4** da la de Mercado Libre tal cual.
+- **Carrito:** si alguien compra varios productos juntos, queda como una sola venta con un solo envío.
+- **Sin stock:** si entra una compra de algo que ya no hay, se registra igual y aparece un aviso destacado: conseguí el producto o cancelá la compra en Mercado Libre.
+- **Riesgo de fraude:** si Mercado Libre lo marca, la orden lo advierte y no deja descargar la etiqueta. No la despaches.
+- **Cancelaciones:** se cancelan en Mercado Libre. Si se cancela antes de despachar, el stock vuelve solo. Si se cancela o no se entrega después de despachar, cuando la mercadería vuelva usá **Reingresar al stock** en la orden. Ojo: si la cancelás vos diciendo que no tenés stock, Mercado Libre además **pausa la publicación**; cuando tengas el producto, reactivala desde Publicaciones.
+- **Buscar órdenes nuevas:** la pantalla busca sola las compras que falten cada vez que se abre; el botón lo hace en el momento.
+- **Analíticas:** el filtro **Origen** separa Local y Mercado Libre, y el margen descuenta lo que cobró Mercado Libre.
+
 ## Lo que todavía no hace
 
 Llega en las próximas etapas:
 
-- **Las ventas de Mercado Libre no entran al sistema** ni descuentan stock hasta que esté la parte de órdenes (spec 022). **Mientras tanto no vendas por Mercado Libre:** el sistema no se entera de esas ventas y el control diario volvería a ofrecer las unidades vendidas.
 - **Publicar un producto nuevo desde el sistema** (spec 025). Por ahora se publica en Mercado Libre y después se vincula.
+- **Facturar las ventas de Mercado Libre** (spec 024).

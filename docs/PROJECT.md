@@ -201,9 +201,9 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
 | 018 | Keep-alive de la base de datos | 001 | En desarrollo |
 | 019 | Conexión con Mercado Libre | 002, 003, 013 | Verificada (pendiente de despliegue: medir los 500 ms de la ruta de avisos en Vercel) |
-| 020 | Vincular y administrar publicaciones de Mercado Libre | 004, 019 | Verificada (2026-11-19) |
+| 020 | Vincular y administrar publicaciones de Mercado Libre | 004, 019 | Verificada (2026-11-19), con publicaciones de una sola variante |
 | 021 | Sincronización de stock con Mercado Libre | 005, 020 | Verificada (2026-11-19) |
-| 022 | Órdenes de Mercado Libre | 008, 011, 013, 021 | Borrador |
+| 022 | Órdenes de Mercado Libre | 008, 011, 013, 020, 021 | Verificada (2026-11-19), con despacho, entrega y fraude a confirmar con la primera venta real |
 | 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Verificada en homologación (pendiente de despliegue: medir el arranque en frío de ARCA en Vercel, y confirmar el QR con la primera factura real) |
 | 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |
 | 025 | Publicar productos en Mercado Libre | 004, 019, 020 | Borrador |

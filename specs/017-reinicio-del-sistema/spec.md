@@ -14,6 +14,8 @@ Sirve para pasar de la etapa de pruebas a la operación real: hoy el sistema tie
 
 Es una acción **irreversible**: una vez hecha, los datos no se pueden recuperar desde el sistema.
 
+
+*(Agregado 2026-11-19, spec 022.)* Las compras de Mercado Libre se borran junto con las ventas. El usuario y el rol «Sistema», que usan esas ventas, se conservan, igual que la fecha desde la que se registran las compras.
 ## 2. Alcance
 
 **Incluye:**
