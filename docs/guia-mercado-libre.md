@@ -54,6 +54,8 @@ Si desactivás un producto en el catálogo, su publicación se pausa sola.
 
 ## Avisos
 
+La campanita separa los avisos en tres pestañas: **Todos**, **Sistema** (pedidos, caja, stock y facturación) y **Mercado Libre**. Cada una muestra cuántos tiene sin leer y tiene **Marcar todas como leídas**. Los urgentes (riesgo de fraude, venta sin stock, despacho vencido y conexión caída) se ven en rojo. Los avisos marcados «Ahora» se van solos cuando se resuelve lo que avisan.
+
 Cualquier cambio que se haga en Mercado Libre sobre una publicación vinculada (el precio, el SKU, pausarla, reactivarla, finalizarla, o que Mercado Libre la observe o la dé de baja) aparece como aviso en la campanita, con el detalle. Las pausas por falta de stock no avisan.
 
 La pantalla de publicaciones se actualiza sola cada minuto; también podés tocar **Actualizar**.

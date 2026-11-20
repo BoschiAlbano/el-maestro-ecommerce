@@ -88,6 +88,7 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 - **RF-17.** Al anular una venta facturada (spec 008), el sistema emite una nota de crédito C por el total, asociada a esa factura.
 - **RF-18.** La anulación de la venta no espera a ARCA: se anula con sus reglas de siempre. Si la nota de crédito no se autoriza, queda **pendiente**, con reintento y con el control del RF-13.
 - **RF-19.** Mientras haya facturas o notas de crédito pendientes, la campanita muestra un aviso con la cantidad.
+- *(Agregado 2026-11-20, spec 013, sección 11.)* Los avisos de facturación (RF-5, RF-19 y RF-27) van en la pestaña **Sistema** de la campanita.
 
 **Comprobante**
 

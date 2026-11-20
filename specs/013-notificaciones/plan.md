@@ -49,3 +49,66 @@ Sin módulo nuevo — reusa Pedidos y Caja para los avisos puntuales, Inventario
 - **Lectura global, no por usuario** — evita una tabla de unión (`NotificationRead` por usuario) para un equipo chico que comparte una sola caja; si en el futuro hace falta lectura por usuario, es un cambio de spec aparte.
 - **Revisión periódica (60s), no tiempo real** — decisión ya tomada en `spec.md`, sección 10.
 - **La campanita se agrega al header existente sin rediseñarlo** — el cliente pidió explícitamente no ir más a fondo con el retoque visual por ahora.
+
+## 9. Cambio 2026-11-20: pestañas y diseño (spec, sección 11)
+
+*(Aprobado el 2026-11-20.)*
+
+### 9.1 Datos
+
+**Sin migración.** La pestaña, el ícono y si es urgente se deducen del tipo de aviso; no se guardan.
+
+### 9.2 Lógica pura — `src/lib/notification-tabs.ts` (nuevo, sin I/O, con pruebas)
+
+- `NotificationTab = "sistema" | "mercadolibre"`.
+- `NOTIFICATION_TAB: Record<NotificationType, NotificationTab>`: `Record` completo, como `NOTIFICATION_ACCESS`. Un tipo nuevo sin pestaña no compila (spec, sección 11, casos borde).
+- `NOTIFICATION_ICON: Record<NotificationType, NotificationIcon>`: una clave de ícono (`pedido`, `caja`, `stock`, `factura`, `venta`, `cancelacion`, `fraude`, `envio`, `publicacion`, `conexion`). El componente la traduce a un ícono de `lucide-react`; la lógica pura no depende de la interfaz.
+- `URGENT_TYPES`: `ML_FRAUDE`, `ML_VENTA_SIN_STOCK` y `ML_RECONEXION` (RF-12).
+- `relativeTime(date, now)`: «hace un momento», «hace 5 min», «hace 3 h», «ayer 18:40» o «12/11 18:40», en hora de Tucumán (RF-12).
+- `tabCounts(...)`: cuántos sin leer tiene cada pestaña y el total (RF-8).
+
+### 9.3 Avisos calculados
+
+`LiveAlert` (`src/lib/facturacion/alerts.ts`) suma tres campos obligatorios: `tab`, `icon` y `urgent`. Cada constructor los completa:
+
+- `buildInvoicingAlerts`: pestaña Sistema, ícono `factura`.
+- `buildPendingSyncAlert`: Mercado Libre, `publicacion`.
+- `buildOrderAlerts`: Mercado Libre. El despacho vencido y el riesgo de fraude son urgentes; los íconos son `envio` y `fraude`.
+
+Al ser obligatorios, un aviso calculado nuevo sin pestaña tampoco compila.
+
+### 9.4 Resumen — `notifications-data.ts`
+
+- Cada `NotificationItem` suma `tab`, `icon` y `urgent`. El resumen suma `showTabs`: `true` si el usuario tiene «ver» en Mercado Libre (RF-10).
+- **Reconexión** (permisos de la sección 11): `NOTIFICATION_ACCESS` admite «cualquiera de estos módulos», y `ML_RECONEXION` queda con Configuración **o** Mercado Libre. Si el usuario no tiene «editar» en Configuración, que es lo que pide reconectar, el aviso llega sin enlace y con «Avisale al Dueño para reconectarla.» al final.
+- `markAllNotificationsRead(currentUser, tab)`, con `tab` igual a `todos`, `sistema` o `mercadolibre` (RF-11):
+  - un `updateMany` de los avisos sin leer de los tipos que el usuario ve (RF-7) y que son de esa pestaña;
+  - si la pestaña incluye Sistema y el aviso de stock bajo está activo, `dismissStockAlert` (RF-4b);
+  - los avisos calculados no se tocan.
+
+  Es seguro de repetir: dos personas a la vez no rompen nada.
+- Server Action `markAllNotificationsReadAction(tab)` en `notifications-actions.ts`.
+
+### 9.5 Componente — `notifications-bell.tsx`
+
+- Ventana más ancha (`w-[min(26rem,calc(100vw-2rem))]`) con la lista desplazable (`max-h` y `overflow-y-auto`) (RF-13).
+- Encabezado: «Avisos» y «Marcar todas como leídas», que actúa sobre la pestaña abierta y se apaga si no hay nada que marcar.
+- Con `showTabs`, `Tabs` (`src/components/ui/tabs.tsx`, ya existe) con Todos, Sistema y Mercado Libre, cada una con su contador (RF-8). Abre en Todos. Sin `showTabs`, la lista sola (RF-10).
+- Fila del aviso (RF-12):
+  - ícono en un círculo, mensaje y hora debajo;
+  - toda la fila es un enlace cuando el aviso lleva a algún lado;
+  - «marcar como leído» es un botón chico con ícono (`Check`) y texto para lectores de pantalla;
+  - los urgentes, con fondo y texto rojos suaves, en claro y en oscuro.
+- Orden: primero los calculados, con la marca «Ahora»; después el de stock bajo; después los avisos con hora, del más nuevo al más viejo.
+- Una pestaña vacía muestra su mensaje: «No hay avisos», «No hay avisos del sistema», «No hay avisos de Mercado Libre» (RF-13).
+
+### 9.6 Pruebas
+
+- **Unitarias:** `notification-tabs.test.ts` (pestaña de cada tipo, urgentes, `relativeTime` en los bordes de minuto, hora y día, y `tabCounts`); `notification-types.test.ts` (la reconexión con Mercado Libre o con Configuración); `order-alerts.test.ts` y las de los avisos de facturación (los campos nuevos).
+- **Manual:** el cliente revisa la campanita con avisos de las dos pestañas, «Marcar todas como leídas» en cada una, un usuario sin permiso de Mercado Libre, y la vista en el celular.
+- **E2E:** pendiente para la pasada de endurecimiento.
+
+### 9.7 Decisiones
+
+- **La pestaña se deduce del tipo, no se guarda:** no hace falta migrar los avisos viejos, y un tipo nuevo obliga a decidirla.
+- **«Marcar todas» no toca los avisos calculados:** marcarlos no tendría efecto, porque se vuelven a calcular en la próxima vuelta. Lo dice la spec (RF-11).

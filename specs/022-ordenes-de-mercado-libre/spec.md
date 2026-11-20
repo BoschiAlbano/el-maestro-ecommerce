@@ -72,6 +72,7 @@ Que cada compra hecha en Mercado Libre llegue sola al sistema como una venta de 
 - *(Agregado 2026-11-20, spec 024.)* El botón principal de una orden por despachar pasó a ser «Preparar envío»: emite la factura, la sube a la compra en Mercado Libre y deja imprimir la factura y la etiqueta, las dos en 10 × 15. La etiqueta sola sigue disponible.
 - **RF-17.** Una orden cuya fecha límite de despacho vence en las **próximas 4 horas** *(decisión del cliente, 2026-11-19)* se destaca en la lista y genera un aviso en la campanita. Si vence sin haberse despachado, se genera otro aviso.
 - **RF-18.** Una orden marcada por Mercado Libre con **riesgo de fraude** se muestra con una advertencia de no despachar, no permite descargar la etiqueta y genera un aviso en la campanita.
+- *(Agregado 2026-11-20, spec 013, sección 11.)* Los avisos de las órdenes (RF-10, RF-17 y RF-18) van en la pestaña **Mercado Libre** de la campanita. Se destacan como urgentes la venta sin stock, el despacho vencido y el riesgo de fraude.
 
 **Cancelaciones**
 

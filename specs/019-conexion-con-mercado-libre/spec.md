@@ -46,6 +46,7 @@ Esta spec no publica productos, no mueve stock y no trae órdenes. Es la base so
 - **RF-3.** Con la cuenta conectada, la sección muestra: el nombre de la cuenta de Mercado Libre, desde cuándo está conectada, el estado (conectada / requiere reconexión) y la fecha y hora del último aviso recibido.
 - **RF-4.** El sistema renueva la autorización por su cuenta antes de que venza. El usuario no tiene que hacer nada mientras la conexión esté sana.
 - **RF-5.** Si la renovación falla de forma definitiva (por ejemplo, porque el acceso se revocó desde Mercado Libre), la conexión pasa a "requiere reconexión", se genera un aviso en la campanita y la sección ofrece "Volver a conectar".
+- *(Agregado 2026-11-20, spec 013, sección 11.)* El aviso va en la pestaña **Mercado Libre** de la campanita, se destaca como urgente y lo ve también quien tiene «ver» en Mercado Libre (ver Permisos).
 - **RF-6.** "Desconectar" pide confirmación, elimina la autorización guardada y deja la sección como en el RF-1. El historial ya registrado en el sistema no se borra.
 - **RF-7.** Solo puede haber una cuenta conectada. Para cambiar de cuenta hay que desconectar primero.
 - **RF-8.** Al volver a conectar, si la cuenta autorizada no es la misma que estaba conectada antes, el sistema no la reemplaza: lo informa y pide desconectar primero la actual (RF-7). *(Cambio 2026-11-11, al escribir el plan: antes decía "lo advierte y pide confirmación antes de reemplazarla". Confirmar después de autorizar obligaba a guardar una autorización a medio aceptar.)*
@@ -87,7 +88,7 @@ Esta spec no publica productos, no mueve stock y no trae órdenes. Es la base so
 | Ver la sección y el estado de la conexión | Permiso "ver" en Configuración |
 | Conectar, volver a conectar y desconectar | Solo el rol Dueño |
 | Buscar avisos pendientes | Permiso "editar" en Configuración |
-| Ver el aviso de conexión caída en la campanita | Permiso "ver" en Configuración |
+| Ver el aviso de conexión caída en la campanita | Permiso "ver" en Configuración o, desde el 2026-11-20, en Mercado Libre *(spec 013, sección 11: va en la pestaña Mercado Libre; quien no puede reconectar lo ve sin enlace y con «Avisale al Dueño»)* |
 
 ## 7. Casos borde y errores
 

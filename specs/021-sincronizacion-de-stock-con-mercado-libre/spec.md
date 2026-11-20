@@ -43,6 +43,7 @@ Que la cantidad disponible de cada publicación de Mercado Libre sea siempre el 
 - **RF-5.** Lo que se envía es siempre la cantidad total del RF-1, nunca una diferencia. Enviar dos veces lo mismo no cambia nada.
 - **RF-6.** Si el envío falla, la publicación queda como "pendiente de enviar" y se vuelve a intentar en cada una de estas ocasiones: el próximo movimiento de ese producto, el próximo aviso de Mercado Libre, el control diario y la sincronización manual. Es la misma bandeja de envíos que usa el precio (spec 020).
 - **RF-7.** Mientras haya publicaciones con cambios sin enviar (cantidad, precio o pausa), la campanita muestra un solo aviso con la cantidad. Desaparece solo cuando no queda ninguna.
+- *(Agregado 2026-11-20, spec 013, sección 11.)* Este aviso va en la pestaña **Mercado Libre** de la campanita.
 - **RF-8.** Una vez por día, el sistema recorre todas las publicaciones vigentes, compara la cantidad que tiene Mercado Libre con la que corresponde y corrige las diferencias.
 - **RF-9.** La pantalla de publicaciones tiene un botón "Sincronizar ahora" que envía lo pendiente y hace el control del RF-8 en el momento, y muestra el resultado: cuántas se revisaron, cuántas se corrigieron y cuáles fallaron. Reemplaza al botón "Reintentar envíos" de la spec 020.
 - **RF-10.** La pantalla de publicaciones muestra, por producto, la cantidad publicada en Mercado Libre y si está pendiente de enviar.

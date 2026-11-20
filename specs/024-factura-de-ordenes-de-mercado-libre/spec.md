@@ -83,6 +83,7 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 - **RF-21.** La pantalla de órdenes (spec 022) permite filtrar por estado de la factura.
 - **RF-22.** Las facturas de órdenes aparecen en la pantalla de comprobantes (spec 023) con origen "Mercado Libre" y suman al acumulado contra el tope del monotributo.
 - **RF-23.** La campanita avisa cuando hay órdenes despachadas sin factura subida.
+- *(Agregado 2026-11-20, spec 013, sección 11.)* Este aviso va en la pestaña **Mercado Libre** de la campanita.
 
 ## 5. Reglas de negocio
 
