@@ -23,40 +23,47 @@ enum ModuloNegocio {
   EMPLEADOS
   ANALITICAS
   CONFIGURACION
+  /// Publicaciones de Mercado Libre (specs/020, sección 6).
+  MERCADO_LIBRE
 }
 
 /// Usuario de la aplicación, vinculado al usuario de Supabase Auth.
 model User {
-  id              String                @id @default(uuid())
-  authUserId      String                @unique
-  name            String
-  email           String                @unique
+  id                String                   @id @default(uuid())
+  authUserId        String                   @unique
+  name              String
+  email             String                   @unique
   /// Nombre para ingresar al sistema, como lo escribió el dueño (specs/016).
-  username        String
+  username          String
   /// Forma normalizada de `username` (minúsculas, sin espacios de más): sobre ella
   /// se busca y se garantiza que sea único sin distinguir mayúsculas.
-  usernameKey     String                @unique
+  usernameKey       String                   @unique
   /// Copia del login activo/inactivo de Supabase Auth: un usuario inactivo
   /// no puede iniciar sesión, pero su historial (ventas, caja, etc.) se
   /// conserva con su nombre — nunca se borra el usuario (specs/002, sección 4).
-  active          Boolean               @default(true)
-  roleId          String
-  role            Role                  @relation(fields: [roleId], references: [id])
-  auditLogs       AuditLog[]
-  priceChanges    ProductPriceHistory[]
-  stockMovements  StockMovement[]
-  stockEntries    StockEntry[]
-  shiftsOpened    CashShift[]           @relation("ShiftsOpened")
-  shiftsClosed    CashShift[]           @relation("ShiftsClosed")
-  cashMovements   CashMovement[]
-  sales           Sale[]
-  salesVoided     Sale[]                @relation("SalesVoided")
-  ticketReprints  TicketReprint[]
-  orders          Order[]
-  ordersCancelled Order[]               @relation("OrdersCancelled")
-  employee        Employee?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  active            Boolean                  @default(true)
+  roleId            String
+  role              Role                     @relation(fields: [roleId], references: [id])
+  auditLogs         AuditLog[]
+  priceChanges      ProductPriceHistory[]
+  stockMovements    StockMovement[]
+  stockEntries      StockEntry[]
+  shiftsOpened      CashShift[]              @relation("ShiftsOpened")
+  shiftsClosed      CashShift[]              @relation("ShiftsClosed")
+  cashMovements     CashMovement[]
+  sales             Sale[]
+  salesVoided       Sale[]                   @relation("SalesVoided")
+  ticketReprints    TicketReprint[]
+  orders            Order[]
+  ordersCancelled   Order[]                  @relation("OrdersCancelled")
+  employee          Employee?
+  mlConnections     MercadoLibreConnection[]
+  mlListingsLinked  MercadoLibreListing[]
+  mlLabelsPrinted   MercadoLibreOrder[]
+  invoicesRequested Invoice[]
+  arcaCredentials   ArcaCredential[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@map("users")
 }
@@ -105,14 +112,17 @@ model RolePermission {
 /// Datos del negocio y parámetros generales. Fila única (id fijo), no un
 /// key-value genérico — son 3 campos conocidos (specs/003, plan.md sección 1).
 model Setting {
-  id                   String   @id @default("singleton")
-  razonSocial          String   @default("")
-  textoTicketAdicional String?
-  stockMinimoDefault   Int      @default(5)
+  id                     String    @id @default("singleton")
+  razonSocial            String    @default("")
+  textoTicketAdicional   String?
+  stockMinimoDefault     Int       @default(5)
   /// Productos que estaban bajo el mínimo cuando alguien marcó leído el aviso de
   /// stock bajo (specs/013). El aviso reaparece si queda bajo algún producto que no figure acá.
-  stockAlertDismissedIds String[] @default([])
-  updatedAt            DateTime @updatedAt
+  stockAlertDismissedIds String[]  @default([])
+  /// Desde cuándo se registran las compras de Mercado Libre (specs/022,
+  /// RF-9b). Sin fecha no se registra ninguna: se define el día del arranque.
+  mlOrdersStartDate      DateTime?
+  updatedAt              DateTime  @updatedAt
 
   @@map("settings")
 }
@@ -132,6 +142,20 @@ enum AuditAction {
   ROLE_UPDATED
   ROLE_DELETED
   SYSTEM_RESET
+  /// Conectar y desconectar la cuenta de Mercado Libre (specs/019, RF-6).
+  ML_CONNECTED
+  ML_DISCONNECTED
+  /// Datos del emisor y certificado de ARCA (specs/023, RF-1 y RF-2e).
+  FISCAL_CONFIG_UPDATED
+  ARCA_CERTIFICATE_UPDATED
+  /// Publicaciones de Mercado Libre (specs/020).
+  ML_LISTING_LINKED
+  ML_LISTING_UNLINKED
+  ML_LISTING_PAUSED
+  ML_LISTING_ACTIVATED
+  ML_LISTING_CLOSED
+  /// Mercadería de una compra de Mercado Libre que volvió al stock (specs/022, RF-20).
+  ML_ORDER_RESTOCKED
 }
 
 /// Registro de auditoría. Solo lectura una vez creado (specs/003, sección 5):
@@ -208,6 +232,13 @@ model Product {
 
   photoUrl String?
 
+  /// SKU como lo escribió el usuario (specs/020, RF-1). Opcional.
+  sku    String?
+  /// `sku` en mayúsculas: sobre esta columna se garantiza que no se repita
+  /// sin distinguir mayúsculas (mismo criterio que `User.usernameKey`). La
+  /// calcula siempre `normalizeSku`; nunca se escribe a mano.
+  skuKey String? @unique
+
   /// `Decimal`, nunca `Float` (constitución, regla 6).
   purchasePrice Decimal @db.Decimal(12, 2)
   salePrice     Decimal @db.Decimal(12, 2)
@@ -226,6 +257,9 @@ model Product {
   stockEntryItems StockEntryItem[]
   saleItems       SaleItem[]
   orderItems      OrderItem[]
+  mlListings      MercadoLibreListing[]   @relation("MlListingProduct")
+  mlLinkedListing MercadoLibreListing?    @relation("MlListingLinkedProduct")
+  mlOrderItems    MercadoLibreOrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,13 +279,21 @@ model ProductPriceHistory {
   purchasePrice Decimal @db.Decimal(12, 2)
   salePrice     Decimal @db.Decimal(12, 2)
 
-  changedByUserId String
-  changedByUser   User   @relation(fields: [changedByUserId], references: [id])
+  /// Vacío cuando el cambio llegó de Mercado Libre (specs/020, RF-15).
+  changedByUserId String?
+  changedByUser   User?             @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
+  source          PriceChangeSource @default(USER)
 
   createdAt DateTime @default(now())
 
   @@index([productId])
   @@map("product_price_history")
+}
+
+/// De dónde vino un cambio de precio (specs/020, RF-15).
+enum PriceChangeSource {
+  USER
+  MERCADO_LIBRE
 }
 
 /// INGRESO y VENTA los generan las specs 006 y 008 (todavía no existen);
@@ -412,12 +454,16 @@ model CashMovement {
 /// Una venta de mostrador (specs/008). Anulada si `voidedAt` no es `null`
 /// — nunca se borra ni se edita, igual criterio que el resto de la app.
 model Sale {
-  id           String    @id @default(uuid())
-  ticketNumber Int       @unique @default(autoincrement())
-  shiftId      String
-  shift        CashShift @relation(fields: [shiftId], references: [id])
+  id           String      @id @default(uuid())
+  ticketNumber Int         @unique @default(autoincrement())
+  /// Vacío solo en las ventas de Mercado Libre, que no pasan por la caja
+  /// (specs/022; constitución, regla 11).
+  shiftId      String?
+  shift        CashShift?  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  /// LOCAL: mostrador y pedidos por encargo; MERCADO_LIBRE: compras de Mercado Libre (specs/022).
+  channel      SaleChannel @default(LOCAL)
   userId       String
-  user         User      @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
 
   /// Redondeado al peso con `roundToPeso` (specs/001) — es un monto
   /// calculado, no uno que se carga a mano.
@@ -441,9 +487,12 @@ model Sale {
   reprints       TicketReprint[]
   stockMovements StockMovement[]
   cashMovements  CashMovement[]
+  invoices       Invoice[]
+  mlOrder        MercadoLibreOrder?
 
   @@index([shiftId])
   @@index([orderId])
+  @@index([channel, createdAt])
   @@map("sales")
 }
 
@@ -460,6 +509,8 @@ model SaleItem {
   quantity      Int
   unitSalePrice Decimal @db.Decimal(12, 2)
   unitCost      Decimal @db.Decimal(12, 2)
+
+  mlOrderItem MercadoLibreOrderItem?
 
   @@index([saleId])
   @@map("sale_items")
@@ -564,6 +615,21 @@ model Employee {
 enum NotificationType {
   PEDIDO_NUEVO
   DIFERENCIA_CAJA
+  /// La conexión con Mercado Libre se cayó y hay que volver a conectar
+  /// (specs/019, RF-5).
+  ML_RECONEXION
+  /// Lo facturado en 12 meses cruzó el 80 % del tope del monotributo
+  /// (specs/023, RF-27). Solo informativo, y solo para el Dueño.
+  TOPE_FACTURACION
+  /// Mercado Libre observó, pausó o dio de baja una publicación vinculada
+  /// (specs/020, RF-14).
+  ML_PUBLICACION
+  /// Órdenes de Mercado Libre (specs/022): venta nueva, venta que dejó el
+  /// stock en negativo, cancelación y riesgo de fraude.
+  ML_VENTA
+  ML_VENTA_SIN_STOCK
+  ML_CANCELACION
+  ML_FRAUDE
 }
 
 /// Aviso puntual (specs/013) — solo pedido nuevo y diferencia de caja; el
@@ -584,4 +650,456 @@ model Notification {
 
   @@index([readAt])
   @@map("notifications")
+}
+
+enum MlConnectionStatus {
+  CONNECTED
+  /// La renovación falló de forma definitiva: hay que volver a autorizar.
+  NEEDS_RECONNECT
+}
+
+/// Cuenta de Mercado Libre conectada (specs/019). Fila única, igual que
+/// `Setting`: el `id` fijo garantiza una sola cuenta conectada (RF-7).
+/// Desconectar borra la fila.
+model MercadoLibreConnection {
+  id       String @id @default("singleton")
+  /// Identificador de la cuenta en Mercado Libre. Como texto: es un número
+  /// que no se opera y puede superar el rango de `Int`.
+  mlUserId String
+  nickname String
+  siteId   String
+
+  /// Cifrados con `encryptToken` (src/lib/mercadolibre/token-crypto.ts).
+  /// Nunca en claro, nunca al navegador, nunca en registros (RF-16).
+  accessTokenEnc       String
+  refreshTokenEnc      String
+  accessTokenExpiresAt DateTime
+
+  status       MlConnectionStatus @default(CONNECTED)
+  statusReason String?
+
+  connectedAt       DateTime @default(now())
+  connectedByUserId String
+  connectedByUser   User     @relation(fields: [connectedByUserId], references: [id])
+
+  lastRefreshedAt    DateTime?
+  lastNotificationAt DateTime?
+  lastRecoveryAt     DateTime?
+  /// Última búsqueda de órdenes nuevas (specs/022, RF-14): como mucho una por minuto al abrir la pantalla.
+  lastOrdersFetchAt  DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("ml_connections")
+}
+
+enum MlNotificationSource {
+  /// Llegó a la ruta de avisos.
+  WEBHOOK
+  /// Se recuperó de los avisos perdidos (pasada diaria o botón manual).
+  RECOVERY
+}
+
+enum MlNotificationStatus {
+  PENDING
+  PROCESSED
+  /// No hay ninguna función que procese ese tema (RF-15).
+  NO_ACTION
+  FAILED
+  /// De otra cuenta, sin cuenta conectada, o pendiente al desconectar (RF-11).
+  DISCARDED
+}
+
+/// Aviso de Mercado Libre (specs/019). La tabla funciona como cola: la ruta
+/// de avisos guarda y responde, y el procesamiento viene después. Sin
+/// relación a `ml_connections` a propósito: un aviso queda como dato
+/// histórico aunque se desconecte la cuenta.
+model MercadoLibreNotification {
+  id String @id @default(uuid())
+
+  /// El identificador del aviso si Mercado Libre lo manda; si no, un hash de
+  /// tema, recurso y fecha de envío. Único: el mismo aviso recibido dos veces
+  /// se guarda una sola vez (RF-12).
+  dedupeKey String @unique
+
+  /// Texto libre, no enum: llegan temas que el sistema no conoce.
+  topic    String
+  resource String
+  mlUserId String
+
+  source MlNotificationSource
+  status MlNotificationStatus @default(PENDING)
+
+  /// Intentos de procesamiento propios (no los reintentos de Mercado Libre).
+  attempts  Int     @default(0)
+  lastError String?
+
+  /// Fecha de envío que informa Mercado Libre.
+  sentAt      DateTime?
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([status, receivedAt])
+  @@map("ml_notifications")
+}
+
+/// Ambiente de ARCA. Un comprobante de prueba nunca se confunde con uno real.
+enum FiscalEnvironment {
+  HOMOLOGACION
+  PRODUCCION
+}
+
+/// Datos del emisor y parámetros de facturación (specs/023, RF-1, RF-6, RF-9
+/// y RF-16). Fila única, con restricción en la base, igual que `ml_connections`.
+/// La condición frente al IVA no es un campo: el emisor es siempre Responsable
+/// Monotributo (docs/decisions/0005).
+model FiscalConfig {
+  id String @id @default("singleton")
+
+  razonSocial        String    @default("")
+  cuit               String    @default("")
+  domicilioComercial String    @default("")
+  iibb               String    @default("")
+  /// Solo la fecha.
+  inicioActividades  DateTime? @db.Date
+  puntoDeVenta       Int?
+
+  /// Con cuál de los dos certificados se factura. El real solo se puede
+  /// activar en el sitio publicado (RF-2d).
+  environment FiscalEnvironment @default(HOMOLOGACION)
+
+  /// Tope anual de la categoría del monotributo, cargado a mano (RF-6).
+  topeAnual           Decimal? @db.Decimal(14, 2)
+  /// Desde qué total hay que identificar al comprador (RF-9).
+  montoIdentificacion Decimal  @default(10000000) @db.Decimal(14, 2)
+  /// Hasta cuántos días después de la venta se puede facturar (RF-16).
+  diasParaFacturar    Int      @default(5)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("fiscal_config")
+}
+
+/// Certificado de ARCA cargado desde Configuración (specs/023, RF-2b a RF-2e).
+/// Una fila por ambiente. La clave privada va cifrada (`src/lib/secret-box.ts`)
+/// y es de solo escritura: ninguna pantalla ni acción la devuelve.
+model ArcaCredential {
+  environment FiscalEnvironment @id
+
+  /// El certificado es público: va sin cifrar.
+  certificatePem String?
+  privateKeyEnc  String?
+
+  /// Clave y pedido generados por el sistema que todavía esperan el
+  /// certificado de ARCA. No reemplazan al que está en uso hasta que llega.
+  pendingKeyEnc String?
+  pendingCsrPem String?
+
+  /// Leídos del certificado en uso.
+  cuit      String?
+  expiresAt DateTime?
+
+  uploadedByUserId String?
+  uploadedByUser   User?     @relation(fields: [uploadedByUserId], references: [id])
+  uploadedAt       DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("arca_credentials")
+}
+
+/// Permiso temporal de ARCA (dura 12 horas), por ambiente y servicio. Va a la
+/// base porque el servidor no tiene disco, y pedir un permiso nuevo con uno
+/// vigente da error. Cifrado.
+model ArcaTicket {
+  environment FiscalEnvironment
+  service     String
+  /// CUIT del certificado con el que se pidió: si cambia, el permiso no sirve.
+  cuit        String
+  payloadEnc  String
+  expiresAt   DateTime
+  updatedAt   DateTime          @updatedAt
+
+  @@id([environment, service])
+  @@map("arca_tickets")
+}
+
+enum InvoiceKind {
+  FACTURA_C
+  NOTA_CREDITO_C
+}
+
+enum InvoiceStatus {
+  /// Pedido y todavía sin autorizar: ARCA no respondió o rechazó (RF-12).
+  PENDING
+  AUTHORIZED
+  /// Nunca llegó a existir en ARCA y ya no corresponde (venta anulada).
+  DISCARDED
+}
+
+enum InvoiceOrigin {
+  LOCAL
+  /// Lo usa la spec 024.
+  MERCADO_LIBRE
+}
+
+enum ReceiverDocType {
+  /// Consumidor Final sin identificar.
+  NONE
+  DNI
+  CUIT
+}
+
+/// Factura o nota de crédito (specs/023). Un comprobante autorizado no se
+/// edita ni se borra: la única forma de dejarlo sin efecto es una nota de
+/// crédito. El detalle de productos sale de `SaleItem`, que ya es inmutable.
+model Invoice {
+  id          String            @id @default(uuid())
+  kind        InvoiceKind
+  status      InvoiceStatus     @default(PENDING)
+  environment FiscalEnvironment
+  origin      InvoiceOrigin     @default(LOCAL)
+
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  /// En una nota de crédito, la factura que deja sin efecto.
+  relatedInvoiceId String?
+  relatedInvoice   Invoice?  @relation("InvoiceCreditNotes", fields: [relatedInvoiceId], references: [id])
+  creditNotes      Invoice[] @relation("InvoiceCreditNotes")
+
+  pointOfSale     Int
+  /// Lo asigna ARCA; vacío mientras está pendiente.
+  number          Int?
+  /// Número con el que se intentó la última vez. Se guarda antes de llamar a
+  /// ARCA para poder comprobar, al reintentar, si ese intento se autorizó.
+  attemptedNumber Int?
+  cae             String?
+  caeExpiresAt    DateTime? @db.Date
+  issueDate       DateTime? @db.Date
+
+  /// El total de la venta, ya redondeado al peso.
+  total Decimal @db.Decimal(12, 2)
+
+  receiverDocType      ReceiverDocType @default(NONE)
+  receiverDocNumber    String?
+  receiverName         String?
+  /// Código de ARCA de la condición frente al IVA del comprador.
+  receiverIvaCondition Int
+
+  /// Datos del emisor al autorizarse: una reimpresión muestra lo que se
+  /// emitió aunque después cambie la configuración.
+  emitterSnapshot Json?
+
+  attempts  Int     @default(0)
+  lastError String?
+
+  requestedByUserId String
+  requestedByUser   User   @relation(fields: [requestedByUserId], references: [id])
+
+  createdAt    DateTime  @default(now())
+  authorizedAt DateTime?
+
+  @@unique([environment, pointOfSale, kind, number])
+  @@index([saleId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("invoices")
+}
+
+/// Estado de una publicación vinculada, como lo muestra el sistema
+/// (specs/020, RF-12). Lo que informa Mercado Libre, sin traducir, va en
+/// `mlStatus` y `mlSubStatus`.
+enum MlListingStatus {
+  ACTIVE
+  PAUSED
+  PAUSED_NO_STOCK
+  UNDER_REVIEW
+  CLOSED
+}
+
+/// Publicación de Mercado Libre vinculada a un producto (specs/020). Deshacer
+/// el vínculo borra la fila; finalizarla la conserva como historial.
+model MercadoLibreListing {
+  id            String  @id @default(uuid())
+  mlItemId      String  @unique
+  /// La única variante de la publicación, si tiene una (specs/020, cambio
+  /// 2026-11-19): precio, cantidad y SKU se leen y se mandan ahí.
+  mlVariationId String?
+
+  /// De qué producto es. Se conserva aunque la publicación se finalice.
+  productId       String
+  product         Product  @relation("MlListingProduct", fields: [productId], references: [id], onDelete: Cascade)
+  /// Igual a `productId` mientras la publicación está vigente; vacío al
+  /// finalizarla. El `@unique` garantiza "un producto, una publicación
+  /// vigente" (specs/020, sección 5) sin un índice parcial.
+  linkedProductId String?  @unique
+  linkedProduct   Product? @relation("MlListingLinkedProduct", fields: [linkedProductId], references: [id], onDelete: Cascade)
+
+  /// Referencia, tomada al vincular y en cada lectura (RF-8).
+  title        String
+  thumbnailUrl String?
+  permalink    String
+  categoryId   String?
+
+  status       MlListingStatus
+  mlStatus     String
+  mlSubStatus  String[]        @default([])
+  /// Motivo en español cuando Mercado Libre la pausa, la observa o la da de
+  /// baja (RF-14).
+  statusReason String?
+
+  /// Último precio y SKU leídos de Mercado Libre o enviados a Mercado Libre.
+  lastKnownPrice     Decimal   @db.Decimal(12, 2)
+  lastKnownSku       String?
+  /// Última cantidad leída de Mercado Libre o enviada (specs/021, RF-10).
+  lastKnownQuantity  Int?
+  /// Último envío o control de cantidad que terminó bien.
+  lastQuantitySyncAt DateTime?
+  /// SKU que llegó de Mercado Libre y no se pudo tomar (RF-3).
+  skuConflict        String?
+
+  /// Hay un precio del sistema que todavía no llegó a Mercado Libre (RF-13).
+  pricePendingSince    DateTime?
+  /// El producto se desactivó y la pausa todavía no llegó (RF-18).
+  pausePendingSince    DateTime?
+  /// Hay una cantidad del sistema que todavía no llegó (specs/021, RF-6).
+  quantityPendingSince DateTime?
+  lastSyncError        String?
+  lastReadAt           DateTime?
+
+  linkedAt       DateTime  @default(now())
+  linkedByUserId String
+  linkedByUser   User      @relation(fields: [linkedByUserId], references: [id])
+  closedAt       DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([pricePendingSince])
+  @@index([quantityPendingSince])
+  @@map("ml_listings")
+}
+
+/// Canal de una venta (specs/022, RF-22).
+enum SaleChannel {
+  LOCAL
+  MERCADO_LIBRE
+}
+
+/// Estado de una compra de Mercado Libre, como lo muestra el sistema (specs/022, RF-12).
+enum MlOrderStatus {
+  TO_PREPARE
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  NOT_DELIVERED
+  CANCELLED
+}
+
+/// Una compra de Mercado Libre (specs/022): una orden suelta o un paquete
+/// (carrito). Guarda lo que es de Mercado Libre; la venta, sus ítems y el
+/// stock van por `Sale`, como cualquier venta.
+model MercadoLibreOrder {
+  id         String   @id @default(uuid())
+  /// `pack:{id}` o `order:{id}`: la base garantiza que una compra se registre una sola vez (RF-8).
+  mlKey      String   @unique
+  mlOrderIds String[]
+  mlPackId   String?
+
+  saleId String? @unique
+  sale   Sale?   @relation(fields: [saleId], references: [id])
+
+  status            MlOrderStatus
+  mlShipmentId      String?
+  shipmentStatus    String?
+  shipmentSubstatus String?
+  /// Fecha límite de despacho, de `/shipments/{id}/sla` (RF-17).
+  dispatchDeadline  DateTime?
+
+  /// Lo mínimo para identificar el paquete. La dirección, el teléfono y el
+  /// documento no se guardan: viajan en la etiqueta (spec, sección 5).
+  buyerNickname   String
+  receiverName    String?
+  destinationCity String?
+
+  /// Lo que pagó el comprador por los productos, sin el envío que cobra Mercado Libre.
+  total              Decimal @db.Decimal(12, 2)
+  /// Lo que cobró Mercado Libre por la venta (RF-4).
+  mlFee              Decimal @db.Decimal(12, 2)
+  sellerShippingCost Decimal @default(0) @db.Decimal(12, 2)
+  net                Decimal @db.Decimal(12, 2)
+
+  /// Algún producto quedó con stock negativo al registrarla (RF-10b).
+  outOfStock  Boolean @default(false)
+  /// Mercado Libre la marcó con riesgo de fraude (RF-18).
+  fraudRisk   Boolean @default(false)
+  /// Motivo para revisarla: ítem sin vincular, devolución parcial (spec, sección 7).
+  needsReview String?
+
+  cancelReason String?
+  cancelledAt  DateTime?
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
+
+  labelPrintedAt       DateTime?
+  labelPrintedByUserId String?
+  labelPrintedByUser   User?     @relation(fields: [labelPrintedByUserId], references: [id])
+
+  /// Fecha de la compra en Mercado Libre.
+  mlCreatedAt DateTime
+
+  items  MercadoLibreOrderItem[]
+  events MercadoLibreOrderEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([dispatchDeadline])
+  @@index([mlShipmentId])
+  @@map("ml_orders")
+}
+
+/// Un producto de una compra de Mercado Libre (specs/022).
+model MercadoLibreOrderItem {
+  id      String            @id @default(uuid())
+  orderId String
+  order   MercadoLibreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// La orden de Mercado Libre del paquete a la que pertenece.
+  mlOrderId     String
+  mlItemId      String
+  mlVariationId String?
+  title         String
+  sku           String?
+  quantity      Int
+  unitPrice     Decimal @db.Decimal(12, 2)
+  /// Lo que cobra Mercado Libre por unidad (`sale_fee`).
+  saleFee       Decimal @db.Decimal(12, 2)
+
+  /// Vacío si la publicación no estaba vinculada: no descuenta stock (spec, sección 7).
+  productId  String?
+  product    Product?  @relation(fields: [productId], references: [id])
+  saleItemId String?   @unique
+  saleItem   SaleItem? @relation(fields: [saleItemId], references: [id])
+
+  /// Unidades que volvieron al stock después de una cancelación posterior al despacho (RF-20).
+  restockedQuantity Int @default(0)
+
+  @@index([orderId])
+  @@map("ml_order_items")
+}
+
+/// Historial de estados de una compra de Mercado Libre (specs/022, RF-15).
+model MercadoLibreOrderEvent {
+  id      String            @id @default(uuid())
+  orderId String
+  order   MercadoLibreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status  MlOrderStatus
+  detail  String?
+  at      DateTime          @default(now())
+
+  @@index([orderId])
+  @@map("ml_order_events")
 }

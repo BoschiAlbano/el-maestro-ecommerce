@@ -40,6 +40,7 @@ Saber cuánto stock real tiene cada producto en todo momento, para poder vender 
 - **RF-4.** La pantalla de inventario muestra, por producto, el stock actual y si está en o por debajo de su stock mínimo (el umbral ya definido en la spec 004).
 - **RF-5.** Cada producto tiene un historial de sus movimientos de stock (tipo, cantidad, motivo, quién y cuándo), visible desde su ficha. El historial está paginado de a 10 (`?pagina=N`). *(Agregado 2026-10-20.)*
 - **RF-6.** El sistema expone una función interna para registrar un movimiento de stock, que las specs 006 (ingreso de mercadería) y 008 (ventas) van a usar para sus propios movimientos — ningún módulo futuro inventa su propia forma de cambiar el stock.
+  *(Agregado 2026-11-19, spec 021.)* Esa misma función marca la publicación de Mercado Libre del producto, si tiene, para enviarle la cantidad nueva. Todo movimiento de stock de un producto publicado, sin excepción, termina actualizando la cantidad en Mercado Libre.
 - **RF-7.** Un movimiento que deja el stock de un producto en negativo no se bloquea; se guarda igual y la pantalla de inventario lo señala como una situación a revisar.
 - **RF-8.** El alta de un producto (spec 004) permite opcionalmente indicar su stock inicial; si no tiene el permiso especial "ajustar stock", ese campo no está disponible.
 

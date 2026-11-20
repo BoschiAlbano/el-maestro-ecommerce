@@ -53,4 +53,15 @@ describe("buildBreadcrumbs", () => {
       { label: "Nuevo" },
     ]);
   });
+
+  it("órdenes de Mercado Libre y su detalle (specs/022)", () => {
+    expect(buildBreadcrumbs("/ordenes/abc")).toEqual([{ label: "Órdenes", href: "/ordenes" }, { label: "Detalle" }]);
+  });
+
+  it("publicaciones de Mercado Libre y su pantalla de vincular (specs/020)", () => {
+    expect(buildBreadcrumbs("/publicaciones/vincular")).toEqual([
+      { label: "Mercado Libre", href: "/publicaciones" },
+      { label: "Vincular publicaciones" },
+    ]);
+  });
 });

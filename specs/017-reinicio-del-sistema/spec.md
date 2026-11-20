@@ -14,6 +14,8 @@ Sirve para pasar de la etapa de pruebas a la operación real: hoy el sistema tie
 
 Es una acción **irreversible**: una vez hecha, los datos no se pueden recuperar desde el sistema.
 
+
+*(Agregado 2026-11-19, spec 022.)* Las compras de Mercado Libre se borran junto con las ventas. El usuario y el rol «Sistema», que usan esas ventas, se conservan, igual que la fecha desde la que se registran las compras.
 ## 2. Alcance
 
 **Incluye:**
@@ -22,6 +24,9 @@ Es una acción **irreversible**: una vez hecha, los datos no se pueden recuperar
 - Antes de borrar, un resumen de **qué se va a borrar** (cantidades) y una **doble confirmación**: la contraseña del Dueño y escribir una frase exacta.
 - Borrar todos los datos de negocio, los demás usuarios (incluida su cuenta de acceso) y las fotos de productos.
 - Dejar el sistema usable: el Dueño que hizo el reinicio sigue dentro, con su rol y la configuración del negocio.
+- *(Agregado 2026-11-11, spec 019.)* La cuenta de Mercado Libre conectada se conserva, porque es configuración y no datos del negocio: el reinicio no la desconecta. Los avisos recibidos de Mercado Libre sí se borran, y si la cuenta la había conectado otro usuario con rol Dueño, pasa a figurar como conectada por quien reinicia.
+- *(Agregado 2026-11-11, spec 023.)* Los comprobantes electrónicos se borran junto con las ventas, **también los reales**: el Dueño puede reiniciar con facturas emitidas, pero el resumen previo lo advierte con un aviso fuerte (cuántas son, que borrarlas del sistema no las anula en ARCA, que se pierde la copia y el acumulado contra el tope, y que conviene exportar antes el Excel desde Comprobantes). Los datos del emisor, el certificado y el permiso de ARCA se conservan, porque son configuración; el certificado, si lo había cargado otro Dueño, pasa a figurar como cargado por quien reinicia. La numeración no se pierde: la lleva ARCA.
+- *(Agregado 2026-11-16, spec 020.)* Los vínculos entre productos y publicaciones de Mercado Libre se borran junto con los productos. Las publicaciones siguen en Mercado Libre tal como están, pero sus ventas dejan de descontar stock hasta que se vuelvan a vincular. Si hay publicaciones vinculadas, el resumen previo lo advierte.
 
 **No incluye:**
 

@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { scheduleListingPush } from "@/lib/mercadolibre/listings";
 
 export type ActionState = { error?: string };
 
@@ -57,6 +58,7 @@ export async function adjustStock(
     }),
   );
 
+  scheduleListingPush([productId]);
   revalidatePath("/inventario");
   revalidatePath(`/inventario/${productId}`);
   return {};

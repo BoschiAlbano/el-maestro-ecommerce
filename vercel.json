@@ -1,4 +1,15 @@
 {
-  "regions": ["gru1"],
-  "crons": [{ "path": "/api/cron/keep-alive", "schedule": "0 12 * * *" }]
+  "regions": [
+    "gru1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/keep-alive",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/mercadolibre",
+      "schedule": "0 13 * * *"
+    }
+  ]
 }

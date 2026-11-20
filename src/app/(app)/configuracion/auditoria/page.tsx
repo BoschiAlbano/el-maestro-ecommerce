@@ -31,6 +31,10 @@ const ACCIONES: { value: AuditAction; label: string }[] = [
   { value: "ROLE_UPDATED", label: "Rol editado" },
   { value: "ROLE_DELETED", label: "Rol borrado" },
   { value: "SYSTEM_RESET", label: "Sistema reiniciado" },
+  { value: "ML_CONNECTED", label: "Mercado Libre conectado" },
+  { value: "ML_DISCONNECTED", label: "Mercado Libre desconectado" },
+  { value: "FISCAL_CONFIG_UPDATED", label: "Datos de facturación editados" },
+  { value: "ARCA_CERTIFICATE_UPDATED", label: "Certificado de ARCA actualizado" },
 ];
 
 function labelFor(action: AuditAction): string {

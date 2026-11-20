@@ -8,11 +8,15 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { scheduleListingPush } from "@/lib/mercadolibre/listings";
 import { registerCashMovement } from "@/lib/cash";
 import { computeSaleTotal, validatePayments } from "@/lib/sale";
 import { computeDepositApplication, validateOrderItemQuantity } from "@/lib/order";
 import { notifyPedidoNuevo } from "@/lib/notifications";
 import type { DepositTicketInput } from "@/lib/ticket-lines";
+import { invoiceRequestSchema, type InvoiceRequest, type SaleInvoiceInfo } from "@/lib/facturacion/invoice-request";
+import { authorizeAfterSale, createInvoiceInTx, prepareInvoice } from "@/lib/facturacion/invoices";
+import type { FiscalConfigView } from "@/lib/facturacion/fiscal-data";
 
 export type ActionState = { error?: string };
 export type SearchedProduct = { id: string; name: string; barcode: string; salePrice: number; stock: number };
@@ -212,10 +216,18 @@ export async function deliverOrderItems(
   orderId: string,
   deliveries: { orderItemId: string; quantity: number }[],
   extraPayments: { method: "EFECTIVO" | "TRANSFERENCIA"; amount: number; transferReference?: string }[],
-): Promise<ActionState & { saleId?: string }> {
+  invoiceRequest?: InvoiceRequest | null,
+): Promise<ActionState & { saleId?: string; invoice?: SaleInvoiceInfo }> {
   const currentUser = await getCurrentUser();
   requirePermission(currentUser, ModuloNegocio.PEDIDOS, "crear");
   requirePermission(currentUser, ModuloNegocio.VENTAS, "crear");
+
+  let parsedInvoice: InvoiceRequest | null = null;
+  if (invoiceRequest) {
+    const parsed = invoiceRequestSchema.safeParse(invoiceRequest);
+    if (!parsed.success) return { error: "Los datos de la factura no son válidos." };
+    parsedInvoice = parsed.data;
+  }
 
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order) return { error: "El pedido no existe." };
@@ -274,7 +286,16 @@ export async function deliverOrderItems(
     return { error: "La seña ya cubre todo esta entrega: no hace falta cobrar nada más." };
   }
 
-  const sale = await prisma.$transaction(async (tx) => {
+  // La factura se valida antes de vender (specs/023, RF-4). Se factura el total de la entrega,
+  // seña incluida: la seña es parte del precio, no un descuento.
+  let invoiceConfig: FiscalConfigView | null = null;
+  if (parsedInvoice) {
+    const prepared = await prepareInvoice(parsedInvoice, saleTotal);
+    if ("error" in prepared) return { error: prepared.error };
+    invoiceConfig = prepared.config;
+  }
+
+  const { sale, invoiceId } = await prisma.$transaction(async (tx) => {
     const created = await tx.sale.create({
       data: {
         shiftId: shift.id,
@@ -340,14 +361,31 @@ export async function deliverOrderItems(
       },
     });
 
-    return created;
+    const invoiceId =
+      parsedInvoice && invoiceConfig
+        ? await createInvoiceInTx(tx, {
+            saleId: created.id,
+            total: saleTotal,
+            receiver: parsedInvoice.receiver,
+            userId: currentUser.id,
+            config: invoiceConfig,
+          })
+        : null;
+
+    return { sale: created, invoiceId };
   });
+
+  // La cantidad en Mercado Libre se envía después de responder (specs/021, RF-4).
+  scheduleListingPush(deliveries.map((delivery) => itemById.get(delivery.orderItemId)!.productId));
+
+  // La entrega ya está hecha: la factura nunca puede hacerla fallar (RF-10).
+  const invoice = invoiceId ? await authorizeAfterSale(invoiceId) : undefined;
 
   revalidatePath(`/pedidos/${orderId}`);
   revalidatePath("/pedidos");
   revalidatePath("/inventario");
   revalidatePath("/caja");
-  return { saleId: sale.id };
+  return { saleId: sale.id, invoice };
 }
 
 export async function cancelOrder(orderId: string, reason: string): Promise<ActionState> {

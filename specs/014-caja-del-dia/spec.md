@@ -12,6 +12,8 @@ Que el dueño vea **cómo va la caja de un día completo**, sin importar cuánto
 
 Hoy la caja se mira por turno (spec 007). Si el cajero de la mañana cerró y el de la tarde tiene la caja abierta, el dueño tiene que entrar al historial, abrir el turno de la mañana, ir a `/caja` para ver el de la tarde y sumar a ojo. Esta spec elimina ese paso: un resumen del día que junta todos los turnos y, a la vez, deja ver el aporte de cada uno.
 
+
+*(Agregado 2026-11-19, spec 022.)* La caja del día cuenta solo las ventas del local: las de Mercado Libre no pasan por la caja.
 ## 2. Alcance
 
 **Incluye:**

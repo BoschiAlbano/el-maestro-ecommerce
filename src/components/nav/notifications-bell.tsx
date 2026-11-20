@@ -9,36 +9,67 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-const EMPTY_SUMMARY: NotificationsSummary = { items: [], stockBajo: false, unreadCount: 0 };
+const EMPTY_SUMMARY: NotificationsSummary = { items: [], liveAlerts: [], stockBajo: false, unreadCount: 0 };
 const POLL_INTERVAL_MS = 60_000;
+
+/** Evento para que otra pantalla pida actualizar la campanita sin esperar la próxima vuelta (specs/020, RF-14b). */
+export const REFRESH_NOTIFICATIONS_EVENT = "notifications:refresh";
+
+export function requestNotificationsRefresh() {
+  window.dispatchEvent(new Event(REFRESH_NOTIFICATIONS_EVENT));
+}
 
 export function NotificationsBell() {
   const [summary, setSummary] = useState<NotificationsSummary>(EMPTY_SUMMARY);
   const [pending, startTransition] = useTransition();
 
-  function refresh() {
-    startTransition(async () => {
+  // Los avisos son un extra de la pantalla: si una consulta falla (se cortó la red, el servidor se estaba
+  // reiniciando, un túnel devolvió una respuesta incompleta), se conserva lo último que se vio y se vuelve a
+  // intentar en la próxima vuelta. Un error acá nunca tiene que tumbar la página.
+  async function loadSummary() {
+    try {
       setSummary(await getNotificationsSummary());
-    });
+    } catch {
+      // se reintenta solo
+    }
   }
 
   useEffect(() => {
-    refresh();
-    const interval = setInterval(refresh, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    const poll = async () => {
+      try {
+        setSummary(await getNotificationsSummary());
+      } catch {
+        // se reintenta en la próxima vuelta
+      }
+    };
+    void poll();
+    const interval = setInterval(poll, POLL_INTERVAL_MS);
+    window.addEventListener(REFRESH_NOTIFICATIONS_EVENT, poll);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(REFRESH_NOTIFICATIONS_EVENT, poll);
+    };
   }, []);
 
   function handleMarkRead(id: string) {
     startTransition(async () => {
-      const result = await markNotificationReadAction(id);
-      if (!result.error) setSummary(await getNotificationsSummary());
+      try {
+        const result = await markNotificationReadAction(id);
+        if (!result.error) await loadSummary();
+      } catch {
+        // se reintenta al volver a tocar
+      }
     });
   }
 
   function handleDismissStock() {
     startTransition(async () => {
-      const result = await dismissStockAlertAction();
-      if (!result.error) setSummary(await getNotificationsSummary());
+      try {
+        const result = await dismissStockAlertAction();
+        if (!result.error) await loadSummary();
+      } catch {
+        // se reintenta al volver a tocar
+      }
     });
   }
 
@@ -62,7 +93,7 @@ export function NotificationsBell() {
       <PopoverContent>
         <div className="flex flex-col gap-3">
           <p className="text-sm font-semibold">Avisos</p>
-          {summary.items.length === 0 && !summary.stockBajo && (
+          {summary.items.length === 0 && summary.liveAlerts.length === 0 && !summary.stockBajo && (
             <p className="text-sm text-muted-foreground">No hay avisos nuevos.</p>
           )}
           {summary.stockBajo && (
@@ -75,9 +106,22 @@ export function NotificationsBell() {
               </Button>
             </div>
           )}
+          {summary.liveAlerts.map((alert) => (
+            <div key={alert.key} className="text-sm">
+              <Link href={alert.href} className="text-primary underline">
+                {alert.message}
+              </Link>
+            </div>
+          ))}
           {summary.items.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-2 text-sm">
-              <span>{item.message}</span>
+              {item.href ? (
+                <Link href={item.href} className="text-primary underline">
+                  {item.message}
+                </Link>
+              ) : (
+                <span>{item.message}</span>
+              )}
               <Button
                 type="button"
                 variant="ghost"

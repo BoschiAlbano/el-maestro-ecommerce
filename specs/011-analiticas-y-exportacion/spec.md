@@ -10,6 +10,8 @@
 
 Mostrar al dueño qué se vende, cuánto, quién lo vende y cuánto se gana, con filtros y exportación.
 
+
+*(Agregado 2026-11-19, spec 022.)* Filtro **Origen** (Todas, Local, Mercado Libre; «Local» agrupa mostrador y pedidos). Las ventas de Mercado Libre aparecen como canal y como medio de cobro «Mercado Libre», y el margen descuenta lo que cobró Mercado Libre y el envío a cargo del vendedor. Las exportaciones respetan el filtro y suman la tabla «Ventas por origen».
 ## 2. Alcance
 
 **Incluye:**

@@ -10,6 +10,8 @@
 
 Controlar la plata que entra y sale de la caja durante un turno, para saber cuánto debería haber en efectivo en cualquier momento y detectar diferencias al cerrar.
 
+
+*(Agregado 2026-11-19, spec 022.)* Las ventas de Mercado Libre no pasan por la caja: no tienen turno ni movimientos de caja, y no cambian el efectivo esperado ni el cierre.
 ## 2. Alcance
 
 **Incluye:**

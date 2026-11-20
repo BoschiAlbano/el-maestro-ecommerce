@@ -9,11 +9,15 @@ import {
   computeMarginSummary,
   computeStockValuation,
   groupBy,
+  ORIGIN_LABELS,
   type ParsedAnalyticsFilters,
 } from "./analytics";
 
 /** Sentinel para "ventas sin pedido vinculado" al filtrar/agrupar por canal (specs/011, sección 2). */
 export const MOSTRADOR = "Mostrador";
+/** Canal y "turno" de las ventas de Mercado Libre, que no tienen caja (specs/022, RF-23). */
+export const MERCADO_LIBRE_LABEL = "Mercado Libre";
+const ML_SHIFT_KEY = "__mercadolibre__";
 
 export type AnalyticsFilters = ParsedAnalyticsFilters;
 
@@ -36,6 +40,8 @@ export type AnalyticsData = {
   porEmpleado: GroupTotal[];
   porTurno: GroupTotal[];
   porCanal: GroupTotal[];
+  /** Local y Mercado Libre (specs/022, RF-22). */
+  porOrigen: GroupTotal[];
   masVendidos: (GroupTotal & { cantidad: number })[];
   sinMovimiento: { id: string; name: string }[] | null;
   margen: { totalMargin: number; marginPct: number } | null;
@@ -44,7 +50,7 @@ export type AnalyticsData = {
   margenPorRubro: MarginGroup[] | null;
   valorizacionStock: number | null;
   diferenciasCaja: GroupTotal[];
-  /** Lo cobrado en el período por medio de pago (ingresos de caja de ventas no anuladas). */
+  /** Lo cobrado en el período por medio de pago (ingresos de caja de ventas no anuladas, y las de Mercado Libre). */
   porMedioPago: { method: string; total: number; count: number }[];
 };
 
@@ -55,6 +61,7 @@ type SaleItemRow = {
   shiftId: string;
   shiftLabel: string;
   channel: string;
+  origin: string;
   productId: string;
   productName: string;
   brandId: string | null;
@@ -64,6 +71,8 @@ type SaleItemRow = {
   quantity: number;
   unitSalePrice: number;
   unitCost: number;
+  /** Lo que cobró Mercado Libre por unidad, con su parte del envío a cargo del vendedor; 0 en el local. */
+  unitFee: number;
   createdAt: Date;
 };
 
@@ -73,8 +82,12 @@ function buildSaleItemWhere(filters: AnalyticsFilters, from: Date, to: Date): Pr
     createdAt: { gte: from, lt: to },
   };
   if (filters.employeeId) saleWhere.userId = filters.employeeId;
-  if (filters.channel === MOSTRADOR) saleWhere.orderId = null;
-  else if (filters.channel) saleWhere.order = { channel: filters.channel };
+  if (filters.origin) saleWhere.channel = filters.origin;
+  if (filters.channel === MERCADO_LIBRE_LABEL) saleWhere.channel = "MERCADO_LIBRE";
+  else if (filters.channel === MOSTRADOR) {
+    saleWhere.orderId = null;
+    saleWhere.channel = "LOCAL";
+  } else if (filters.channel) saleWhere.order = { channel: filters.channel };
   if (filters.paymentMethod) {
     saleWhere.cashMovements = { some: { paymentMethod: filters.paymentMethod, type: "INGRESO" } };
   }
@@ -94,22 +107,34 @@ async function fetchSaleItemRows(filters: AnalyticsFilters, from: Date, to: Date
   const items = await prisma.saleItem.findMany({
     where: buildSaleItemWhere(filters, from, to),
     include: {
-      sale: { include: { user: true, order: true, shift: true } },
+      sale: { include: { user: true, order: true, shift: true, mlOrder: { select: { total: true, sellerShippingCost: true } } } },
       product: { include: { brand: true, rubro: true } },
+      mlOrderItem: { select: { saleFee: true } },
     },
   });
 
-  return items.map((item) => ({
+  return items.map((item) => {
+    // Lo que cobró Mercado Libre por unidad, más la parte del envío a cargo del
+    // vendedor que le toca a este ítem según su importe (specs/022, RF-24).
+    const order = item.sale.mlOrder;
+    const lineTotal = item.unitSalePrice.toNumber() * item.quantity;
+    const shippingShare =
+      order && order.total.toNumber() > 0 ? (order.sellerShippingCost.toNumber() * lineTotal) / order.total.toNumber() / item.quantity : 0;
+    const unitFee = (item.mlOrderItem?.saleFee.toNumber() ?? 0) + shippingShare;
+    return {
     saleId: item.saleId,
     employeeId: item.sale.userId,
     employeeName: item.sale.user.name,
-    shiftId: item.sale.shiftId,
-    shiftLabel: `Turno del ${new Intl.DateTimeFormat("es-AR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "America/Argentina/Tucuman",
-    }).format(item.sale.shift.openedAt)}`,
-    channel: item.sale.order?.channel ?? MOSTRADOR,
+    shiftId: item.sale.shiftId ?? ML_SHIFT_KEY,
+    shiftLabel: item.sale.shift
+      ? `Turno del ${new Intl.DateTimeFormat("es-AR", {
+          dateStyle: "short",
+          timeStyle: "short",
+          timeZone: "America/Argentina/Tucuman",
+        }).format(item.sale.shift.openedAt)}`
+      : `${MERCADO_LIBRE_LABEL} (sin caja)`,
+    channel: item.sale.channel === "MERCADO_LIBRE" ? MERCADO_LIBRE_LABEL : (item.sale.order?.channel ?? MOSTRADOR),
+    origin: ORIGIN_LABELS[item.sale.channel],
     productId: item.productId,
     productName: item.product.name,
     brandId: item.product.brandId,
@@ -119,8 +144,10 @@ async function fetchSaleItemRows(filters: AnalyticsFilters, from: Date, to: Date
     quantity: item.quantity,
     unitSalePrice: item.unitSalePrice.toNumber(),
     unitCost: item.unitCost.toNumber(),
+    unitFee,
     createdAt: item.sale.createdAt,
-  }));
+  };
+  });
 }
 
 function summarize(rows: SaleItemRow[]): { total: number; count: number } {
@@ -166,6 +193,7 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
     where: {
       voidedAt: { gte: filters.from, lt: filters.to },
       ...(filters.employeeId ? { userId: filters.employeeId } : {}),
+      ...(filters.origin ? { channel: filters.origin } : {}),
       ...(filters.paymentMethod
         ? { cashMovements: { some: { paymentMethod: filters.paymentMethod, type: "INGRESO" as const } } }
         : {}),
@@ -191,6 +219,7 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
   const porEmpleado = groupTotals(rows, (r) => r.employeeId, (r) => r.employeeName);
   const porTurno = groupTotals(rows, (r) => r.shiftId, (r) => r.shiftLabel);
   const porCanal = groupTotals(rows, (r) => r.channel, (r) => r.channel);
+  const porOrigen = groupTotals(rows, (r) => r.origin, (r) => r.origin);
 
   const productGroups = groupBy(rows, (r) => r.productId);
   const masVendidos = [...productGroups.entries()]
@@ -264,14 +293,22 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
         voidedAt: null,
         createdAt: { gte: filters.from, lt: filters.to },
         ...(filters.employeeId ? { userId: filters.employeeId } : {}),
+        channel: "LOCAL",
       },
     },
     _sum: { amount: true },
     _count: true,
   });
-  const porMedioPago = paymentRows
-    .map((r) => ({ method: r.paymentMethod, total: r._sum.amount?.toNumber() ?? 0, count: r._count }))
-    .sort((a, b) => b.total - a.total);
+  // Las ventas de Mercado Libre no tienen movimientos de caja: su medio de
+  // cobro es «Mercado Libre» (specs/022, RF-23).
+  const localPayments =
+    filters.origin === "MERCADO_LIBRE"
+      ? []
+      : paymentRows.map((r) => ({ method: r.paymentMethod as string, total: r._sum.amount?.toNumber() ?? 0, count: r._count }));
+  const mlSales = rows.filter((r) => r.origin === ORIGIN_LABELS.MERCADO_LIBRE);
+  const mlPayment =
+    !filters.paymentMethod && mlSales.length > 0 ? [{ method: "MERCADO_LIBRE", ...summarize(mlSales) }] : [];
+  const porMedioPago = [...localPayments, ...mlPayment].sort((a, b) => b.total - a.total);
 
   return {
     totalVentas,
@@ -291,6 +328,7 @@ export async function loadAnalyticsData(filters: AnalyticsFilters, currentUser: 
     porEmpleado,
     porTurno,
     porCanal,
+    porOrigen,
     masVendidos,
     sinMovimiento,
     margen,

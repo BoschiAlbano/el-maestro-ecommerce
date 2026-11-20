@@ -38,6 +38,7 @@ type ProductFormProps = {
     brandId: string | null;
     rubroId: string;
     barcode: string;
+    sku: string | null;
     photoUrl: string | null;
     purchasePrice: string;
     salePrice: string;
@@ -224,6 +225,14 @@ export function ProductForm({
       <div className="flex flex-col gap-2">
         <Label htmlFor="barcode">Código de barras {isEdit ? "" : "(vacío = se genera uno)"}</Label>
         <Input id="barcode" name="barcode" defaultValue={product?.barcode} />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="sku">SKU (opcional)</Label>
+        <Input id="sku" name="sku" defaultValue={product?.sku ?? ""} maxLength={50} autoComplete="off" />
+        <p className="text-xs text-muted-foreground">
+          Letras, números y guiones. Si el producto está en Mercado Libre, se cambia también ahí.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

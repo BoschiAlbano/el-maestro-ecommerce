@@ -98,7 +98,10 @@ export default async function HistorialVentasPage({
     employee: sale.user.name,
     total: sale.total.toNumber(),
     voided: sale.voidedAt !== null,
-    shift: { label: formatDateTime(sale.shift.openedAt), current: sale.shift.closedAt === null },
+    // Las ventas de Mercado Libre no tienen caja (specs/022).
+    shift: sale.shift
+      ? { label: formatDateTime(sale.shift.openedAt), current: sale.shift.closedAt === null }
+      : { label: "Mercado Libre", current: false },
   }));
 
   return (

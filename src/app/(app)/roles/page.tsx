@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { TablePagination, parsePage, parsePageSize } from "@/components/table-pagination";
 import { DeleteRoleButton } from "./delete-role-button";
+import { SYSTEM_ROLE_ID } from "@/lib/mercadolibre/orders/system-user";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -27,10 +28,13 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
   }
 
   const { pagina } = await searchParams;
-  const total = await prisma.role.count();
+  // El rol «Sistema» de Mercado Libre no se administra (specs/022).
+  const notSystem = { id: { not: SYSTEM_ROLE_ID } };
+  const total = await prisma.role.count({ where: notSystem });
   const page = Math.min(parsePage(pagina), Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
   const roles = await prisma.role.findMany({
+    where: notSystem,
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
     skip: (page - 1) * PAGE_SIZE,

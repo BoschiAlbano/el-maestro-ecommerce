@@ -1,34 +1,9 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { ResetCounts } from "@/lib/system-reset";
+import { BUSINESS_TABLES, type ResetCounts } from "@/lib/system-reset";
+import { SYSTEM_ROLE_ID, SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
-/**
- * Tablas de negocio que el reinicio vacía (specs/017, plan sección 3). Los
- * nombres son fijos, no vienen de ninguna entrada del usuario. Todo lo que
- * referencia a estas tablas también está en la lista, así que `CASCADE` no
- * arrastra nada más. Quedan afuera `users`, `roles`, `role_permissions` y
- * `settings`, que se tratan aparte.
- */
-const BUSINESS_TABLES = [
-  "audit_logs",
-  "notifications",
-  "ticket_reprints",
-  "sale_items",
-  "sales",
-  "order_items",
-  "orders",
-  "cash_movements",
-  "cash_shifts",
-  "stock_entry_items",
-  "stock_entries",
-  "stock_movements",
-  "product_price_history",
-  "products",
-  "brands",
-  "rubros",
-  "employees",
-] as const;
 
 /** Cantidades de lo que se va a borrar, para el resumen previo (RF-3). */
 export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts> {
@@ -44,6 +19,10 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     otherUsers,
     otherRoles,
     auditLogs,
+    invoices,
+    realInvoices,
+    pendingInvoices,
+    linkedListings,
     openShifts,
     pendingOrders,
   ] = await Promise.all([
@@ -55,9 +34,13 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     prisma.stockEntry.count(),
     prisma.cashShift.count(),
     prisma.employee.count(),
-    prisma.user.count({ where: { id: { not: ownerUserId } } }),
-    prisma.role.count({ where: { isOwnerRole: false } }),
+    prisma.user.count({ where: { id: { notIn: [ownerUserId, SYSTEM_USER_ID] } } }),
+    prisma.role.count({ where: { isOwnerRole: false, id: { not: SYSTEM_ROLE_ID } } }),
     prisma.auditLog.count(),
+    prisma.invoice.count(),
+    prisma.invoice.count({ where: { status: "AUTHORIZED", environment: "PRODUCCION" } }),
+    prisma.invoice.count({ where: { status: "PENDING" } }),
+    prisma.mercadoLibreListing.count({ where: { linkedProductId: { not: null } } }),
     prisma.cashShift.count({ where: { closedAt: null } }),
     prisma.order.count({ where: { status: "PENDIENTE" } }),
   ]);
@@ -74,6 +57,10 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
     otherUsers,
     otherRoles,
     auditLogs,
+    invoices,
+    realInvoices,
+    pendingInvoices,
+    linkedListings,
     openShift: openShifts > 0,
     pendingOrders,
   };
@@ -87,7 +74,22 @@ export async function loadResetCounts(ownerUserId: string): Promise<ResetCounts>
 export async function wipeBusinessData(tx: Prisma.TransactionClient, ownerUserId: string) {
   await tx.$executeRawUnsafe(`TRUNCATE TABLE ${BUSINESS_TABLES.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`);
 
-  await tx.user.deleteMany({ where: { id: { not: ownerUserId } } });
+  // La cuenta de Mercado Libre se conserva (es configuración, specs/019), pero
+  // referencia al usuario que la conectó: si fue otro Dueño, pasa a quien
+  // reinicia, o borrar a ese usuario fallaría y el reinicio entero volvería atrás.
+  await tx.mercadoLibreConnection.updateMany({
+    where: { connectedByUserId: { not: ownerUserId } },
+    data: { connectedByUserId: ownerUserId },
+  });
+
+  // Lo mismo con el certificado de ARCA (specs/023): se conserva y apunta a quien lo cargó.
+  await tx.arcaCredential.updateMany({
+    where: { uploadedByUserId: { not: ownerUserId } },
+    data: { uploadedByUserId: ownerUserId },
+  });
+
+  // El usuario y el rol «Sistema» de Mercado Libre se conservan (specs/022, RF-7).
+  await tx.user.deleteMany({ where: { id: { notIn: [ownerUserId, SYSTEM_USER_ID] } } });
   await tx.rolePermission.deleteMany({ where: { role: { isOwnerRole: false } } });
-  await tx.role.deleteMany({ where: { isOwnerRole: false } });
+  await tx.role.deleteMany({ where: { isOwnerRole: false, id: { not: SYSTEM_ROLE_ID } } });
 }

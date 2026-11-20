@@ -26,14 +26,19 @@ export function computeTicketPromedio(total: number, count: number): number {
   return total / count;
 }
 
+/**
+ * Margen de lo vendido. `unitFee` es lo que cobró Mercado Libre por unidad (y
+ * su parte del envío a cargo del vendedor): se descuenta en las ventas de
+ * Mercado Libre (specs/022, RF-24). En las del local es 0.
+ */
 export function computeMarginSummary(
-  items: { unitSalePrice: number; unitCost: number; quantity: number }[],
+  items: { unitSalePrice: number; unitCost: number; quantity: number; unitFee?: number }[],
 ): { totalMargin: number; marginPct: number } {
   let totalSale = 0;
   let totalMargin = 0;
   for (const item of items) {
     totalSale += item.unitSalePrice * item.quantity;
-    totalMargin += (item.unitSalePrice - item.unitCost) * item.quantity;
+    totalMargin += (item.unitSalePrice - item.unitCost - (item.unitFee ?? 0)) * item.quantity;
   }
   const marginPct = totalSale === 0 ? 0 : (totalMargin / totalSale) * 100;
   return { totalMargin, marginPct };
@@ -81,7 +86,14 @@ export type AnalyticsSearchParams = {
   rubro?: string;
   canal?: string;
   medioPago?: string;
+  /** `local` o `mercadolibre` (specs/022, RF-22). */
+  origen?: string;
 };
+
+/** Origen de una venta: «Local» agrupa mostrador y pedidos por encargo (specs/022, RF-22). */
+export type SaleOrigin = "LOCAL" | "MERCADO_LIBRE";
+
+export const ORIGIN_LABELS: Record<SaleOrigin, string> = { LOCAL: "Local", MERCADO_LIBRE: "Mercado Libre" };
 
 export type ParsedAnalyticsFilters = {
   from: Date;
@@ -92,6 +104,7 @@ export type ParsedAnalyticsFilters = {
   rubroId?: string;
   channel?: string;
   paymentMethod?: "EFECTIVO" | "TRANSFERENCIA";
+  origin?: SaleOrigin;
 };
 
 function orUndefined(value: string | undefined): string | undefined {
@@ -116,6 +129,7 @@ export function parseAnalyticsFilters(params: AnalyticsSearchParams, now: Date):
     rubroId: orUndefined(params.rubro),
     channel: orUndefined(params.canal),
     paymentMethod,
+    origin: params.origen === "local" ? "LOCAL" : params.origen === "mercadolibre" ? "MERCADO_LIBRE" : undefined,
   };
 }
 

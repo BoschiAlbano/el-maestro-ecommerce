@@ -24,6 +24,12 @@ type StockTx = {
       data: { currentStock: { increment: number } };
     }) => Promise<unknown>;
   };
+  mercadoLibreListing: {
+    updateMany: (args: {
+      where: { linkedProductId: string };
+      data: { quantityPendingSince: Date };
+    }) => Promise<unknown>;
+  };
 };
 
 type RegisterStockMovementInput = {
@@ -46,6 +52,11 @@ type RegisterStockMovementInput = {
  * El stock puede quedar en negativo a propósito: no hay chequeo que lo
  * impida (specs/005, sección 5 y 7).
  *
+ * Además marca la publicación vigente de Mercado Libre del producto, si tiene,
+ * como "cantidad pendiente de enviar" (specs/021, RF-3), en la misma
+ * transacción: ningún movimiento se olvida de avisar, y si la transacción falla
+ * no queda nada marcado. El envío lo agenda la acción con `scheduleListingPush`.
+ *
  * Uso: `prisma.$transaction((tx) => registerStockMovement(tx, {...}))`
  */
 export async function registerStockMovement(tx: StockTx, input: RegisterStockMovementInput) {
@@ -63,6 +74,11 @@ export async function registerStockMovement(tx: StockTx, input: RegisterStockMov
   await tx.product.update({
     where: { id: input.productId },
     data: { currentStock: { increment: input.quantity } },
+  });
+
+  await tx.mercadoLibreListing.updateMany({
+    where: { linkedProductId: input.productId },
+    data: { quantityPendingSince: new Date() },
   });
 
   return movement;

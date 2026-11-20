@@ -16,6 +16,7 @@ import { QuantityStepper } from "./quantity-stepper";
 import { RemoveItemButton } from "./remove-item-button";
 import { TicketButton } from "../../ventas/ticket-button";
 import { OrderTicketHost } from "./order-tickets";
+import { getInvoicingOffer } from "@/lib/facturacion/invoices";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -103,6 +104,7 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
   const toCollect = Math.max(0, pendingValue - Math.max(0, remainingDeposit));
 
   const canDeliver = isPending && puedeCrear && puedeVender && pendingItems.length > 0;
+  const invoicing = canDeliver ? await getInvoicingOffer() : null;
   const canPayDeposit = isPending && puedeCrear && depositAmount === 0;
   const canCancel = isPending && puedeAnular;
   const canEditItems = isPending && puedeCrear;
@@ -138,7 +140,12 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
               </Link>
             )}
             {canDeliver && (
-              <DeliverDialog orderId={order.id} pendingItems={pendingItems} remainingDeposit={remainingDeposit} />
+              <DeliverDialog
+                orderId={order.id}
+                pendingItems={pendingItems}
+                remainingDeposit={remainingDeposit}
+                invoicing={invoicing}
+              />
             )}
             {canPayDeposit && <DepositDialog orderId={order.id} />}
             {canCancel && <CancelOrderDialog orderId={order.id} hasDepositToReturn={remainingDeposit > 0} />}

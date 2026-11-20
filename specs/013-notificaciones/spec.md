@@ -10,6 +10,8 @@
 
 Avisar en pantalla, desde cualquier parte del sistema, lo que requiere atención: un pedido nuevo, una diferencia al cerrar la caja, o productos por debajo del stock que hace falta.
 
+
+*(Agregado 2026-11-19, spec 022.)* Avisos de órdenes de Mercado Libre: venta nueva, venta que dejó el stock en negativo (destacado), cancelación y riesgo de fraude. Además, avisos calculados que desaparecen solos: órdenes que vencen en menos de 4 horas, con el despacho vencido y con riesgo de fraude sin resolver. Los ve quien tiene «ver» en Mercado Libre.
 ## 2. Alcance
 
 **Incluye:**
@@ -39,6 +41,7 @@ Avisar en pantalla, desde cualquier parte del sistema, lo que requiere atención
 - **RF-5.** Una campanita, visible desde cualquier pantalla del sistema (no solo el inicio), muestra un número con la cantidad de avisos sin leer y, al abrirla, la lista con el detalle de cada uno.
 - **RF-6.** La campanita se actualiza sola cada 60 segundos, sin que el usuario tenga que recargar la página.
 - **RF-7.** Cada tipo de aviso respeta el permiso de su propio módulo: pedido nuevo con "ver" en Pedidos, diferencia de caja con "ver" en Caja, stock bajo con "ver" en Inventario — igual criterio que el inicio (spec 012).
+- *(Agregado 2026-11-16, spec 020.)* Aviso de **publicación de Mercado Libre**: cuando algo de una publicación vinculada cambia en Mercado Libre (precio, SKU o estado), salvo las pausas por falta de stock. Lo ven quienes tienen "ver" en Mercado Libre y lleva a la pantalla de publicaciones.
 
 ## 5. Reglas de negocio
 

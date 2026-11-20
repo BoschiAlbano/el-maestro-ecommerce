@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { requirePermission, requireSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { registerStockMovement } from "@/lib/stock";
+import { markPricePending, scheduleListingPush } from "@/lib/mercadolibre/listings";
 
 export type CreateStockEntryState = { error?: string };
 
@@ -44,6 +45,8 @@ export async function createStockEntry(
   }
   const salePriceById = new Map(products.map((p) => [p.id, p.salePrice.toNumber()]));
   const purchasePriceById = new Map(products.map((p) => [p.id, p.purchasePrice.toNumber()]));
+  // Productos cuyo precio de venta cambió: se envía a Mercado Libre (specs/020, RF-13).
+  const salePriceChangedIds = new Set<string>();
 
   const entry = await prisma.$transaction(async (tx) => {
     const created = await tx.stockEntry.create({
@@ -95,11 +98,15 @@ export async function createStockEntry(
         });
         purchasePriceById.set(item.productId, item.purchasePrice);
         salePriceById.set(item.productId, finalSalePrice);
+        if (saleChanged) salePriceChangedIds.add(item.productId);
       }
     }
 
+    await markPricePending(tx, [...salePriceChangedIds]);
     return created;
   });
+  // Precio y cantidad van juntos a Mercado Libre, después de responder (specs/020 y 021).
+  scheduleListingPush(parsed.data.items.map((item) => item.productId));
 
   revalidatePath("/ingresos");
   revalidatePath("/inventario");

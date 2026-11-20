@@ -76,6 +76,18 @@ export function AnalyticsPdfDocument({
         ))}
         {data.masVendidos.length === 0 && <Text>Sin ventas en el período.</Text>}
 
+        {/* Local y Mercado Libre (specs/022, RF-25). */}
+        <Text style={styles.sectionTitle}>Ventas por origen</Text>
+        {data.porOrigen.map((g) => (
+          <View key={g.key} style={styles.productRow}>
+            <Text>{g.label}</Text>
+            <Text>
+              {formatMoney(g.total)} en {g.count} venta(s)
+            </Text>
+          </View>
+        ))}
+        {data.porOrigen.length === 0 && <Text>Sin ventas en el período.</Text>}
+
         <Text style={styles.sectionTitle}>Diferencias de caja</Text>
         {data.diferenciasCaja.map((g) => (
           <View key={g.key} style={styles.productRow}>

@@ -135,7 +135,11 @@ export default async function CajaDelDiaPage({
       include: { user: true, shift: { include: { openedByUser: true } } },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.sale.findMany({ where: { createdAt: range }, select: { total: true, voidedAt: true, depositApplied: true } }),
+    // Las ventas de Mercado Libre no pasan por la caja (specs/022).
+    prisma.sale.findMany({
+      where: { createdAt: range, channel: "LOCAL" },
+      select: { total: true, voidedAt: true, depositApplied: true },
+    }),
   ]);
 
   // Turnos del día: los que tuvieron movimientos ese día y los que se abrieron ese día

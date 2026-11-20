@@ -18,6 +18,9 @@ const SECTIONS: Record<string, string> = {
   roles: "Roles",
   empleados: "Empleados",
   analiticas: "Analíticas",
+  comprobantes: "Comprobantes",
+  publicaciones: "Mercado Libre",
+  ordenes: "Órdenes",
   configuracion: "Configuración",
   marcas: "Marcas",
   rubros: "Rubros",
@@ -40,6 +43,7 @@ const SUBPAGES: Record<string, string> = {
   imprimir: "Imprimir",
   auditoria: "Auditoría",
   ticket: "Ticket",
+  vincular: "Vincular publicaciones",
 };
 
 /** Secciones donde la página de un id es para editar (en el resto es un detalle). */

@@ -1,7 +1,7 @@
 # 0003 — El ticket es un documento interno, no fiscal
 
 - **Fecha:** 2026-10-14
-- **Estado:** Aceptada
+- **Estado:** Reemplazada por 0005 (el ticket sigue siendo interno; lo que cambió es que el sistema ahora emite facturas)
 
 ## Contexto
 

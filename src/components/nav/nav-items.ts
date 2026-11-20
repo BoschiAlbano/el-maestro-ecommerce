@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks, ShieldCheck, ScrollText } from "lucide-react";
+import { Home, ShoppingCart, Package, ClipboardList, Wallet, CalendarDays, Users, IdCard, Settings, Tags, Truck, BarChart3, ListChecks, ShieldCheck, ScrollText, Receipt, Store, PackageCheck } from "lucide-react";
 // Desde "enums" (no desde "client"): ver nota en components/permission-matrix.tsx.
 import { ModuloNegocio } from "@/generated/prisma/enums";
 import { isOwner, hasPermission, type Accion, type UserLike } from "@/lib/permissions";
@@ -98,6 +98,22 @@ export const navItems: NavItem[] = [
     requiresPermission: { module: ModuloNegocio.INGRESO_MERCADERIA, action: "ver" },
   },
   {
+    href: "/publicaciones",
+    label: "Mercado Libre",
+    icon: Store,
+    group: "catalogo",
+    enabled: true,
+    requiresPermission: { module: ModuloNegocio.MERCADO_LIBRE, action: "ver" },
+  },
+  {
+    href: "/ordenes",
+    label: "Órdenes",
+    icon: PackageCheck,
+    group: "catalogo",
+    enabled: true,
+    requiresPermission: { module: ModuloNegocio.MERCADO_LIBRE, action: "ver" },
+  },
+  {
     href: "/usuarios",
     label: "Usuarios",
     icon: Users,
@@ -128,6 +144,14 @@ export const navItems: NavItem[] = [
     group: "administracion",
     enabled: true,
     requiresPermission: { module: ModuloNegocio.ANALITICAS, action: "ver" },
+  },
+  {
+    href: "/comprobantes",
+    label: "Comprobantes",
+    icon: Receipt,
+    group: "administracion",
+    enabled: true,
+    ownerOnly: true,
   },
   {
     href: "/configuracion",

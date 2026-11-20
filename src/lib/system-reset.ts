@@ -3,6 +3,46 @@
 
 export const RESET_PHRASE = "REINICIAR EL SISTEMA";
 
+/**
+ * Tablas de negocio que el reinicio vacía (specs/017, plan sección 3). Los
+ * nombres son fijos, no vienen de ninguna entrada del usuario. Todo lo que
+ * referencia a estas tablas también está en la lista, así que `CASCADE` no
+ * arrastra nada más. Quedan afuera `users`, `roles`, `role_permissions`,
+ * `settings`, `ml_connections` (la cuenta de Mercado Libre es configuración,
+ * no datos del negocio: specs/019) y los datos de facturación (`fiscal_config`,
+ * `arca_credentials`, `arca_tickets`: son configuración, specs/023), que se
+ * tratan aparte. Los comprobantes (`invoices`) sí se vacían, con una advertencia
+ * fuerte si hay reales. Los vínculos con Mercado Libre (`ml_listings`, specs/020)
+ * también: sus productos se borran, y las publicaciones siguen en Mercado Libre.
+ * Las compras de Mercado Libre (`ml_orders` y sus ítems y eventos, specs/022) se
+ * borran con las ventas. El usuario y el rol «Sistema» se conservan.
+ */
+export const BUSINESS_TABLES = [
+  "audit_logs",
+  "notifications",
+  "ml_notifications",
+  "ticket_reprints",
+  "invoices",
+  "ml_order_events",
+  "ml_order_items",
+  "ml_orders",
+  "sale_items",
+  "sales",
+  "order_items",
+  "orders",
+  "cash_movements",
+  "cash_shifts",
+  "stock_entry_items",
+  "stock_entries",
+  "stock_movements",
+  "product_price_history",
+  "ml_listings",
+  "products",
+  "brands",
+  "rubros",
+  "employees",
+] as const;
+
 /** Devuelve el mensaje de error, o `null` si la confirmación es válida. */
 export function validateResetConfirmation(input: { password: string; phrase: string }): string | null {
   if (!input.password) return "Ingresá tu contraseña.";
@@ -26,17 +66,29 @@ export type ResetCounts = {
   /** Sin contar al rol Dueño. */
   otherRoles: number;
   auditLogs: number;
+  /** Todos los comprobantes (specs/023), de prueba o reales. */
+  invoices: number;
+  /** Los que ya están autorizados por ARCA con validez fiscal: siguen existiendo en ARCA. */
+  realInvoices: number;
+  /** Los que todavía no se emitieron: se pierden sin emitirse. */
+  pendingInvoices: number;
+  /** Publicaciones de Mercado Libre vinculadas a un producto (specs/020). */
+  linkedListings: number;
   openShift: boolean;
   pendingOrders: number;
 };
 
-type CountKey = Exclude<keyof ResetCounts, "openShift" | "pendingOrders">;
+type CountKey = Exclude<
+  keyof ResetCounts,
+  "openShift" | "pendingOrders" | "realInvoices" | "pendingInvoices" | "linkedListings"
+>;
 
 const ROWS: { key: CountKey; singular: string; plural: string }[] = [
   { key: "products", singular: "producto", plural: "productos" },
   { key: "brands", singular: "marca", plural: "marcas" },
   { key: "rubros", singular: "rubro", plural: "rubros" },
   { key: "sales", singular: "venta", plural: "ventas" },
+  { key: "invoices", singular: "comprobante electrónico", plural: "comprobantes electrónicos" },
   { key: "orders", singular: "pedido", plural: "pedidos" },
   { key: "stockEntries", singular: "ingreso de mercadería", plural: "ingresos de mercadería" },
   { key: "cashShifts", singular: "turno de caja", plural: "turnos de caja" },
@@ -65,6 +117,31 @@ export function summarizeReset(counts: ResetCounts): ResetSummary {
       counts.pendingOrders === 1
         ? "Hay 1 pedido pendiente: se va a perder."
         : `Hay ${counts.pendingOrders} pedidos pendientes: se van a perder.`,
+    );
+  }
+
+  if (counts.realInvoices > 0) {
+    warnings.push(
+      `Hay ${counts.realInvoices} ${counts.realInvoices === 1 ? "comprobante real emitido" : "comprobantes reales emitidos"} en ARCA. ` +
+        "Borrarlos del sistema NO los anula: siguen existiendo en ARCA y cuentan para tu monotributo. " +
+        "Acá se pierde la copia (no vas a poder volver a verlos ni reimprimirlos) y el acumulado contra el tope. " +
+        "Antes de reiniciar, descargá el Excel desde Comprobantes. La numeración no se pierde: la lleva ARCA, " +
+        "y los datos del emisor y el certificado se conservan.",
+    );
+  }
+  if (counts.pendingInvoices > 0) {
+    warnings.push(
+      counts.pendingInvoices === 1
+        ? "Hay 1 comprobante pendiente de emitir: se va a perder sin emitirse."
+        : `Hay ${counts.pendingInvoices} comprobantes pendientes de emitir: se van a perder sin emitirse.`,
+    );
+  }
+
+  if (counts.linkedListings > 0) {
+    warnings.push(
+      `Hay ${counts.linkedListings} ${counts.linkedListings === 1 ? "publicación de Mercado Libre vinculada" : "publicaciones de Mercado Libre vinculadas"}. ` +
+        "Se pierde el vínculo, no la publicación: sigue en Mercado Libre tal como está, pero sus ventas ya no descuentan stock. " +
+        "Después del reinicio vas a tener que vincularlas de nuevo.",
     );
   }
 

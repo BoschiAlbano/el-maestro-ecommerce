@@ -10,6 +10,8 @@
 
 Vender productos por mostrador, cobrando una o varias formas de pago, con ticket impreso, de forma que el stock y la caja queden siempre al día sin que alguien tenga que corregirlos a mano después.
 
+
+*(Agregado 2026-11-19, spec 022.)* Las compras de Mercado Libre se registran solas como ventas del canal «Mercado Libre», sin caja y a nombre del usuario «Mercado Libre (automático)». Aparecen en el historial de ventas con su canal y un enlace a la orden. No se pueden anular desde acá: se cancelan en Mercado Libre y el sistema lo refleja.
 ## 2. Alcance
 
 **Incluye:**
@@ -24,7 +26,7 @@ Vender productos por mostrador, cobrando una o varias formas de pago, con ticket
 - Historial de ventas y detalle de cada una
 - Rediseño de las pantallas de venta, historial y detalle (2026-10-19, RF-9 a RF-13): una pantalla de venta tipo punto de venta, el cobro en una ventana modal con cálculo del vuelto, y el historial y el detalle con el mismo estilo que el resto del sistema
 
-**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md` (sin descuentos, sin tarjeta ni QR, sin facturación fiscal, un solo puesto de caja). No incluye los pedidos por encargo (spec 009) ni devoluciones parciales de una venta — la anulación es de la venta completa, no de ítems sueltos.
+**No incluye:** ver "Fuera de alcance" en `docs/PROJECT.md` (sin descuentos, sin tarjeta ni QR, un solo puesto de caja; la facturación fiscal electrónica es opcional y vive en la spec 023). No incluye los pedidos por encargo (spec 009) ni devoluciones parciales de una venta — la anulación es de la venta completa, no de ítems sueltos.
 
 ## 3. Historias de usuario
 
@@ -108,4 +110,5 @@ A confirmar en el plan: `Sale` (fecha, usuario, turno de caja, total, si está a
 - **Anular revierte todo automáticamente (stock y caja), sin anulación parcial.** Evita depender de que alguien se acuerde de corregir el stock y la caja a mano después de anular; coherente con que todo lo demás en el sistema (precios, stock, caja) también funciona por movimientos que se agregan, nunca por ediciones.
 - **El costo de cada ítem queda como foto del precio de compra al momento de la venta**, no se recalcula si el costo del producto cambia después.
 - **Sin "vuelto" modelado como movimiento propio** *(sigue vigente; el 2026-10-19 se agregó solo una ayuda en pantalla, RF-11: el cajero puede anotar cuánto recibió y ver el vuelto, pero el sistema sigue sin registrarlo).* Los pagos ingresados tienen que sumar exactamente el total de la venta; el cambio físico que entrega el cajero (si pagaron con un billete más grande) no es un evento que el sistema registre — no afecta el efectivo esperado de la caja de ninguna manera distinta.
+- **Factura electrónica opcional por venta** *(agregado 2026-11-11, spec 023).* En el cobro, la cajera puede tildar «Emitir factura» (viene apagado): la venta sigue siendo la misma y se le suma una Factura C a Consumidor Final, o identificando al comprador. La venta se confirma aunque ARCA no responda: la factura queda pendiente y se reintenta después. Al anular una venta facturada, el sistema emite la nota de crédito. Los detalles están en la spec 023.
 - **Reimpresión: se guarda un registro por cada vez**, no solo la última — coherente con "reimpresión con registro" (`docs/PROJECT.md`, sección 4).

@@ -10,6 +10,8 @@
 
 Darle al dueño, desde el celular, lo que necesita saber antes de viajar a comprar: qué falta, qué se vende y qué pedidos tiene.
 
+
+*(Agregado 2026-11-19, spec 022.)* «Ventas de hoy» muestra el total y el detalle Local y Mercado Libre, y quien ve el módulo Mercado Libre tiene la tarjeta «Órdenes para preparar».
 ## 2. Alcance
 
 **Incluye:**

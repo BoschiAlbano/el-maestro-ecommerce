@@ -38,3 +38,11 @@ next-env.d.ts
 *.pem
 
 /src/generated/prisma
+
+# Facturación electrónica (spec 023): certificados y claves de ARCA. Nunca al repositorio.
+/afip/
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx

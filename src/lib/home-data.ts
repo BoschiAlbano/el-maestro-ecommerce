@@ -24,13 +24,21 @@ export type HomeData = {
       ingresos: number;
       egresos: number;
       neto: number;
-      ventas: { total: number; count: number };
+      /** Todas las ventas del día, con el detalle por canal (specs/022, plan sección 3.8). */
+      ventas: {
+        total: number;
+        count: number;
+        local: { total: number; count: number };
+        mercadoLibre: { total: number; count: number };
+      };
       porMedioPago: { method: string; total: number; count: number }[];
       /** Los 5 productos más vendidos hoy, por unidades (specs/012, RF-11). */
       topProductos: TopProduct[];
     };
   } | null;
   pedidos: { count: number; proximos: { id: string; customerName: string; createdAt: Date }[] } | null;
+  /** Órdenes de Mercado Libre para preparar (specs/022, RF-26). */
+  mercadoLibre: { toPrepare: number } | null;
   stock: {
     alertCount: number;
     /** Los productos con mayor cantidad sugerida (specs/012, RF-12). */
@@ -97,7 +105,7 @@ export async function loadHomeData(currentUser: UserLike): Promise<HomeData> {
       prisma.cashMovement.findMany({ where: { createdAt: todayRange } }),
       prisma.sale.findMany({
         where: { voidedAt: null, createdAt: todayRange },
-        select: { createdAt: true, total: true },
+        select: { createdAt: true, total: true, channel: true },
       }),
       prisma.cashMovement.groupBy({
         by: ["paymentMethod"],
@@ -117,7 +125,11 @@ export async function loadHomeData(currentUser: UserLike): Promise<HomeData> {
     const egresos = todayMovements
       .filter((m) => m.type === "EGRESO")
       .reduce((sum, m) => sum + m.amount.toNumber(), 0);
-    const todaySalesRows = todaySales.map((s) => ({ createdAt: s.createdAt, total: s.total.toNumber() }));
+    const todaySalesRows = todaySales.map((s) => ({ createdAt: s.createdAt, total: s.total.toNumber(), channel: s.channel }));
+    const byChannel = (channel: "LOCAL" | "MERCADO_LIBRE") => {
+      const rows = todaySalesRows.filter((s) => s.channel === channel);
+      return { total: rows.reduce((sum, s) => sum + s.total, 0), count: rows.length };
+    };
 
     let open: NonNullable<HomeData["caja"]>["open"] = null;
     if (openShift) {
@@ -151,7 +163,12 @@ export async function loadHomeData(currentUser: UserLike): Promise<HomeData> {
         ingresos,
         egresos,
         neto: ingresos - egresos,
-        ventas: { total: todaySalesRows.reduce((sum, s) => sum + s.total, 0), count: todaySalesRows.length },
+        ventas: {
+          total: todaySalesRows.reduce((sum, s) => sum + s.total, 0),
+          count: todaySalesRows.length,
+          local: byChannel("LOCAL"),
+          mercadoLibre: byChannel("MERCADO_LIBRE"),
+        },
         porMedioPago: todayPayments
           .map((r) => ({ method: r.paymentMethod, total: r._sum.amount?.toNumber() ?? 0, count: r._count }))
           .sort((a, b) => b.total - a.total),
@@ -193,5 +210,9 @@ export async function loadHomeData(currentUser: UserLike): Promise<HomeData> {
       }
     : null;
 
-  return { caja, pedidos, stock };
+  const mercadoLibre: HomeData["mercadoLibre"] = hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver")
+    ? { toPrepare: await prisma.mercadoLibreOrder.count({ where: { status: { in: ["TO_PREPARE", "READY_TO_SHIP"] } } }) }
+    : null;
+
+  return { caja, pedidos, stock, mercadoLibre };
 }

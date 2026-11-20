@@ -10,8 +10,29 @@ import { ModuloNegocio } from "@/generated/prisma/client";
 import { generateUniqueBarcode } from "@/lib/barcode";
 import { uploadProductPhoto } from "@/lib/upload-photo";
 import { registerStockMovement } from "@/lib/stock";
+import { normalizeOptionalSku } from "@/lib/mercadolibre/sku";
+import { updateListing } from "@/lib/mercadolibre/listings-api";
+import {
+  markPausePending,
+  markPricePending,
+  mlErrorMessage,
+  scheduleListingPush,
+} from "@/lib/mercadolibre/listings";
 
 export type ActionState = { error?: string; warning?: string };
+
+const SKU_TAKEN = "Ya hay otro producto con ese SKU.";
+
+/** La base rechazó un SKU repetido (dos personas guardando a la vez). */
+function isSkuCollision(error: unknown): boolean {
+  if (!error || typeof error !== "object" || !("code" in error) || error.code !== "P2002") return false;
+  return JSON.stringify((error as { meta?: unknown }).meta ?? {}).includes("skuKey");
+}
+
+function readSku(formData: FormData) {
+  const raw = formData.get("sku");
+  return normalizeOptionalSku(typeof raw === "string" ? raw : null);
+}
 
 // Los precios son opcionales en el esquema porque un <input disabled> no
 // viaja en el FormData: quien no tiene "cambiarPrecios" ve esos campos
@@ -84,6 +105,12 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
     return { error: "No tenés permiso para cargar stock." };
   }
 
+  const skuResult = readSku(formData);
+  if (!skuResult.ok) return { error: skuResult.error };
+  if (skuResult.skuKey && (await prisma.product.findUnique({ where: { skuKey: skuResult.skuKey } }))) {
+    return { error: SKU_TAKEN };
+  }
+
   let finalBarcode = barcode;
   let barcodeIsGenerated = false;
   if (!finalBarcode) {
@@ -108,34 +135,42 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
     return { error: error instanceof Error ? error.message : "No se pudo subir la foto." };
   }
 
-  const product = await prisma.$transaction(async (tx) => {
-    const created = await tx.product.create({
-      data: {
-        name,
-        brandId: brandId || null,
-        rubroId,
-        barcode: finalBarcode!,
-        barcodeIsGenerated,
-        photoUrl,
-        purchasePrice,
-        salePrice,
-        minStock: finalMinStock,
-      },
-    });
-    await tx.productPriceHistory.create({
-      data: { productId: created.id, purchasePrice, salePrice, changedByUserId: currentUser.id },
-    });
-    if (initialStock) {
-      await registerStockMovement(tx, {
-        productId: created.id,
-        type: "AJUSTE",
-        quantity: initialStock,
-        reason: "Carga inicial al crear el producto",
-        userId: currentUser.id,
+  let product;
+  try {
+    product = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({
+        data: {
+          name,
+          brandId: brandId || null,
+          rubroId,
+          barcode: finalBarcode!,
+          barcodeIsGenerated,
+          sku: skuResult.sku,
+          skuKey: skuResult.skuKey,
+          photoUrl,
+          purchasePrice,
+          salePrice,
+          minStock: finalMinStock,
+        },
       });
-    }
-    return created;
-  });
+      await tx.productPriceHistory.create({
+        data: { productId: created.id, purchasePrice, salePrice, changedByUserId: currentUser.id },
+      });
+      if (initialStock) {
+        await registerStockMovement(tx, {
+          productId: created.id,
+          type: "AJUSTE",
+          quantity: initialStock,
+          reason: "Carga inicial al crear el producto",
+          userId: currentUser.id,
+        });
+      }
+      return created;
+    });
+  } catch (error) {
+    if (isSkuCollision(error)) return { error: SKU_TAKEN };
+    throw error;
+  }
 
   revalidatePath("/productos");
   redirect(`/productos/${product.id}`);
@@ -161,6 +196,21 @@ export async function updateProduct(
     if (collision) return { error: "Ya existe un producto con ese código de barras." };
   }
 
+  const skuResult = readSku(formData);
+  if (!skuResult.ok) return { error: skuResult.error };
+  if (skuResult.skuKey && skuResult.skuKey !== existing.skuKey) {
+    const collision = await prisma.product.findUnique({ where: { skuKey: skuResult.skuKey } });
+    if (collision) return { error: SKU_TAKEN };
+  }
+  const skuChanged = skuResult.sku !== existing.sku;
+  // Con publicación vigente el SKU se mantiene igual en los dos lados (specs/020, RF-3).
+  const listing = skuChanged
+    ? await prisma.mercadoLibreListing.findUnique({ where: { linkedProductId: productId } })
+    : null;
+  if (listing && skuResult.sku === null) {
+    return { error: "Este producto está publicado en Mercado Libre: el SKU se puede cambiar, pero no borrar." };
+  }
+
   // Cambiar el precio es un permiso especial aparte de "editar" (specs/004,
   // sección 7): si no lo tiene, se guarda todo lo demás igual, pero el
   // precio queda como estaba. `purchasePrice`/`salePrice` vienen `undefined`
@@ -183,31 +233,58 @@ export async function updateProduct(
     return { error: error instanceof Error ? error.message : "No se pudo subir la foto." };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.product.update({
-      where: { id: productId },
-      data: {
-        name,
-        brandId: brandId || null,
-        rubroId,
-        barcode: barcode || existing.barcode,
-        photoUrl: photoUrl ?? existing.photoUrl,
-        purchasePrice: finalPurchasePrice,
-        salePrice: finalSalePrice,
-        minStock: minStock ?? existing.minStock,
-      },
-    });
-    if (aplicarCambioPrecio) {
-      await tx.productPriceHistory.create({
+  // Primero Mercado Libre: si no responde, no se guarda nada (specs/020, sección 7).
+  if (listing && skuResult.sku !== null) {
+    try {
+      await updateListing(listing.mlItemId, { sku: skuResult.sku }, listing.mlVariationId);
+    } catch (error) {
+      return { error: `No se guardó ningún cambio. ${mlErrorMessage(error)}` };
+    }
+  }
+
+  const salePriceChanged = aplicarCambioPrecio && !existing.salePrice.equals(finalSalePrice);
+  let pricePending = 0;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id: productId },
         data: {
-          productId,
+          name,
+          brandId: brandId || null,
+          rubroId,
+          barcode: barcode || existing.barcode,
+          sku: skuResult.sku,
+          skuKey: skuResult.skuKey,
+          photoUrl: photoUrl ?? existing.photoUrl,
           purchasePrice: finalPurchasePrice,
           salePrice: finalSalePrice,
-          changedByUserId: currentUser.id,
+          minStock: minStock ?? existing.minStock,
         },
       });
-    }
-  });
+      if (aplicarCambioPrecio) {
+        await tx.productPriceHistory.create({
+          data: {
+            productId,
+            purchasePrice: finalPurchasePrice,
+            salePrice: finalSalePrice,
+            changedByUserId: currentUser.id,
+          },
+        });
+      }
+      if (listing && skuResult.sku !== null) {
+        await tx.mercadoLibreListing.update({
+          where: { id: listing.id },
+          data: { lastKnownSku: skuResult.sku, skuConflict: null },
+        });
+      }
+      // Un solo precio: el cambio se envía a Mercado Libre sin esperarlo (RF-13).
+      if (salePriceChanged) pricePending = await markPricePending(tx, [productId]);
+    });
+  } catch (error) {
+    if (isSkuCollision(error)) return { error: SKU_TAKEN };
+    throw error;
+  }
+  if (pricePending > 0) scheduleListingPush([productId]);
 
   revalidatePath("/productos");
   revalidatePath(`/productos/${productId}`);
@@ -223,7 +300,12 @@ export async function setProductActive(productId: string, active: boolean): Prom
   const currentUser = await getCurrentUser();
   requirePermission(currentUser, ModuloNegocio.CATALOGO, "anular");
 
-  await prisma.product.update({ where: { id: productId }, data: { active } });
+  // Desactivar el producto pausa su publicación (specs/020, RF-18); reactivarlo no la reactiva.
+  const pausePending = await prisma.$transaction(async (tx) => {
+    await tx.product.update({ where: { id: productId }, data: { active } });
+    return active ? 0 : markPausePending(tx, productId);
+  });
+  if (pausePending > 0) scheduleListingPush([productId]);
   revalidatePath("/productos");
   revalidatePath(`/productos/${productId}`);
   return {};

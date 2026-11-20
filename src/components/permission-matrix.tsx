@@ -11,6 +11,7 @@ const MODULOS: { value: ModuloNegocio; label: string }[] = [
   { value: ModuloNegocio.CAJA, label: "Caja" },
   { value: ModuloNegocio.VENTAS, label: "Ventas" },
   { value: ModuloNegocio.PEDIDOS, label: "Pedidos" },
+  { value: ModuloNegocio.MERCADO_LIBRE, label: "Mercado Libre" },
   { value: ModuloNegocio.EMPLEADOS, label: "Empleados" },
   { value: ModuloNegocio.ANALITICAS, label: "Analíticas" },
   { value: ModuloNegocio.CONFIGURACION, label: "Configuración" },

@@ -20,7 +20,7 @@ Reglas no negociables. Toda spec, plan y línea de código debe respetarlas. Si 
 ## 3. Integridad
 
 10. **Una venta es una sola transacción**: venta, ítems, pagos, movimientos de stock y caja se guardan todos o ninguno.
-11. **No se vende sin caja abierta** y solo hay **una caja abierta** a la vez (restricción en la base de datos, no solo en la interfaz).
+11. **No se vende en el local sin caja abierta** y solo hay **una caja abierta** a la vez (restricción en la base de datos, no solo en la interfaz). Las ventas de Mercado Libre son la única excepción: las cobra Mercado Libre, no generan movimientos de caja y se registran con o sin caja abierta. *(Excepción aprobada el 2026-11-10, ver spec 022 y decisión 0004.)*
 12. **Un cierre de caja no se edita.** Las correcciones son movimientos nuevos con motivo.
 13. **Anulaciones, ajustes de stock, reimpresiones y cambios de precio** requieren permiso, llevan motivo cuando corresponde y quedan en la auditoría.
 

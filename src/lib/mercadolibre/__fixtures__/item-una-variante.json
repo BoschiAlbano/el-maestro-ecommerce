@@ -1,0 +1,137 @@
+{
+  "id": "MLA2304418309",
+  "title": "Billetera Negra Para Hombre Diseño Clásico",
+  "price": 2500,
+  "currency_id": "ARS",
+  "status": "active",
+  "sub_status": [],
+  "available_quantity": 1,
+  "listing_type_id": "gold_special",
+  "catalog_listing": false,
+  "user_product_id": null,
+  "category_id": "MLA417712",
+  "permalink": "https://articulo.mercadolibre.com.ar/MLA-2304418309-billetera-negra-para-hombre-diseno-clasico-_JM",
+  "thumbnail": "http://http2.mlstatic.com/D_677439-MLA120181030218_112026-I.webp",
+  "last_updated": "2026-11-19T21:58:31.872Z",
+  "tags": [
+    "test_item",
+    "good_quality_thumbnail",
+    "immediate_payment",
+    "cart_eligible"
+  ],
+  "seller_id": 1,
+  "pictures": [
+    {
+      "id": "677439-MLA120181030218_112026",
+      "url": "http://http2.mlstatic.com/D_677439-MLA120181030218_112026-O.webp",
+      "secure_url": "https://http2.mlstatic.com/D_677439-MLA120181030218_112026-O.webp",
+      "size": "500x500",
+      "max_size": "1024x1024",
+      "quality": ""
+    }
+  ],
+  "shipping": {
+    "mode": "me2",
+    "logistic_type": "xd_drop_off"
+  },
+  "attributes": [
+    {
+      "id": "BRAND",
+      "name": "Marca",
+      "value_id": "432858",
+      "value_name": "Billabong",
+      "values": [
+        {
+          "id": "432858",
+          "name": "Billabong",
+          "struct": null
+        }
+      ],
+      "value_type": "string"
+    },
+    {
+      "id": "MODEL",
+      "name": "Modelo",
+      "value_id": null,
+      "value_name": "billabong 2000",
+      "values": [
+        {
+          "id": null,
+          "name": "billabong 2000",
+          "struct": null
+        }
+      ],
+      "value_type": "string"
+    }
+  ],
+  "variations": [
+    {
+      "id": 208633027325,
+      "price": 2500,
+      "available_quantity": 1,
+      "attribute_combinations": [
+        {
+          "id": "COLOR",
+          "name": "Color",
+          "value_id": "2450295",
+          "value_name": "Negro",
+          "values": [
+            {
+              "id": "2450295",
+              "name": "Negro",
+              "struct": null
+            }
+          ],
+          "value_type": "string"
+        },
+        {
+          "id": "FABRIC_DESIGN",
+          "name": "Diseño de la tela",
+          "value_id": "24721100",
+          "value_name": "Liso",
+          "values": [
+            {
+              "id": "24721100",
+              "name": "Liso",
+              "struct": null
+            }
+          ],
+          "value_type": "string"
+        }
+      ],
+      "attributes": [
+        {
+          "id": "GTIN",
+          "name": "Código universal de producto",
+          "value_id": null,
+          "value_name": "2150119432082",
+          "value_struct": null,
+          "values": [
+            {
+              "id": null,
+              "name": "2150119432082",
+              "struct": null
+            }
+          ],
+          "value_type": "string"
+        },
+        {
+          "id": "SELLER_SKU",
+          "name": "SKU",
+          "value_id": null,
+          "value_name": "BIL-BLB-M902-NEG",
+          "value_struct": null,
+          "values": [
+            {
+              "id": null,
+              "name": "BIL-BLB-M902-NEG",
+              "struct": null
+            }
+          ],
+          "value_type": "string"
+        }
+      ],
+      "user_product_id": "MLAU5980929956"
+    }
+  ]
+}

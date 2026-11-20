@@ -8,7 +8,7 @@ import {
   type NotificationsSummary,
 } from "@/lib/notifications-data";
 
-const EMPTY_SUMMARY: NotificationsSummary = { items: [], stockBajo: false, unreadCount: 0 };
+const EMPTY_SUMMARY: NotificationsSummary = { items: [], liveAlerts: [], stockBajo: false, unreadCount: 0 };
 
 export async function getNotificationsSummary(): Promise<NotificationsSummary> {
   const currentUser = await getCurrentUser();

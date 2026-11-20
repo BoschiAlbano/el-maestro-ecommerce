@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   addGroupSheet(workbook, "Ventas por empleado", data.porEmpleado);
   addGroupSheet(workbook, "Ventas por turno", data.porTurno);
   addGroupSheet(workbook, "Ventas por canal", data.porCanal);
+  addGroupSheet(workbook, "Ventas por origen", data.porOrigen);
 
   const masVendidos = workbook.addWorksheet("Productos más vendidos");
   masVendidos.addRow(["Producto", "Cantidad", "Total"]);

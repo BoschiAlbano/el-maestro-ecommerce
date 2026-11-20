@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EditUserForm } from "./edit-user-form";
 import { ResetPasswordForm } from "./reset-password-form";
 import { ToggleActiveButton } from "./toggle-active-button";
+import { SYSTEM_ROLE_ID, SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 
 export default async function EditarUsuarioPage({
   params,
@@ -25,10 +26,11 @@ export default async function EditarUsuarioPage({
   const { id } = await params;
   const [user, roles] = await Promise.all([
     prisma.user.findUnique({ where: { id } }),
-    prisma.role.findMany({ orderBy: { name: "asc" } }),
+    prisma.role.findMany({ where: { id: { not: SYSTEM_ROLE_ID } }, orderBy: { name: "asc" } }),
   ]);
 
-  if (!user) notFound();
+  // El usuario «Sistema» de Mercado Libre no se edita (specs/022).
+  if (!user || user.id === SYSTEM_USER_ID) notFound();
 
   const isSelf = user.id === currentUser.id;
 

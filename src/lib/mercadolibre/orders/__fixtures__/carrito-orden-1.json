@@ -1,0 +1,48 @@
+{
+  "id": 2000019668418136,
+  "status": "paid",
+  "status_detail": null,
+  "tags": [
+    "paid",
+    "not_delivered",
+    "test_order",
+    "pack_order"
+  ],
+  "pack_id": 2000016160983971,
+  "date_created": "2026-11-19T19:37:26.000-04:00",
+  "date_closed": "2026-11-19T19:37:39.000-04:00",
+  "total_amount": 5000,
+  "paid_amount": 5000,
+  "currency_id": "ARS",
+  "buyer": {
+    "id": 1510889899,
+    "nickname": "TESTUSER1090254404"
+  },
+  "shipping": {
+    "id": 48580331636
+  },
+  "cancel_detail": null,
+  "order_items": [
+    {
+      "item": {
+        "id": "MLA2304611029",
+        "title": "Cable Usb-c A Usb-a Genérico Negro Trenzado 1 Metro",
+        "variation_id": 208632990089,
+        "seller_sku": "ODOO-TEST-001"
+      },
+      "quantity": 1,
+      "unit_price": 5000,
+      "sale_fee": 2105,
+      "listing_type_id": "gold_special"
+    }
+  ],
+  "payments": [
+    {
+      "status": "approved",
+      "status_detail": "accredited",
+      "transaction_amount": 5000,
+      "total_paid_amount": 5000,
+      "shipping_cost": 0
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { SYSTEM_USER_ID } from "@/lib/mercadolibre/orders/system-user";
 import { parseAnalyticsFilters, type AnalyticsSearchParams } from "@/lib/analytics";
 import { loadAnalyticsData } from "@/lib/analytics-data";
 import { Input } from "@/components/ui/input";
@@ -42,16 +43,17 @@ export default async function AnaliticasPage({
     return <p className="text-sm text-muted-foreground">No tenés permiso para ver las analíticas.</p>;
   }
 
-  const { desde, hasta, empleado, medioPago } = await searchParams;
-  // Solo estos cuatro filtros existen en pantalla: un link viejo con ?marca=… no debe filtrar a escondidas.
-  const rawParams: AnalyticsSearchParams = { desde, hasta, empleado, medioPago };
+  const { desde, hasta, empleado, medioPago, origen } = await searchParams;
+  // Solo estos filtros existen en pantalla: un link viejo con ?marca=… no debe filtrar a escondidas.
+  const rawParams: AnalyticsSearchParams = { desde, hasta, empleado, medioPago, origen };
   const filters = parseAnalyticsFilters(rawParams, new Date());
   const puedeExportar = hasPermission(currentUser, ModuloNegocio.ANALITICAS, "exportar");
   const verCostos = hasSpecialPermission(currentUser, "verCostosMargenes");
 
   const [data, employees] = await Promise.all([
     loadAnalyticsData(filters, currentUser),
-    prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    // El usuario «Sistema» de Mercado Libre se filtra con Origen, no como empleado (specs/022).
+    prisma.user.findMany({ where: { id: { not: SYSTEM_USER_ID } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const desdeDefault = filters.from.toISOString().slice(0, 10);
@@ -78,7 +80,11 @@ export default async function AnaliticasPage({
 
       <FilterForm
         toggleBelow
-        activeCount={(rawParams.empleado && rawParams.empleado !== "__all__" ? 1 : 0) + (rawParams.medioPago && rawParams.medioPago !== "__all__" ? 1 : 0)}
+        activeCount={
+          (rawParams.empleado && rawParams.empleado !== "__all__" ? 1 : 0) +
+          (rawParams.medioPago && rawParams.medioPago !== "__all__" ? 1 : 0) +
+          (rawParams.origen && rawParams.origen !== "__all__" ? 1 : 0)
+        }
         search={
           <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
         <div className="flex flex-col gap-2">
@@ -128,7 +134,25 @@ export default async function AnaliticasPage({
               <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
             </SelectContent>
           </Select>
-        </div>      </FilterForm>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="origen">Origen</Label>
+          <Select
+            name="origen"
+            defaultValue={rawParams.origen ?? "__all__"}
+            items={{ __all__: "Todas", local: "Local", mercadolibre: "Mercado Libre" }}
+          >
+            <SelectTrigger id="origen" className="w-full sm:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todas</SelectItem>
+              <SelectItem value="local">Local</SelectItem>
+              <SelectItem value="mercadolibre">Mercado Libre</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterForm>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
@@ -209,6 +233,10 @@ export default async function AnaliticasPage({
           <TotalsTable rows={data.porCanal} firstColumn="Canal" />
         </Panel>
       </section>
+
+      <Panel title="Ventas por origen" description="Local agrupa mostrador y pedidos por encargo">
+        <TotalsTable rows={data.porOrigen} firstColumn="Origen" />
+      </Panel>
 
       <Panel title="Ventas por turno de caja">
         <TotalsTable rows={data.porTurno} firstColumn="Turno" />
