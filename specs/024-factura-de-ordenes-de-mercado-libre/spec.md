@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Borrador |
+| **Estado** | Verificada (2026-11-20) |
 | **Depende de** | 022, 023 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 ("Ampliación de alcance"); decisión 0005; `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`, secciones 1.7 y 2 |
 
@@ -18,7 +18,7 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 
 - Emitir la factura C de una orden de Mercado Libre con los datos fiscales que el comprador cargó en Mercado Libre.
 - Subir el PDF de la factura a la compra en Mercado Libre.
-- Imprimir la factura junto con la etiqueta de envío, en un solo paso de preparación.
+- Imprimir la factura junto con la etiqueta de envío, en un solo paso de preparación, en la impresora de etiquetas de 10 × 15.
 - La nota de crédito cuando se cancela una orden ya facturada.
 - El seguimiento de facturas pendientes de emitir o de subir.
 
@@ -42,7 +42,7 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 
 **Preparar la orden**
 
-- **RF-1.** Una orden en estado "para preparar" (spec 022) tiene la acción **"Preparar envío"**. Emite la factura, la sube a Mercado Libre y deja a mano dos impresiones: la factura y la etiqueta de envío.
+- **RF-1.** Una orden que todavía no salió, «para preparar» o «lista para despachar» (spec 022), tiene la acción **"Preparar envío"** *(decisión del cliente, 2026-11-20: la factura se emite con este botón, no al entrar la compra)*. Emite la factura, la sube a Mercado Libre y deja a mano dos impresiones: la factura y la etiqueta de envío. Es el botón principal de la orden; la etiqueta sola sigue disponible (RF-18). *(Corregido 2026-11-20: incluye «lista para despachar», porque al imprimir la etiqueta la orden pasa sola a ese estado.)*
 - **RF-2.** "Preparar envío" no está disponible en una orden con riesgo de fraude, cancelada o sin los datos fiscales del emisor completos (spec 023).
 - **RF-3.** Antes de emitir, el sistema muestra los datos del comprador que va a usar y el total. El usuario confirma.
 
@@ -59,23 +59,23 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 - **RF-9.** La factura es siempre clase C, por el total de los productos de la compra al precio al que se vendieron. El detalle lista cada producto con su cantidad y precio.
 - **RF-10.** El envío que el comprador le paga a Mercado Libre no se incluye en la factura.
 - **RF-11.** Una compra tiene como máximo una factura, aunque incluya varios productos.
-- **RF-12.** La emisión usa el mecanismo de la spec 023: si ARCA no responde, la factura queda pendiente, con reintento y control de duplicados.
+- **RF-12.** La emisión usa el mecanismo de la spec 023: si ARCA no responde, la factura queda pendiente, con reintento y control de duplicados. La factura es de la venta que la spec 022 creó para la orden, como cualquier factura del local.
 
 **Envío a Mercado Libre**
 
-- **RF-13.** Una vez autorizada, el sistema sube el PDF de la factura a la compra en Mercado Libre.
+- **RF-13.** Una vez autorizada, el sistema sube el PDF de la factura a la compra en Mercado Libre. Antes de subirla consulta si la compra ya tiene una factura cargada; si la tiene, no la pisa (sección 7) *(agregado 2026-11-20)*.
 - **RF-14.** Si la subida falla, la factura queda "emitida, sin subir" y se reintenta desde la orden y en el control diario.
 - **RF-15.** La orden muestra el estado de su factura: sin factura, pendiente de autorización, emitida sin subir, o emitida y subida.
 - **RF-16.** El sistema no envía mensajes al comprador por la factura.
 
 **Impresión**
 
-- **RF-17.** La factura de una orden se imprime en hoja A4, para incluirla en el paquete.
+- **RF-17.** La factura de una orden se imprime en la **impresora de etiquetas de 10 × 15**, la misma de la etiqueta *(decisión del cliente, 2026-11-20; antes decía hoja A4)*, para incluirla en el paquete. Queda la hoja A4 como alternativa, igual que con la etiqueta. El PDF que se sube a Mercado Libre es el A4 de la spec 023.
 - **RF-18.** La etiqueta de envío (spec 022) se ofrece al lado de la factura. Si la factura quedó pendiente, la etiqueta se puede imprimir igual, con una advertencia de que la orden todavía no tiene factura.
 
 **Cancelaciones**
 
-- **RF-19.** Si se cancela una orden con factura emitida, el sistema emite la nota de crédito C por el total, con el mecanismo de la spec 023.
+- **RF-19.** Si se cancela una orden con factura emitida, el sistema emite la nota de crédito C por el total, con el mecanismo de la spec 023. *(Prueba técnica, 2026-11-20.)* La nota de crédito **no se sube a Mercado Libre**: Mercado Libre admite un solo archivo por compra y no deja borrarlo ni reemplazarlo. Queda en el sistema, en Comprobantes, y la factura subida queda en la compra.
 - **RF-20.** Si se cancela una orden con la factura pendiente de autorización, la factura se descarta y no se emite nota de crédito.
 
 **Seguimiento**
@@ -96,7 +96,7 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 - **La factura se emite al preparar el envío**, no al entrar la compra. Así no se factura lo que se cancela en los primeros minutos ni lo que Mercado Libre marca con riesgo de fraude.
 - **El dato fiscal del comprador es el de Mercado Libre.** El domicilio de la factura es el fiscal, que puede ser distinto del de entrega.
 - **Mercado Libre le avisa al comprador** cuando se sube la factura. Mandar mensajes propios por lo mismo puede hacer que la cuenta sea observada.
-- **Condiciones que impone Mercado Libre:** un solo PDF por compra, de hasta 1 MB.
+- **Condiciones que impone Mercado Libre:** un solo PDF por compra, de hasta 1 MB, que **no se puede borrar ni reemplazar** (prueba técnica). Por eso solo se sube una factura autorizada, después de que el usuario confirmó los datos (RF-3).
 - **Datos personales:** los datos fiscales del comprador se guardan solo para el comprobante y los ve quien puede ver la orden.
 - Valen todas las reglas de la spec 023: un comprobante no se edita ni se borra, la numeración es de ARCA y la operación no se frena por ARCA.
 
@@ -127,36 +127,37 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 
 ## 8. Criterios de aceptación
 
-- [ ] "Preparar envío" en una orden de prueba emite una factura C con los datos del comprador que informa Mercado Libre.
-- [ ] La factura aparece cargada en la compra, vista desde la cuenta del comprador de prueba.
-- [ ] Una compra con dos productos genera una sola factura con los dos en el detalle.
-- [ ] El envío pagado por el comprador no figura en la factura.
-- [ ] Una orden sin datos fiscales del comprador y de monto bajo se factura a Consumidor Final.
-- [ ] Una orden con riesgo de fraude no permite preparar el envío.
-- [ ] Con ARCA sin responder, la factura queda pendiente y la etiqueta se imprime con la advertencia.
-- [ ] Con la subida fallida, la factura queda "emitida, sin subir" y el reintento la sube.
-- [ ] Preparar dos veces la misma orden no duplica la factura.
-- [ ] Cancelar una orden facturada emite la nota de crédito.
-- [ ] La factura de la orden aparece en la pantalla de comprobantes con origen "Mercado Libre" y suma al acumulado.
-- [ ] Hay pruebas unitarias de: traducción de los datos fiscales de Mercado Libre a los del comprobante, decisión entre identificar al comprador y Consumidor Final, armado del detalle desde un carrito, y decisión de nota de crédito según el estado de la factura.
+- [x] "Preparar envío" en una orden de prueba emite una factura C con los datos del comprador que informa Mercado Libre. *(Revisión manual, 2026-11-20: factura C nº 92.)*
+- [x] La factura aparece cargada en la compra, vista desde la cuenta del comprador de prueba. *(Revisión manual.)*
+- [x] Una compra con dos productos genera una sola factura con los dos en el detalle. *(Revisión manual y prueba unitaria.)*
+- [x] El envío pagado por el comprador no figura en la factura. *(Revisión manual: $7.500, solo los productos.)*
+- [x] Una orden sin datos fiscales del comprador y de monto bajo se factura a Consumidor Final. *(Prueba unitaria: las cuentas de prueba no permiten borrar los datos fiscales.)*
+- [x] Una orden con riesgo de fraude no permite preparar el envío. *(Prueba unitaria: Mercado Libre no marca fraude en las cuentas de prueba.)*
+- [x] Con ARCA sin responder, la factura queda pendiente y la etiqueta se imprime con la advertencia. *(Script sobre una orden de prueba, con ARCA cortada solo en ese proceso: factura C nº 93 pendiente, y al reintentar se autorizó.)*
+- [x] Con la subida fallida, la factura queda "emitida, sin subir" y el reintento la sube. *(Mismo script: subida cortada, «emitida, sin subir» con el motivo, y el reintento la subió.)*
+- [x] Preparar dos veces la misma orden no duplica la factura. *(Revisión manual y script.)*
+- [x] Cancelar una orden facturada emite la nota de crédito. *(Revisión manual: nota de crédito C nº 8, sin subir.)*
+- [x] La factura de la orden aparece en la pantalla de comprobantes con origen "Mercado Libre" y suma al acumulado. *(Revisión manual. El acumulado suma todos los orígenes; en modo de pruebas no cuenta, como en la spec 023.)*
+- [x] Hay pruebas unitarias de: traducción de los datos fiscales de Mercado Libre a los del comprobante, decisión entre identificar al comprador y Consumidor Final, armado del detalle desde un carrito, y decisión de nota de crédito según el estado de la factura. *(`billing-read` / `invoice-receiver`, `invoice-state`, `invoice-pdf` y la decisión de la spec 023, que se reutiliza.)*
 - [ ] Cobertura E2E: pendiente para la pasada de endurecimiento (ver `AGENTS.md`).
 
 ## 9. Preguntas abiertas
 
-**Para el cliente:**
+**Respondidas por el cliente (2026-11-20):**
 
-1. **Cuándo se factura.** La propuesta es al preparar el envío, con un botón. La alternativa es automática, apenas entra la compra: ahorra un paso pero genera notas de crédito por las cancelaciones tempranas. ¿Cuál prefiere?
-2. **Impresora.** La factura de la orden va en hoja A4. ¿El local tiene una impresora común además de la de tickets?
+- **Cuándo se factura:** con el botón «Preparar envío» (RF-1), no al entrar la compra.
+- **Impresora:** la factura se imprime en la de etiquetas de 10 × 15, junto con la etiqueta (RF-17).
 
-**Para el contador:**
+**Para el contador** (mientras no conteste, se usa la propuesta; no frena la construcción):
 
-3. **Importe.** ¿La factura es por el precio de los productos, sin el envío que cobra Mercado Libre? Es la propuesta.
-4. **Descuentos de Mercado Libre.** Si Mercado Libre le hace un descuento al comprador con un cupón propio, ¿se factura el precio publicado o lo que pagó el comprador?
-5. **Comprador que pide IVA discriminado.** Como monotributista solo se puede emitir factura C. ¿Hace falta alguna aclaración en el comprobante?
+3. **Importe.** ¿La factura es por el precio de los productos, sin el envío que cobra Mercado Libre? *Propuesta:* sí.
+4. **Descuentos de Mercado Libre.** Si Mercado Libre le hace un descuento al comprador con un cupón propio, ¿se factura el precio publicado o lo que pagó el comprador? *Propuesta:* el precio de venta que informa Mercado Libre en la orden.
+5. **Comprador que pide IVA discriminado.** Como monotributista solo se puede emitir factura C. ¿Hace falta alguna aclaración en el comprobante? *Propuesta:* no.
+5b. **Formato de 10 × 15.** ¿Es válido entregar la factura impresa en 10 × 15 dentro del paquete, con todos sus datos, el código de autorización y el QR? El comprobante oficial es el PDF que recibe el comprador por Mercado Libre. *(Agregada 2026-11-20.)*
 
 **A confirmar en la prueba técnica:**
 
-6. **Nota de crédito y Mercado Libre.** Cuando se cancela una orden facturada, ¿la factura subida se deja, se borra o se reemplaza por la nota de crédito? Mercado Libre admite un solo PDF por compra.
-7. **Datos que realmente devuelve Mercado Libre** para un comprador con DNI y para uno con CUIT, y con qué nombres llega la situación fiscal.
+6. ~~**Nota de crédito y Mercado Libre.**~~ Respondida en la prueba técnica (2026-11-20): la factura subida se deja; no se puede borrar ni reemplazar, así que la nota de crédito no se sube (RF-19).
+7. **Datos que realmente devuelve Mercado Libre.** Con DNI, respondida en la prueba técnica: nombre, apellido, documento, tipo de contribuyente (`05` Consumidor Final) y domicilio. Con CUIT no se pudo probar: la cuenta de prueba no deja cambiar sus datos fiscales. Se cubre con pruebas unitarias y se confirma con la primera venta real a un comprador con CUIT.
 8. **Plazo.** Si Mercado Libre exige subir la factura dentro de algún plazo en Argentina.
 9. **Facturador de Mercado Libre.** Confirmar que su emisión automática se puede desactivar una vez activada, para el cambio al sistema.

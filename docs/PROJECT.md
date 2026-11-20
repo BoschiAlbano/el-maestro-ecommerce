@@ -205,7 +205,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 021 | Sincronización de stock con Mercado Libre | 005, 020 | Verificada (2026-11-19) |
 | 022 | Órdenes de Mercado Libre | 008, 011, 013, 020, 021 | Verificada (2026-11-19), con despacho, entrega y fraude a confirmar con la primera venta real |
 | 023 | Facturación electrónica (ARCA) | 003, 008, 009 | Verificada en homologación (pendiente de despliegue: medir el arranque en frío de ARCA en Vercel, y confirmar el QR con la primera factura real) |
-| 024 | Factura de órdenes de Mercado Libre | 022, 023 | Borrador |
+| 024 | Factura de órdenes de Mercado Libre | 022, 023 | Verificada (2026-11-20), en homologación; la validez de la factura en 10 × 15 queda a confirmar con el contador |
 | 025 | Publicar productos en Mercado Libre | 004, 019, 020 | Borrador |
 
 Sobre las specs 019 a 025:

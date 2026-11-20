@@ -92,6 +92,7 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 **Comprobante**
 
 - **RF-20.** Cada factura y cada nota de crédito tiene un PDF con: los datos del emisor (RF-1), tipo y letra del comprobante, punto de venta y número, fecha, datos del comprador, detalle de productos con cantidad, precio unitario e importe, total, código de autorización con su vencimiento y código QR de ARCA.
+- *(Agregado 2026-11-20, spec 024.)* La factura de una orden de Mercado Libre lleva además el domicilio del comprador, cuando Mercado Libre lo informa, y su detalle sale de los ítems de la orden. Ese mismo PDF A4 es el que se sube a la compra en Mercado Libre. Hay también una versión en 10 × 15 cm para la impresora de etiquetas.
 - **RF-21.** El comprobante se puede imprimir en hoja A4 y en la impresora de tickets de 58 mm. El contenido es el mismo; cambia la disposición.
 - **RF-22.** Una venta facturada imprime la factura en lugar del ticket. El ticket interno sigue disponible para reimprimir desde el detalle de la venta y conserva su leyenda.
 - **RF-23.** Reimprimir un comprobante no emite nada nuevo: vuelve a mostrar el mismo.
@@ -99,6 +100,7 @@ Esta spec **modifica el comportamiento de las specs 008 y 009**: agrega la opci�
 **Comprobantes emitidos**
 
 - **RF-24.** Una pantalla "Comprobantes" lista facturas y notas de crédito con: tipo, número, fecha, comprador, total, estado (emitida o pendiente), origen (local o Mercado Libre) y la venta relacionada. Se filtra por fecha, tipo, estado y origen.
+- *(Agregado 2026-11-20, spec 024.)* La columna y el filtro «Origen» se implementaron con la spec 024, cuando aparecieron las primeras facturas de Mercado Libre. El Excel también lleva la columna.
 - **RF-25.** La pantalla muestra el total facturado en el período filtrado, neto de notas de crédito.
 - **RF-26.** La lista se exporta a Excel con las mismas columnas, para el contador.
 - **RF-27.** La pantalla muestra lo facturado en los últimos 12 meses, neto de notas de crédito, contra el tope del RF-6. Cuando ese acumulado cruza el 80 % del tope, se genera un aviso en la campanita. Es una **advertencia informativa**, para que el dueño le avise al contador: no bloquea ni limita la facturación, y no hay otro aviso al llegar al tope ni al pasarlo.
