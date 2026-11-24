@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
   // Se acepta solo en desarrollo: en producción no se abre ningún origen más.
   allowedDevOrigins: ["**.devtunnels.ms", ...(isDev ? ["**.ngrok-free.dev"] : [])],
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       allowedOrigins: ["**.devtunnels.ms", "localhost:3000", ...(isDev ? ["**.ngrok-free.dev"] : [])],
     },
