@@ -5,6 +5,7 @@ import shipment from "./__fixtures__/envio.json";
 import cart1 from "./__fixtures__/carrito-orden-1.json";
 import cart2 from "./__fixtures__/carrito-orden-2.json";
 import pack from "./__fixtures__/carrito-paquete.json";
+import pickup from "./__fixtures__/orden-retiro-entregada.json";
 import {
   cancelReasonText,
   idFromResource,
@@ -17,6 +18,19 @@ import {
 } from "./order-read";
 
 describe("readOrder", () => {
+  it("una compra con retiro en el local, marcada entregada por el vendedor (spec 022, RF-20b)", () => {
+    const read = readOrder(mlOrderSchema.parse(pickup));
+    expect(read.localPickUp).toBe(true);
+    expect(read.shipmentId).toBeNull();
+    expect(read.deliveredByOrder).toBe(true);
+    // Sin la marca del vendedor y sin la etiqueta `delivered`, todavía no está entregada.
+    expect(readOrder(mlOrderSchema.parse({ ...pickup, fulfilled: null })).deliveredByOrder).toBe(false);
+  });
+
+  it("una compra con envío no es de retiro", () => {
+    expect(readOrder(mlOrderSchema.parse(paid)).localPickUp).toBe(false);
+  });
+
   it("la compra pagada de la prueba técnica", () => {
     const read = readOrder(mlOrderSchema.parse(paid));
     expect(read).toMatchObject({

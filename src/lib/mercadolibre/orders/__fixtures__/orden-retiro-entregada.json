@@ -1,0 +1,38 @@
+{
+  "id": 2000019754744208,
+  "status": "paid",
+  "tags": [
+    "no_shipping",
+    "paid",
+    "not_delivered",
+    "test_order"
+  ],
+  "fulfilled": true,
+  "pack_id": null,
+  "date_created": "2026-11-24T15:38:53.000-04:00",
+  "total_amount": 7500,
+  "buyer": {
+    "id": 1,
+    "nickname": "COMPRADOR_PRUEBA",
+    "billing_info": {
+      "id": "1"
+    }
+  },
+  "shipping": {
+    "id": null
+  },
+  "cancel_detail": null,
+  "order_items": [
+    {
+      "item": {
+        "id": "MLA2318260967",
+        "title": "Cable Usb-c Prueba Retiro En El Local",
+        "variation_id": null,
+        "seller_sku": "PRUEBA-025-RETIRO"
+      },
+      "quantity": 1,
+      "unit_price": 7500,
+      "sale_fee": 2492.5
+    }
+  ]
+}

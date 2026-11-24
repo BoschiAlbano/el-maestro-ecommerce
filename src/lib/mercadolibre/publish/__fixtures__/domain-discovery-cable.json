@@ -1,0 +1,62 @@
+[
+  {
+    "domain_id": "MLA-DATA_CABLES_AND_ADAPTERS",
+    "domain_name": "Cables y adaptadores de datos",
+    "category_id": "MLA5338",
+    "category_name": "Cables de Datos",
+    "attributes": [
+      {
+        "id": "INPUT_CONNECTOR",
+        "name": "Conector de entrada",
+        "value_id": "17291935",
+        "value_name": "USB-C"
+      },
+      {
+        "id": "OUTPUT_CONNECTOR",
+        "name": "Conector de salida",
+        "value_id": "6778102",
+        "value_name": "USB-C"
+      }
+    ]
+  },
+  {
+    "domain_id": "MLA-DATA_CABLES_AND_ADAPTERS",
+    "domain_name": "Cables y adaptadores de datos",
+    "category_id": "MLA431810",
+    "category_name": "Cables de Datos",
+    "attributes": [
+      {
+        "id": "INPUT_CONNECTOR",
+        "name": "Conector de entrada",
+        "value_id": "17291935",
+        "value_name": "USB-C"
+      },
+      {
+        "id": "OUTPUT_CONNECTOR",
+        "name": "Conector de salida",
+        "value_id": "6778102",
+        "value_name": "USB-C"
+      }
+    ]
+  },
+  {
+    "domain_id": "MLA-DATA_CABLES_AND_ADAPTERS",
+    "domain_name": "Cables y adaptadores de datos",
+    "category_id": "MLA10626",
+    "category_name": "USB",
+    "attributes": [
+      {
+        "id": "INPUT_CONNECTOR",
+        "name": "Conector de entrada",
+        "value_id": "17291935",
+        "value_name": "USB-C"
+      },
+      {
+        "id": "OUTPUT_CONNECTOR",
+        "name": "Conector de salida",
+        "value_id": "6778102",
+        "value_name": "USB-C"
+      }
+    ]
+  }
+]

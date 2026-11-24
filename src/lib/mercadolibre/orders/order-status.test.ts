@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancellationEffect, mapOrderStatus, statusTimestamps } from "./order-status";
+import { cancellationEffect, mapOrderStatus, purchasePickup, statusTimestamps } from "./order-status";
 
 describe("mapOrderStatus (plan, sección 3.3)", () => {
   it.each([
@@ -15,6 +15,37 @@ describe("mapOrderStatus (plan, sección 3.3)", () => {
     [{ cancelled: false, shipmentStatus: null, shipmentSubstatus: null }, "TO_PREPARE"],
   ])("%j → %s", (input, expected) => {
     expect(mapOrderStatus(input)).toBe(expected);
+  });
+});
+
+describe("retiro en el local (spec 022, RF-20b)", () => {
+  const order = (over: Partial<{ localPickUp: boolean; deliveredByOrder: boolean; shipmentId: string | null }> = {}) => ({
+    localPickUp: true,
+    deliveredByOrder: false,
+    shipmentId: null,
+    ...over,
+  });
+
+  it("sin envío y sin entregar: para preparar; entregada por la orden: entregada", () => {
+    expect(mapOrderStatus({ cancelled: false, shipmentStatus: null, shipmentSubstatus: null, pickup: { delivered: false } })).toBe("TO_PREPARE");
+    expect(mapOrderStatus({ cancelled: false, shipmentStatus: null, shipmentSubstatus: null, pickup: { delivered: true } })).toBe("DELIVERED");
+  });
+
+  it("cancelada manda sobre la entrega", () => {
+    expect(mapOrderStatus({ cancelled: true, shipmentStatus: null, shipmentSubstatus: null, pickup: { delivered: true } })).toBe("CANCELLED");
+  });
+
+  it("purchasePickup: retiro si ninguna orden tiene envío", () => {
+    expect(purchasePickup([order()])).toEqual({ delivered: false });
+    expect(purchasePickup([order({ deliveredByOrder: true })])).toEqual({ delivered: true });
+    expect(purchasePickup([order({ shipmentId: "123" })])).toBeNull();
+    expect(purchasePickup([order({ localPickUp: false })])).toBeNull();
+    expect(purchasePickup([])).toBeNull();
+  });
+
+  it("un paquete se da por entregado cuando todas sus órdenes lo dicen", () => {
+    expect(purchasePickup([order({ deliveredByOrder: true }), order()])).toEqual({ delivered: false });
+    expect(purchasePickup([order({ deliveredByOrder: true }), order({ deliveredByOrder: true })])).toEqual({ delivered: true });
   });
 });
 

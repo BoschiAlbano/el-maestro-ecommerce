@@ -18,8 +18,14 @@ export function mapOrderStatus(input: {
   cancelled: boolean;
   shipmentStatus: string | null;
   shipmentSubstatus: string | null;
+  /**
+   * Retiro en el local (spec 022, RF-20b): no hay envío, así que la entrega la
+   * dice la orden. `null` si la compra va por Mercado Envíos.
+   */
+  pickup?: { delivered: boolean } | null;
 }): MlOrderStatus {
   if (input.cancelled) return "CANCELLED";
+  if (input.pickup) return input.pickup.delivered ? "DELIVERED" : "TO_PREPARE";
   switch (input.shipmentStatus) {
     case "delivered":
       return "DELIVERED";
@@ -59,4 +65,16 @@ export function statusTimestamps(next: MlOrderStatus, now: Date): { shippedAt?: 
   if (next === "SHIPPED" || next === "NOT_DELIVERED") return { shippedAt: now };
   if (next === "DELIVERED") return { shippedAt: now, deliveredAt: now };
   return {};
+}
+
+/**
+ * Si la compra es con retiro en el local y si ya se entregó (spec 022,
+ * RF-20b). Un paquete es de retiro si ninguna orden tiene envío; se da por
+ * entregado cuando todas sus órdenes lo dicen.
+ */
+export function purchasePickup(
+  orders: readonly { localPickUp: boolean; deliveredByOrder: boolean; shipmentId: string | null }[],
+): { delivered: boolean } | null {
+  if (orders.length === 0 || orders.some((o) => o.shipmentId) || !orders.some((o) => o.localPickUp)) return null;
+  return { delivered: orders.every((o) => o.deliveredByOrder) };
 }

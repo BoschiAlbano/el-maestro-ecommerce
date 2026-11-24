@@ -100,6 +100,8 @@ export type OrderRow = {
   fraudRisk: boolean;
   needsReview: boolean;
   invoiceState: OrderInvoiceState;
+  /** Retiro en el local (spec 022, RF-20b). */
+  localPickUp: boolean;
 };
 
 export async function loadOrders(filter: {
@@ -134,6 +136,7 @@ export async function loadOrders(filter: {
     fraudRisk: o.fraudRisk,
     needsReview: o.needsReview !== null,
     invoiceState: stateOf(o, o.sale?.invoices[0]),
+    localPickUp: o.localPickUp,
   }));
 }
 

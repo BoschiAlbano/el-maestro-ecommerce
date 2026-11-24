@@ -8,6 +8,8 @@ export const mlOrderSchema = z.object({
   id,
   status: z.string(),
   tags: z.array(z.string()).nullable().optional(),
+  /** El vendedor la marcó entregada (retiro en el local, spec 022 RF-20b). */
+  fulfilled: z.boolean().nullable().optional(),
   pack_id: id.nullable().optional(),
   date_created: z.string(),
   total_amount: z.number(),
@@ -98,6 +100,10 @@ export type OrderRead = {
   fraudRisk: boolean;
   createdAt: Date;
   buyerNickname: string;
+  /** Retiro en el local: sin envío de Mercado Libre (etiqueta `no_shipping`, spec 022 RF-20b). */
+  localPickUp: boolean;
+  /** Entregada según la orden misma: el vendedor la marcó entregada (`fulfilled`) o trae la etiqueta `delivered`. */
+  deliveredByOrder: boolean;
   /** Para pedir los datos fiscales del comprador (specs/024). */
   billingInfoId: string | null;
   shipmentId: string | null;
@@ -131,6 +137,8 @@ export function readOrder(order: MlOrder): OrderRead {
     fraudRisk: tags.some((t) => FRAUD_TAGS.has(t)),
     createdAt: new Date(order.date_created),
     buyerNickname: order.buyer.nickname ?? `Comprador ${order.buyer.id}`,
+    localPickUp: tags.includes("no_shipping"),
+    deliveredByOrder: order.fulfilled === true || tags.includes("delivered"),
     billingInfoId: order.buyer.billing_info?.id ?? null,
     shipmentId: order.shipping?.id ?? null,
     total: String(order.total_amount),
