@@ -13,7 +13,7 @@
 
 ## Verificación final
 
-- [ ] Se probaron todos los criterios de aceptación de `spec.md`.
-- [x] Linter, tipos y pruebas unitarias pasan. — `eslint`, `tsc --noEmit` y `vitest` (156 pruebas, 23 son de `cash-day`). No se corrió `pnpm build` porque el servidor de desarrollo del cliente está levantado en el mismo directorio.
+- [x] Se probaron todos los criterios de aceptación de `spec.md`. — Revisión manual del cliente el 2026-11-24, con dos turnos de dos usuarios (uno cerrado con diferencia y otro abierto), ventas en efectivo y transferencia, una venta anulada, una seña y un egreso; los totales se recalcularon desde la base turno por turno y coinciden con la pantalla.
+- [x] Linter, tipos y pruebas unitarias pasan. — `eslint`, `tsc --noEmit` y `vitest` (156 pruebas, 23 son de `cash-day`). No se corrió `pnpm build` porque el servidor de desarrollo del cliente está levantado en el mismo directorio. *(2026-11-24: `pnpm build` pasa, con 764 pruebas.)*
 - [ ] Pruebas E2E. — Pendientes: se hacen en la pasada de endurecimiento (ver `AGENTS.md`, sección "Pruebas").
-- [ ] `docs/PROJECT.md` actualizado (estado de la spec).
+- [x] `docs/PROJECT.md` actualizado (estado de la spec). — «Verificada (2026-11-24)».

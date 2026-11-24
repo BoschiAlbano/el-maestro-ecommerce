@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobada (2026-10-20) |
+| **Estado** | Verificada (2026-11-24) |
 | **Depende de** | 007, 008, 009 (y 012, por el acceso desde el inicio) |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 |
 
@@ -98,19 +98,19 @@ No hay un permiso nuevo: se reutiliza el de Caja (spec 002). El permiso se valid
 
 ## 8. Criterios de aceptación
 
-- [ ] Con dos turnos en el mismo día (uno cerrado a la mañana por un usuario y uno abierto a la tarde por otro), `/caja/dia` muestra los totales sumados de ambos, sin tener que entrar al historial.
-- [ ] Los totales en efectivo y en transferencia del día (ingresos, egresos y neto) coinciden con la suma de lo que muestra cada turno en su propio detalle.
+- [x] Con dos turnos en el mismo día (uno cerrado a la mañana por un usuario y uno abierto a la tarde por otro), `/caja/dia` muestra los totales sumados de ambos, sin tener que entrar al historial. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] Los totales en efectivo y en transferencia del día (ingresos, egresos y neto) coinciden con la suma de lo que muestra cada turno en su propio detalle. *(Revisión manual y recálculo desde la base, turno por turno: efectivo +$14.000 −$5.100, transferencia +$2.500.)*
 - ~~[ ] El *Estado actual de la caja* coincide con lo que muestra `/caja` (abierta por quién, desde cuándo, efectivo esperado), y se ve igual aunque se esté mirando un día anterior.~~ *(Quitado 2026-10-20.)*
-- [ ] Los totales de ventas (cantidad, monto, anuladas y cobrado por medio) coinciden con el historial de ventas del mismo día.
-- [ ] El desglose por turno muestra quién abrió y cerró cada uno, horarios, monto inicial, esperado, contado y diferencia, y cada fila lleva al detalle correcto.
-- [ ] El resumen por medio de pago separa efectivo de transferencia y coincide con las tarjetas.
-- [ ] Una venta anulada no suma al total de ventas; una seña de un pedido sí suma a los ingresos pero no a las ventas.
-- [ ] Se puede cambiar de día con el selector y con los botones anterior/siguiente; una fecha futura no se puede elegir y por URL vuelve a hoy.
-- [ ] Un día sin movimientos muestra un mensaje claro.
-- [ ] La lista de movimientos está paginada y los totales no cambian al cambiar de página.
-- [ ] Un usuario sin permiso "ver" en Caja no puede ver la pantalla, probado con un rol real.
-- [ ] Desde `/caja` y desde la fila "Hoy" del inicio se llega a la pantalla.
-- [ ] La pantalla no crea ni modifica ningún dato (solo lectura) y se ve bien en celular (constitución, regla 22).
+- [x] Los totales de ventas (cantidad, monto, anuladas y cobrado por medio) coinciden con el historial de ventas del mismo día. *(Recálculo desde la base: 3 ventas por $10.000 y 1 anulada; la venta de Mercado Libre del día queda afuera.)*
+- [x] El desglose por turno muestra quién abrió y cerró cada uno, horarios, monto inicial, esperado, contado y diferencia, y cada fila lleva al detalle correcto. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] El resumen por medio de pago separa efectivo de transferencia y coincide con las tarjetas. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] Una venta anulada no suma al total de ventas; una seña de un pedido sí suma a los ingresos pero no a las ventas. *(Revisión manual y recálculo desde la base; prueba unitaria en `cash-day`.)*
+- [x] Se puede cambiar de día con el selector y con los botones anterior/siguiente; una fecha futura no se puede elegir y por URL vuelve a hoy. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] Un día sin movimientos muestra un mensaje claro. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] La lista de movimientos está paginada y los totales no cambian al cambiar de página. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] Un usuario sin permiso "ver" en Caja no puede ver la pantalla, probado con un rol real. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] Desde `/caja` y desde la fila "Hoy" del inicio se llega a la pantalla. *(Revisión manual del cliente, 2026-11-24.)*
+- [x] La pantalla no crea ni modifica ningún dato (solo lectura) y se ve bien en celular (constitución, regla 22). *(Revisión manual del cliente, 2026-11-24.)*
 
 ## 9. Decisiones (confirmadas con el cliente, 2026-10-20)
 
