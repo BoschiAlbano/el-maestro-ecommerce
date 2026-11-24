@@ -51,6 +51,8 @@ Tener el catálogo completo de productos, con marca y rubro, precios en ARS y c�
 - Un usuario sin el permiso "ver costos y márgenes" no ve el precio de compra, el margen ni el historial de precio de compra en ninguna pantalla ni exportación.
 - Un usuario con permiso "editar" en Catálogo pero sin el permiso especial "cambiar precios" puede editar los demás datos del producto, pero no su precio de compra ni de venta.
 
+- *(Agregado 2026-11-24, spec 025.)* La ficha del producto suma «Preparar publicación en Mercado Libre» (o «Editar publicación» si la creó el sistema), que lleva a `/productos/[id]/mercadolibre`. Los datos de publicación son propios de la publicación: cambiar el nombre o la foto del producto no los cambia.
+
 ## 5. Reglas de negocio
 
 - El precio de venta lo define el dueño a mano; no hay margen automático ni recálculo masivo (`docs/PROJECT.md`, sección 5).
