@@ -11,6 +11,7 @@ import type { MlConnectionView } from "@/lib/mercadolibre/connection";
 import type { MlConnectResult } from "@/lib/mercadolibre/connection-result";
 import { ResetSystemTab } from "./reset-system-tab";
 import { MercadoLibreTab } from "./mercadolibre-tab";
+import type { PublicationDefaultsValue } from "./publication-defaults";
 import { FacturacionTab } from "./facturacion-tab";
 import type { FacturacionView } from "@/lib/facturacion/facturacion-view";
 
@@ -23,7 +24,13 @@ type SettingsFormProps = {
   /** Solo el Dueño recibe el resumen y ve la pestaña "Sistema" (specs/017). */
   resetSummary?: ResetSummary;
   /** Pestaña "Mercado Libre" (specs/019): la ve quien tiene permiso "ver". */
-  mercadoLibre: { view: MlConnectionView; isOwner: boolean; result: MlConnectResult | null; ordersStartDate: string | null };
+  mercadoLibre: {
+    view: MlConnectionView;
+    isOwner: boolean;
+    result: MlConnectResult | null;
+    ordersStartDate: string | null;
+    publicationDefaults: PublicationDefaultsValue;
+  };
   /** Pestaña "Facturación" (specs/023): la ve quien tiene permiso "ver"; el Dueño edita. */
   facturacion: { view: FacturacionView; isOwner: boolean };
   /** Pestaña con la que abre, si la dirección la pide y el usuario la puede ver. */

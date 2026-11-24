@@ -172,6 +172,11 @@ export default async function PublicacionesPage({
                     <ExternalLink className="size-3" />
                   </a>
                   {!row.product.active && <span className="text-xs text-muted-foreground">Producto desactivado</span>}
+                  {row.publishedFromSystem && row.status !== "CLOSED" && (
+                    <Link href={`/productos/${row.product.id}?tab=mercadolibre`} className="text-xs text-muted-foreground hover:underline">
+                      Creada desde el sistema · editar publicación
+                    </Link>
+                  )}
                 </div>
               </TableCell>
               <TableCell>

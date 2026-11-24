@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { OrdersStartDate } from "./orders-start-date";
+import { PublicationDefaults, type PublicationDefaultsValue } from "./publication-defaults";
 
 const dateFormat = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
@@ -57,6 +58,7 @@ export function MercadoLibreTab({
   canEdit,
   result,
   ordersStartDate,
+  publicationDefaults,
 }: {
   view: MlConnectionView;
   isOwner: boolean;
@@ -66,6 +68,8 @@ export function MercadoLibreTab({
   result: MlConnectResult | null;
   /** Desde qué día se registran las compras (specs/022, RF-9b). */
   ordersStartDate: string | null;
+  /** Valores por defecto de las publicaciones (specs/025, RF-5). */
+  publicationDefaults: PublicationDefaultsValue;
 }) {
   const [disconnectState, disconnectAction, disconnecting] = useActionState(disconnectMercadoLibre, initialState);
   const [fetchState, fetchAction, fetching] = useActionState(fetchMissedNotifications, initialState);
@@ -188,6 +192,7 @@ export function MercadoLibreTab({
       )}
 
       <OrdersStartDate value={ordersStartDate} canEdit={canEdit} />
+      <PublicationDefaults value={publicationDefaults} canEdit={canEdit} />
     </div>
   );
 }
