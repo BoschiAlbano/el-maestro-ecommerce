@@ -199,7 +199,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 015 | Tienda online: ruta raíz y landing en blanco | 001, 002, 012 | Verificada |
 | 016 | Ingreso por usuario y contraseña | 001, 002, 003 | Verificada |
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
-| 018 | Keep-alive de la base de datos | 001 | En desarrollo |
+| 018 | Keep-alive de la base de datos | 001 | Verificada (2026-11-24) |
 | 019 | Conexión con Mercado Libre | 002, 003, 013 | Verificada (pendiente de despliegue: medir los 500 ms de la ruta de avisos en Vercel) |
 | 020 | Vincular y administrar publicaciones de Mercado Libre | 004, 019 | Verificada (2026-11-19), con publicaciones de una sola variante |
 | 021 | Sincronización de stock con Mercado Libre | 005, 020 | Verificada (2026-11-19) |

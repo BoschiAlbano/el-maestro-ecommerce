@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobada (2026-11-10) |
+| **Estado** | Verificada (2026-11-24) |
 | **Depende de** | 001 |
 | **Referencia** | `docs/PROJECT.md`, secciones 3 y 10 |
 
@@ -67,13 +67,13 @@ No hay roles: la ruta no es para personas. Solo la ejecuta el cron de Vercel (o 
 
 ## 8. Criterios de aceptación
 
-- [ ] Con el secreto correcto, `GET /api/cron/keep-alive` responde `200` y la base recibe la consulta.
-- [ ] Sin el encabezado, o con un secreto equivocado, responde `401`.
-- [ ] Con `CRON_SECRET` sin definir, responde `401` aunque se mande un encabezado.
-- [ ] Si la base falla, responde `500` sin exponer detalles.
-- [ ] `vercel.json` tiene el cron diario y el proyecto sigue compilando.
-- [ ] En Vercel, la ejecución del cron aparece como exitosa (panel del proyecto > Settings > Cron Jobs, o "Run" manual).
-- [ ] Hay pruebas unitarias de la validación del secreto (correcto, incorrecto, ausente, secreto vacío, esquema distinto de Bearer).
+- [x] Con el secreto correcto, `GET /api/cron/keep-alive` responde `200` y la base recibe la consulta. *(En local con un secreto de prueba, y en producción con «Run» desde Vercel, 2026-11-24.)*
+- [x] Sin el encabezado, o con un secreto equivocado, responde `401`. *(Probado contra producción, `el-maestro-ecommerce.vercel.app`, 2026-11-24.)*
+- [x] Con `CRON_SECRET` sin definir, responde `401` aunque se mande un encabezado. *(En local, sin definir y vacío; prueba unitaria de `isAuthorizedCron`.)*
+- [x] Si la base falla, responde `500` sin exponer detalles. *(En local, con la base apuntando a un puerto cerrado: `500 {"ok":false}` y el error solo en el registro del servidor.)*
+- [x] `vercel.json` tiene el cron diario y el proyecto sigue compilando. *(Vercel lo muestra activo a las 12:00 UTC.)*
+- [x] En Vercel, la ejecución del cron aparece como exitosa (panel del proyecto > Settings > Cron Jobs, o "Run" manual). *(«Run» manual del cliente, 2026-11-24: 200 en los registros. En el plan Hobby los registros duran alrededor de una hora: las ejecuciones de las 12:00 UTC no se ven más tarde.)*
+- [x] Hay pruebas unitarias de la validación del secreto (correcto, incorrecto, ausente, secreto vacío, esquema distinto de Bearer). *(`src/lib/cron-auth.test.ts`.)*
 - [ ] Cobertura E2E: pendiente para la pasada de endurecimiento (ver `AGENTS.md`).
 
 ## 9. Decisiones
