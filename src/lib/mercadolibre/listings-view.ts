@@ -44,6 +44,8 @@ export type PublicationRow = {
   publishedQuantity: number | null;
   lastSyncError: string | null;
   closedAt: Date | null;
+  /** La creó el sistema (specs/025): su contenido se edita desde el sistema. */
+  publishedFromSystem: boolean;
   product: {
     id: string;
     name: string;
@@ -97,6 +99,7 @@ export async function loadPublications(filter: PublicationsFilter): Promise<Publ
     publishedQuantity: r.lastKnownQuantity,
     lastSyncError: r.lastSyncError,
     closedAt: r.closedAt,
+    publishedFromSystem: r.publishedFromSystem,
     product: { ...r.product, salePrice: r.product.salePrice.toString() },
   }));
 }

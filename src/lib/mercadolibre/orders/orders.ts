@@ -8,7 +8,7 @@ import { pushPendingListingsSafely } from "../listings";
 import { getDispatchDeadline, getOrder, getPack, getSellerShippingCost, getShipment, searchOrderIds } from "./orders-api";
 import { readOrder, readShipment, purchaseKey, type OrderRead, type ShipmentRead } from "./order-read";
 import { buildMlSale, describePurchase, isBeforeStart, isPartiallyCancelled, isPurchaseCancelled, isPurchasePaid } from "./order-sale";
-import { cancellationEffect, mapOrderStatus, NOT_YET_SHIPPED, ORDER_STATUS_LABELS, statusTimestamps } from "./order-status";
+import { cancellationEffect, mapOrderStatus, NOT_YET_SHIPPED, ORDER_STATUS_LABELS, purchasePickup, statusTimestamps } from "./order-status";
 import { SYSTEM_USER_ID } from "./system-user";
 
 // Compras de Mercado Libre en el sistema (specs/022, plan secciones 3.2 a 3.5).
@@ -87,10 +87,12 @@ async function registerPurchase(purchase: Purchase, createdAt: Date): Promise<{ 
 
   const productIds = [...new Set(sale.items.flatMap((i) => (i.productId ? [i.productId] : [])))];
   const fraudRisk = purchase.orders.some((o) => o.fraudRisk);
+  const pickup = purchasePickup(purchase.orders);
   const status = mapOrderStatus({
     cancelled: false,
     shipmentStatus: shipment?.status ?? null,
     shipmentSubstatus: shipment?.substatus ?? null,
+    pickup,
   });
   const buyer = purchase.orders[0].buyerNickname;
   const label = describePurchase(purchase.packId ?? purchase.orders[0].mlOrderId, sale.items);
@@ -139,6 +141,7 @@ async function registerPurchase(purchase: Purchase, createdAt: Date): Promise<{ 
           saleId: created.id,
           status,
           mlShipmentId: shipment?.shipmentId ?? shipmentId,
+          localPickUp: pickup !== null,
           shipmentStatus: shipment?.status ?? null,
           shipmentSubstatus: shipment?.substatus ?? null,
           dispatchDeadline: deadline,
@@ -228,6 +231,7 @@ async function updatePurchase(orderId: string, purchase: Purchase): Promise<void
           cancelled: false,
           shipmentStatus: shipment?.status ?? null,
           shipmentSubstatus: shipment?.substatus ?? null,
+          pickup: purchasePickup(purchase.orders),
         });
   const fraudRisk = purchase.orders.some((o) => o.fraudRisk);
   const partial = isPartiallyCancelled(purchase.orders);
@@ -245,6 +249,7 @@ async function updatePurchase(orderId: string, purchase: Purchase): Promise<void
         status,
         shipmentStatus: shipment?.status ?? current.shipmentStatus,
         shipmentSubstatus: shipment?.substatus ?? current.shipmentSubstatus,
+        localPickUp: purchasePickup(purchase.orders) !== null,
         ...(NOT_YET_SHIPPED.includes(status) && deadline ? { dispatchDeadline: deadline } : {}),
         shippedAt: current.shippedAt ?? times.shippedAt ?? null,
         deliveredAt: current.deliveredAt ?? times.deliveredAt ?? null,

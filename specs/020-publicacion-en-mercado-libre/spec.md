@@ -31,7 +31,7 @@ Las publicaciones se crean, por ahora, directamente en Mercado Libre. El sistema
 
 **No incluye:**
 
-- Crear publicaciones desde el sistema y editar su contenido (título, descripción, fotos, características, garantía, medidas): spec 025. Mientras tanto se editan en Mercado Libre.
+- Crear publicaciones desde el sistema y editar su contenido (título, descripción, fotos, características, garantía, medidas): spec 025. Mientras tanto se editan en Mercado Libre. *(Nota 2026-11-24: hecho en la spec 025. Una publicación creada desde el sistema queda vinculada como cualquier otra y la pantalla de publicaciones la marca «Creada desde el sistema»; las vinculadas desde Mercado Libre se siguen editando allá.)*
 - La cantidad disponible que se publica y su actualización (spec 021). Esta spec solo la envía una vez, al vincular.
 - Las ventas que llegan por la publicación (spec 022).
 - Crear productos en el catálogo del sistema a partir de publicaciones de Mercado Libre: el producto tiene que existir antes en el sistema.
@@ -97,7 +97,7 @@ Las publicaciones se crean, por ahora, directamente en Mercado Libre. El sistema
 - **Todo en pesos y con `Decimal`** (constitución, reglas 5 y 6).
 - **Cambiar el precio desde el sistema sigue requiriendo el permiso especial "cambiar precios"** y queda registrado (constitución, regla 13). Un cambio que llega de Mercado Libre no pasa por permisos del sistema, pero también queda registrado.
 - **Sin conexión no se administra.** Si la cuenta no está conectada o requiere reconexión (spec 019), las acciones de esta spec se bloquean con un mensaje que lo explica.
-- **Funciona con los dos modelos de publicación de Mercado Libre.** Vincular y administrar no dependen de que la cuenta esté en el modelo nuevo; publicar desde el sistema (spec 025), sí.
+- **Funciona con los dos modelos de publicación de Mercado Libre.** Vincular y administrar no dependen de que la cuenta esté en el modelo nuevo; publicar desde el sistema (spec 025), sí. *(Nota 2026-11-24: la prueba técnica de la 025 mostró que no hace falta: Mercado Libre crea la publicación en el modelo nuevo aunque la cuenta no tenga la etiqueta.)*
 
 ## 6. Permisos
 

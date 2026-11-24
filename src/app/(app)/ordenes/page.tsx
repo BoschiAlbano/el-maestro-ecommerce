@@ -187,6 +187,7 @@ export default async function OrdenesPage({
                     {row.fraudRisk && <Badge variant="destructive">Riesgo de fraude</Badge>}
                     {row.outOfStock && <Badge variant="destructive">Sin stock</Badge>}
                     {row.needsReview && <Badge variant="outline">Revisar</Badge>}
+                    {row.localPickUp && <Badge variant="secondary">Retiro en el local</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-right">{money(row.total)}</TableCell>

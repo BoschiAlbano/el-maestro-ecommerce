@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/current-user";
 import { requireOwner, requirePermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import { readMlConfig } from "@/lib/mercadolibre/config";
 import { disconnectMl } from "@/lib/mercadolibre/connection";
 import { mlResultPath } from "@/lib/mercadolibre/connection-result";
@@ -108,4 +109,32 @@ export async function fetchMissedNotifications(): Promise<MlActionState> {
     console.error("[mercadolibre] falló la búsqueda de avisos:", error instanceof Error ? error.name : "error");
     return { error: "No se pudieron buscar los avisos. Probá de nuevo." };
   }
+}
+
+/** Valores por defecto de las publicaciones nuevas (specs/025, RF-5). */
+export async function savePublicationDefaults(input: {
+  listingType: string;
+  warrantyType: string | null;
+  warrantyDays: number | null;
+  localPickUp: boolean;
+}): Promise<MlActionState> {
+  const currentUser = await getCurrentUser();
+  requirePermission(currentUser, ModuloNegocio.CONFIGURACION, "editar");
+
+  const listingType = input.listingType === "gold_pro" ? "gold_pro" : input.listingType === "gold_special" ? "gold_special" : null;
+  if (!listingType) return { error: "El tipo de publicación no es válido." };
+  const warrantyType = input.warrantyType === "SELLER" || input.warrantyType === "FACTORY" ? input.warrantyType : null;
+  if (input.warrantyType !== null && !warrantyType) return { error: "El tipo de garantía no es válido." };
+  const days = warrantyType ? input.warrantyDays : null;
+  if (warrantyType && !(Number.isInteger(days) && days! > 0 && days! <= 3650)) return { error: "Cargá los días de garantía." };
+
+  const data = {
+    mlDefaultListingType: listingType,
+    mlDefaultWarrantyType: warrantyType,
+    mlDefaultWarrantyDays: days,
+    mlDefaultLocalPickUp: Boolean(input.localPickUp),
+  };
+  await prisma.setting.upsert({ where: { id: "singleton" }, update: data, create: { id: "singleton", ...data } });
+  revalidatePath("/configuracion");
+  return { success: "Listo: las publicaciones nuevas arrancan con estos valores." };
 }

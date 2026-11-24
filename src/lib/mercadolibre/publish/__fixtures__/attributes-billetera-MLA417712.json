@@ -1,0 +1,2071 @@
+[
+  {
+    "id": "BRAND",
+    "name": "Marca",
+    "tags": {
+      "catalog_required": true,
+      "required": true
+    },
+    "hierarchy": "PARENT_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "471628",
+        "name": "Aldo"
+      },
+      {
+        "id": "471629",
+        "name": "Alpha Keeper"
+      },
+      {
+        "id": "428827",
+        "name": "American Tourister"
+      },
+      {
+        "id": "471630",
+        "name": "Anne Klein"
+      },
+      {
+        "id": "471631",
+        "name": "Arezzo"
+      },
+      {
+        "id": "471632",
+        "name": "Badiya"
+      },
+      {
+        "id": "471633",
+        "name": "Bagmasters"
+      },
+      {
+        "id": "471634",
+        "name": "Bellroy"
+      },
+      {
+        "id": "428830",
+        "name": "Blaquè"
+      },
+      {
+        "id": "2178508",
+        "name": "CAT"
+      },
+      {
+        "id": "23136",
+        "name": "Calvin Klein"
+      },
+      {
+        "id": "433682",
+        "name": "Coach"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros",
+    "hint": "Escribe la marca real del producto o 'Genérica' si no tiene marca."
+  },
+  {
+    "id": "MODEL",
+    "name": "Modelo",
+    "tags": {
+      "catalog_required": true,
+      "required": true
+    },
+    "hierarchy": "PARENT_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PRODUCT_TYPE",
+    "name": "Tipo de producto",
+    "tags": {},
+    "hierarchy": "PARENT_PK",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "20317201",
+        "name": "Billetera"
+      },
+      {
+        "id": "20317202",
+        "name": "Monedero"
+      }
+    ],
+    "example": "Billetera",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "AGE_GROUP",
+    "name": "Edad",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "PARENT_PK",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "6725189",
+        "name": "Adultos"
+      },
+      {
+        "id": "1065183",
+        "name": "Niños"
+      },
+      {
+        "id": "371795",
+        "name": "Bebés"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "APGID",
+    "name": "APGID",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "PARENT_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "COLOR",
+    "name": "Color",
+    "tags": {
+      "allow_variations": true,
+      "defines_picture": true,
+      "required": true
+    },
+    "hierarchy": "CHILD_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "283148",
+        "name": "Coral claro"
+      },
+      {
+        "id": "283149",
+        "name": "Coral"
+      },
+      {
+        "id": "283150",
+        "name": "Naranja claro"
+      },
+      {
+        "id": "283151",
+        "name": "Naranja oscuro"
+      },
+      {
+        "id": "283156",
+        "name": "Caqui"
+      },
+      {
+        "id": "283157",
+        "name": "Verde lima"
+      },
+      {
+        "id": "283158",
+        "name": "Verde musgo"
+      },
+      {
+        "id": "283152",
+        "name": "Chocolate"
+      },
+      {
+        "id": "283153",
+        "name": "Suela"
+      },
+      {
+        "id": "283154",
+        "name": "Marrón claro"
+      },
+      {
+        "id": "283155",
+        "name": "Marrón oscuro"
+      },
+      {
+        "id": "283164",
+        "name": "Dorado"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "FABRIC_DESIGN",
+    "name": "Diseño de la tela",
+    "tags": {
+      "allow_variations": true,
+      "defines_picture": true
+    },
+    "hierarchy": "CHILD_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "24721100",
+        "name": "Liso"
+      },
+      {
+        "id": "508603",
+        "name": "Floreado"
+      },
+      {
+        "id": "508607",
+        "name": "Rayas"
+      }
+    ],
+    "tooltip": "Refiere al diseño de la estampa. Este campo debe completarse con valores en masculino si corresponde, por ejemplo: 'Liso' 'Floreado' 'Rayado' 'Geométrico'.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MATERIAL",
+    "name": "Material",
+    "tags": {},
+    "hierarchy": "CHILD_PK",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "471652",
+        "name": "Tyvek"
+      },
+      {
+        "id": "482783",
+        "name": "Cuero"
+      },
+      {
+        "id": "570721",
+        "name": "Cuero sintético"
+      }
+    ],
+    "tooltip": "Es la materia prima que fue utilizada para fabricar tu producto.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MAIN_COLOR",
+    "name": "Color principal",
+    "tags": {
+      "variation_attribute": true
+    },
+    "hierarchy": "CHILD_DEPENDENT",
+    "relevance": 1,
+    "type": "color",
+    "value_type": "list",
+    "values": [
+      {
+        "id": "2450295",
+        "name": "Negro",
+        "metadata": {
+          "rgb": "000000"
+        }
+      },
+      {
+        "id": "2450293",
+        "name": "Azul",
+        "metadata": {
+          "rgb": "1717FF"
+        }
+      },
+      {
+        "id": "2450307",
+        "name": "Rojo",
+        "metadata": {
+          "rgb": "FF0000"
+        }
+      },
+      {
+        "id": "2450311",
+        "name": "Violeta",
+        "metadata": {
+          "rgb": "9F00FF"
+        }
+      },
+      {
+        "id": "2450291",
+        "name": "Marrón",
+        "metadata": {
+          "rgb": "A0522D"
+        }
+      },
+      {
+        "id": "2450314",
+        "name": "Verde",
+        "metadata": {
+          "rgb": "0DA600"
+        }
+      },
+      {
+        "id": "2450327",
+        "name": "Naranja",
+        "metadata": {
+          "rgb": "FF8C00"
+        }
+      },
+      {
+        "id": "2450278",
+        "name": "Celeste",
+        "metadata": {
+          "rgb": "83DDFF"
+        }
+      },
+      {
+        "id": "2450312",
+        "name": "Rosa",
+        "metadata": {
+          "rgb": "FCB1BE"
+        }
+      },
+      {
+        "id": "2450289",
+        "name": "Dorado",
+        "metadata": {
+          "rgb": "FFD700"
+        }
+      },
+      {
+        "id": "2450303",
+        "name": "Plateado",
+        "metadata": {
+          "rgb": "CBCFD0"
+        }
+      },
+      {
+        "id": "2450296",
+        "name": "Amarillo",
+        "metadata": {
+          "rgb": "FFED00"
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "GENDER",
+    "name": "Género",
+    "tags": {
+      "required": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "339666",
+        "name": "Hombre"
+      },
+      {
+        "id": "339665",
+        "name": "Mujer"
+      },
+      {
+        "id": "110461",
+        "name": "Sin género"
+      },
+      {
+        "id": "339668",
+        "name": "Niñas"
+      },
+      {
+        "id": "339667",
+        "name": "Niños"
+      },
+      {
+        "id": "19159491",
+        "name": "Sin género infantil"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WIDTH",
+    "name": "Ancho",
+    "tags": {},
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      },
+      {
+        "id": "\"",
+        "name": "\""
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "HEIGHT",
+    "name": "Altura",
+    "tags": {},
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      },
+      {
+        "id": "\"",
+        "name": "\""
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "DEPTH",
+    "name": "Profundidad",
+    "tags": {},
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "\"",
+        "name": "\""
+      },
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WITH_COIN_PURSE",
+    "name": "Con monedero",
+    "tags": {},
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PACKAGE_HEIGHT",
+    "name": "Altura del paquete",
+    "tags": {
+      "hidden": true,
+      "read_only": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "\"",
+        "name": "\""
+      },
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "ft",
+        "name": "ft"
+      },
+      {
+        "id": "m",
+        "name": "m"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PACKAGE_WIDTH",
+    "name": "Ancho del paquete",
+    "tags": {
+      "hidden": true,
+      "read_only": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "\"",
+        "name": "\""
+      },
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "ft",
+        "name": "ft"
+      },
+      {
+        "id": "m",
+        "name": "m"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PACKAGE_LENGTH",
+    "name": "Largo del paquete",
+    "tags": {
+      "hidden": true,
+      "read_only": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "\"",
+        "name": "\""
+      },
+      {
+        "id": "cm",
+        "name": "cm"
+      },
+      {
+        "id": "ft",
+        "name": "ft"
+      },
+      {
+        "id": "m",
+        "name": "m"
+      },
+      {
+        "id": "mm",
+        "name": "mm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PACKAGE_WEIGHT",
+    "name": "Peso del paquete",
+    "tags": {
+      "hidden": true,
+      "read_only": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "g",
+        "name": "g"
+      },
+      {
+        "id": "kg",
+        "name": "kg"
+      },
+      {
+        "id": "lb",
+        "name": "lb"
+      },
+      {
+        "id": "mg",
+        "name": "mg"
+      },
+      {
+        "id": "oz",
+        "name": "oz"
+      }
+    ],
+    "default_unit": "g",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "GTIN",
+    "name": "Código universal de producto",
+    "tags": {
+      "multivalued": true,
+      "variation_attribute": true,
+      "used_hidden": true,
+      "validate": true,
+      "conditional_required": true
+    },
+    "hierarchy": "PRODUCT_IDENTIFIER",
+    "relevance": 1,
+    "type": "product_identifier",
+    "value_type": "string",
+    "value_max_length": 255,
+    "tooltip": "¿Cómo lo encuentro?\n\nEs el número de entre 8 y 14 dígitos que identifica un producto a nivel global. Buscalo en el empaque o etiqueta, junto al código de barras. Debés agregar un código por cada variante. Si no lo encontrás, podés pedirlo al fabricante o usar un buscador de códigos en internet.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros",
+    "hint": "Suele ser un EAN, UPC u otro GTIN."
+  },
+  {
+    "id": "EMPTY_GTIN_REASON",
+    "name": "Motivo de GTIN vacío",
+    "tags": {
+      "hidden": true,
+      "variation_attribute": true,
+      "conditional_required": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "17055158",
+        "name": "El producto es una pieza artesanal"
+      },
+      {
+        "id": "17055159",
+        "name": "El producto es un kit o un pack"
+      },
+      {
+        "id": "17055160",
+        "name": "El producto no tiene código registrado"
+      },
+      {
+        "id": "17055161",
+        "name": "Otra razón"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "VERTICAL_TAGS",
+    "name": "Tags vertical",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "53559152",
+        "name": "is_tom_brand"
+      },
+      {
+        "id": "53559153",
+        "name": "is_polos"
+      },
+      {
+        "id": "53559154",
+        "name": "is_social_brands"
+      },
+      {
+        "id": "53559155",
+        "name": "is_beauty_premium"
+      },
+      {
+        "id": "53559156",
+        "name": "has_dimensions_images"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WITH_VIRTUAL_TRY_ON",
+    "name": "Con probador virtual",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "AGID",
+    "name": "AGID",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "PRODUCT_IDENTIFIER",
+    "relevance": 1,
+    "type": "product_identifier",
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IMPORT_DECLARATION_NUMBER",
+    "name": "Número de pedimento",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "number",
+    "value_max_length": 18,
+    "tooltip": "Número de 15 dígitos del documento aduanero que ampara la importación de mercancía (sólo venta de primera mano). Este dato será utilizado para la emisión de facturas CFDI asociadas a la venta del producto.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PACKAGE_DATA_SOURCE",
+    "name": "Orígen del dato del paquete de fábrica",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "INVOICE_PRODUCT_NAME",
+    "name": "Nombre del producto en la factura",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SAT_KEY",
+    "name": "Clave del producto",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "82021094",
+        "name": "No existe en el catálogo"
+      }
+    ],
+    "tooltip": " La clave del producto es un código asignado por el SAT para clasificar los productos que se comercializan en el país.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MEASURE_UNIT_KEY",
+    "name": "Clave de la unidad de medida",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "82021108",
+        "name": "No existe en el catálogo"
+      }
+    ],
+    "tooltip": "La clave de la unidad de medida es un código estandarizado por el SAT.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MEASURE_UNIT_DESCRIPTION",
+    "name": "Unidad de medida",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "tooltip": " La unidad de medida es la forma en que el SAT mide un producto. Ejemplos: pieza, caja, kit.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IVA_FOR_RESALE",
+    "name": "IVA para reventa",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "81861616",
+        "name": "16%"
+      },
+      {
+        "id": "81861613",
+        "name": "0%"
+      },
+      {
+        "id": "81861612",
+        "name": "Exento"
+      }
+    ],
+    "tooltip": "Elige el porcentaje (0%, 16% o Exento) del Impuesto sobre el Valor Agregado que debe ser pagado por el comprador en cada producto.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IEPS",
+    "name": "IEPS",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "82021095",
+        "name": "0%"
+      },
+      {
+        "id": "82021096",
+        "name": "3%"
+      },
+      {
+        "id": "82021097",
+        "name": "6%"
+      },
+      {
+        "id": "82021098",
+        "name": "7%"
+      },
+      {
+        "id": "82021099",
+        "name": "8%"
+      },
+      {
+        "id": "82021100",
+        "name": "9%"
+      },
+      {
+        "id": "82021101",
+        "name": "25%"
+      },
+      {
+        "id": "82021102",
+        "name": "26.5%"
+      },
+      {
+        "id": "82021103",
+        "name": "30%"
+      },
+      {
+        "id": "82021104",
+        "name": "30.4%"
+      },
+      {
+        "id": "82021105",
+        "name": "50%"
+      },
+      {
+        "id": "82021106",
+        "name": "53%"
+      }
+    ],
+    "tooltip": "Elige el porcentaje del Impuesto Especial sobre Producción y Servicios que debe ser pagado por el comprador en los productos de las categorías: gasolina, bebidas y tabaco.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WITH_POSITIVE_IMPACT",
+    "name": "Con impacto positivo",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "CHILD_DEPENDENT",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WITH_WRIST_STRAP",
+    "name": "Con correa de muñeca",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "WITH_RFID_PROTECTION",
+    "name": "Con protección RFID",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "CLOSURE_TYPES",
+    "name": "Tipos de cierre",
+    "tags": {
+      "hidden": true,
+      "multivalued": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "3584407",
+        "name": "Botón"
+      },
+      {
+        "id": "2771769",
+        "name": "Velcro"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "RELEASE_SEASON",
+    "name": "Temporada de lanzamiento",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "994283",
+        "name": "Primavera/Verano"
+      },
+      {
+        "id": "994284",
+        "name": "Otoño/Invierno"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "RELEASE_YEAR",
+    "name": "Año de lanzamiento",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "number",
+    "value_max_length": 18,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "BILL_POCKETS_NUMBER",
+    "name": "Cantidad de divisiones para billetes",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "number",
+    "value_max_length": 18,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "CARD_SLOTS_NUMBER",
+    "name": "Cantidad de divisiones para tarjetas",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "number",
+    "value_max_length": 18,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MPN",
+    "name": "MPN",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "PRODUCT_IDENTIFIER",
+    "relevance": 2,
+    "type": "product_identifier",
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "ITEM_CONDITION",
+    "name": "Condición del ítem",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "2230581",
+        "name": "Usado"
+      },
+      {
+        "id": "2230284",
+        "name": "Nuevo"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "FILTRABLE_GENDER",
+    "name": "Género filtrables",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "18549360",
+        "name": "Hombre"
+      },
+      {
+        "id": "18549361",
+        "name": "Mujer"
+      },
+      {
+        "id": "18549362",
+        "name": "Niñas"
+      },
+      {
+        "id": "18549363",
+        "name": "Niños"
+      },
+      {
+        "id": "18549364",
+        "name": "Bebés"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_HIGHLIGHT_BRAND",
+    "name": "Es marca destacada",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_TOM_BRAND",
+    "name": "Es marca TOM",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_EMERGING_BRAND",
+    "name": "Es marca emergente",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "VALUE_ADDED_TAX",
+    "name": "IVA",
+    "tags": {
+      "conditional_required": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "55043032",
+        "name": "Exento"
+      },
+      {
+        "id": "48405907",
+        "name": "0 %"
+      },
+      {
+        "id": "48405908",
+        "name": "10.5 %"
+      },
+      {
+        "id": "48405909",
+        "name": "21 %"
+      },
+      {
+        "id": "48405910",
+        "name": "27 %"
+      }
+    ],
+    "tooltip": "El impuesto al valor agregado se aplica sobre el precio de venta de las compras de bienes o servicios.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IMPORT_DUTY",
+    "name": "Impuesto interno",
+    "tags": {
+      "conditional_required": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "49553239",
+        "name": "0 %"
+      },
+      {
+        "id": "49553240",
+        "name": "1 %"
+      },
+      {
+        "id": "49553241",
+        "name": "2.5 %"
+      },
+      {
+        "id": "49553242",
+        "name": "4 %"
+      },
+      {
+        "id": "49553243",
+        "name": "5 %"
+      },
+      {
+        "id": "49553244",
+        "name": "8 %"
+      },
+      {
+        "id": "49553245",
+        "name": "9.5 %"
+      },
+      {
+        "id": "49553246",
+        "name": "10 %"
+      },
+      {
+        "id": "49553247",
+        "name": "14 %"
+      },
+      {
+        "id": "49553248",
+        "name": "15 %"
+      },
+      {
+        "id": "49553249",
+        "name": "18 %"
+      },
+      {
+        "id": "49553250",
+        "name": "19 %"
+      }
+    ],
+    "tooltip": "El impuesto interno solo se aplica a productos específicos considerados superfluos o de lujo como bebidas alcohólicas, hornos microondas, entre otros.",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_SKU",
+    "name": "SKU",
+    "tags": {
+      "hidden": true,
+      "variation_attribute": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_PACKAGE_DATA_SOURCE",
+    "name": "Orígen del dato del paquete de envío",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_PACKAGE_WIDTH",
+    "name": "Ancho del paquete del seller",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "cm",
+        "name": "cm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_PACKAGE_LENGTH",
+    "name": "Largo del paquete del seller",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "cm",
+        "name": "cm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_PACKAGE_HEIGHT",
+    "name": "Altura del paquete del seller",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "cm",
+        "name": "cm"
+      }
+    ],
+    "default_unit": "cm",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SELLER_PACKAGE_WEIGHT",
+    "name": "Peso del paquete del seller",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 1,
+    "value_type": "number_unit",
+    "value_max_length": 255,
+    "allowed_units": [
+      {
+        "id": "g",
+        "name": "g"
+      }
+    ],
+    "default_unit": "g",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "HAZMAT_TRANSPORTABILITY",
+    "name": "Transportabilidad Hazmat",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "13414677",
+        "name": "Exceptuado"
+      },
+      {
+        "id": "13414678",
+        "name": "Limitado"
+      },
+      {
+        "id": "13414679",
+        "name": "Excedido"
+      },
+      {
+        "id": "13414680",
+        "name": "Indeterminado"
+      },
+      {
+        "id": "75989961",
+        "name": "Notificado"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_KIT",
+    "name": "Es kit",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "DESCRIPTIVE_TAGS",
+    "name": "Tags descriptivos",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PRODUCT_CHEMICAL_FEATURES",
+    "name": "Características químicas del producto",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7651070",
+        "name": "Inflamable"
+      },
+      {
+        "id": "7651071",
+        "name": "Aerosol"
+      },
+      {
+        "id": "7651072",
+        "name": "Oxidante"
+      },
+      {
+        "id": "7651073",
+        "name": "Corrosivo"
+      },
+      {
+        "id": "7651074",
+        "name": "Explosivo"
+      },
+      {
+        "id": "7651075",
+        "name": "Tóxico o infeccioso"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "FOODS_AND_DRINKS",
+    "name": "Alimentos y bebidas",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7575926",
+        "name": "Para humanos"
+      },
+      {
+        "id": "7575927",
+        "name": "Para animales"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "MEDICINES",
+    "name": "Medicamentos",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7575930",
+        "name": "Para humanos con receta médica"
+      },
+      {
+        "id": "7575931",
+        "name": "Para humanos sin receta médica"
+      },
+      {
+        "id": "7575932",
+        "name": "Para animales con receta médica"
+      },
+      {
+        "id": "7575933",
+        "name": "Para animales sin receta médica"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "BATTERIES_FEATURES",
+    "name": "Características de las baterías",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7575934",
+        "name": "De litio stand-alone (sueltas o aisladas)"
+      },
+      {
+        "id": "7575935",
+        "name": "De litio instaladas"
+      },
+      {
+        "id": "7575936",
+        "name": "Para autos (ácido-plomo)"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SHIPMENT_PACKING",
+    "name": "Embalaje del envío",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7435891",
+        "name": "Bolsa"
+      },
+      {
+        "id": "7435892",
+        "name": "Caja"
+      },
+      {
+        "id": "7575937",
+        "name": "Sobre"
+      },
+      {
+        "id": "7575939",
+        "name": "Auto-despachable"
+      },
+      {
+        "id": "27037932",
+        "name": "BEX"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "ADDITIONAL_INFO_REQUIRED",
+    "name": "Información adicional requerida",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7435893",
+        "name": "Tiene IMEI"
+      },
+      {
+        "id": "7435894",
+        "name": "Tiene número de serie"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "EXCLUDED_PLATFORMS",
+    "name": "Plataformas excluidas",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "9936777",
+        "name": "Android"
+      },
+      {
+        "id": "9936778",
+        "name": "iOS"
+      },
+      {
+        "id": "9936779",
+        "name": "Desktop"
+      },
+      {
+        "id": "9936780",
+        "name": "Mobile"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_SUITABLE_FOR_SHIPMENT",
+    "name": "Es apto para envío",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PRODUCT_DATA_SOURCE",
+    "name": "Fuente del producto",
+    "tags": {
+      "hidden": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "tooltip": "Indique el país de origen del producto.",
+    "example": "Brasil",
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "LIMITED_MARKETPLACE_VISIBILITY_REASONS",
+    "name": "Motivos de visibilidad limitada en Marketplace",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "values": [
+      {
+        "id": "24219544",
+        "name": "Pharma"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "HAS_COMPATIBILITIES",
+    "name": "Tiene compatibilidades",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "CATALOG_TITLE",
+    "name": "Título de catálogo",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SEARCH_ENHANCEMENT_FIELDS",
+    "name": "Campos de mejora de búsqueda",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "PRODUCT_FEATURES",
+    "name": "Características del producto",
+    "tags": {
+      "hidden": true,
+      "multivalued": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "list",
+    "values": [
+      {
+        "id": "7435885",
+        "name": "Contiene líquido"
+      },
+      {
+        "id": "7435883",
+        "name": "Frágil"
+      },
+      {
+        "id": "7435888",
+        "name": "Con vencimiento"
+      },
+      {
+        "id": "8847339",
+        "name": "Sin vencimiento"
+      },
+      {
+        "id": "7575925",
+        "name": "Dispositivo de salud"
+      },
+      {
+        "id": "7575917",
+        "name": "Desinfectante y sanitizante"
+      },
+      {
+        "id": "8721108",
+        "name": "Voluminoso"
+      },
+      {
+        "id": "10490116",
+        "name": "No volable"
+      },
+      {
+        "id": "12928414",
+        "name": "No rotable"
+      },
+      {
+        "id": "41722098",
+        "name": "Plegable"
+      },
+      {
+        "id": "52092586",
+        "name": "Magnético"
+      },
+      {
+        "id": "52233302",
+        "name": "Puede rodar"
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_NEW_OFFER",
+    "name": "Es oferta nueva",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "SYI_PYMES_ID",
+    "name": "syi pymes id",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "ITEM",
+    "relevance": 2,
+    "value_type": "string",
+    "value_max_length": 255,
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  },
+  {
+    "id": "IS_FLAMMABLE",
+    "name": "Es inflamable",
+    "tags": {
+      "hidden": true,
+      "read_only": true
+    },
+    "hierarchy": "FAMILY",
+    "relevance": 2,
+    "value_type": "boolean",
+    "values": [
+      {
+        "id": "242084",
+        "name": "No",
+        "metadata": {
+          "value": false
+        }
+      },
+      {
+        "id": "242085",
+        "name": "Sí",
+        "metadata": {
+          "value": true
+        }
+      }
+    ],
+    "attribute_group_id": "OTHERS",
+    "attribute_group_name": "Otros"
+  }
+]

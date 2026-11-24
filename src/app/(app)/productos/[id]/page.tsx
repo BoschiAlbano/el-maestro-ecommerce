@@ -4,9 +4,9 @@ import { hasPermission, hasSpecialPermission } from "@/lib/permissions";
 import { ModuloNegocio } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildRubroOptions } from "@/lib/rubro-options";
-import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { STATUS_LABELS } from "@/lib/mercadolibre/listing-status";
 import {
   Table,
@@ -18,8 +18,15 @@ import {
 } from "@/components/ui/table";
 import { ProductForm } from "../product-form";
 import { setProductActive } from "../actions";
+import { MercadoLibrePanel } from "./mercadolibre-panel";
 
-export default async function ProductoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser || !hasPermission(currentUser, ModuloNegocio.CATALOGO, "ver")) {
@@ -33,7 +40,7 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
       include: {
         priceHistory: { include: { changedByUser: true }, orderBy: { createdAt: "desc" } },
         mlLinkedListing: {
-          select: { mlItemId: true, permalink: true, status: true, statusReason: true, linkedAt: true },
+          select: { mlItemId: true, permalink: true, status: true, statusReason: true, linkedAt: true, publishedFromSystem: true },
         },
       },
     }),
@@ -55,6 +62,7 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
   const canChangePrice = hasSpecialPermission(currentUser, "cambiarPrecios");
   const verMercadoLibre = hasPermission(currentUser, ModuloNegocio.MERCADO_LIBRE, "ver");
   const listing = product.mlLinkedListing;
+  const { tab } = await searchParams;
 
   const productId = product.id;
   const nextActive = !product.active;
@@ -63,30 +71,8 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
     await setProductActive(productId, nextActive);
   }
 
-  return (
+  const productTab = (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold">{product.name}</h1>
-
-      {verMercadoLibre && listing && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Mercado Libre:</span>
-          <Badge variant={listing.status === "ACTIVE" ? "default" : "secondary"}>{STATUS_LABELS[listing.status]}</Badge>
-          <a href={listing.permalink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">
-            {listing.mlItemId}
-            <ExternalLink className="size-3" />
-          </a>
-          <span className="text-muted-foreground">
-            · vinculada el{" "}
-            {new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeZone: "America/Argentina/Tucuman" }).format(
-              listing.linkedAt,
-            )}
-          </span>
-          {listing.statusReason && listing.status !== "ACTIVE" && (
-            <span className="basis-full text-xs text-muted-foreground">{listing.statusReason}</span>
-          )}
-        </div>
-      )}
-
       {puedeEditar ? (
         <ProductForm
           brands={brands}
@@ -146,6 +132,37 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-lg font-semibold">{product.name}</h1>
+
+      {verMercadoLibre ? (
+        // Pestañas Producto y Mercado Libre (specs/025, RF-11). `?tab=mercadolibre` abre la segunda.
+        <Tabs defaultValue={tab === "mercadolibre" ? "mercadolibre" : "producto"}>
+          <TabsList>
+            <TabsTrigger value="producto">Producto</TabsTrigger>
+            <TabsTrigger value="mercadolibre">
+              Mercado Libre
+              {listing && (
+                <Badge variant={listing.status === "ACTIVE" ? "default" : "secondary"} className="ml-1">
+                  {STATUS_LABELS[listing.status]}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="producto" className="pt-2">
+            {productTab}
+          </TabsContent>
+          <TabsContent value="mercadolibre" className="pt-2">
+            <MercadoLibrePanel productId={product.id} currentUser={currentUser} listing={listing} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        productTab
+      )}
     </div>
   );
 }

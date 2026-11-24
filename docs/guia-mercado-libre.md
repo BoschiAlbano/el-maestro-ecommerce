@@ -92,8 +92,21 @@ Cada compra se factura cuando se prepara el paquete, con la facturación de ARCA
 - **Si se cancela una compra facturada**, el sistema emite solo la nota de crédito. La nota no se sube a Mercado Libre: Mercado Libre admite un solo archivo por compra y no deja borrarlo.
 - **Seguimiento:** en **Órdenes**, el filtro **Factura** muestra las que no tienen factura, las pendientes y las que faltan subir. La campanita avisa si hay órdenes despachadas sin la factura subida. En **Comprobantes**, el filtro **Origen** separa las del local y las de Mercado Libre.
 
-## Lo que todavía no hace
+## Publicar desde el sistema
 
-Llega en la próxima etapa:
+Un producto que todavía no está en Mercado Libre se publica desde su ficha, con **Preparar publicación en Mercado Libre**.
 
-- **Publicar un producto nuevo desde el sistema** (spec 025). Por ahora se publica en Mercado Libre y después se vincula.
+1. **Título:** arranca con el nombre del producto. Hasta 60 caracteres; Mercado Libre ajusta las mayúsculas.
+2. **Sugerir categoría:** Mercado Libre propone hasta tres según el título y precarga lo que deduce (por ejemplo, los conectores de un cable). Si elegís otra que no es la sugerida, la publicación puede quedar observada.
+3. **Características:** las que pide la categoría. Las marcadas con * son obligatorias.
+4. **SKU y código universal:** el SKU es obligatorio para publicar (si el producto no tiene, se carga ahí). El código de barras de origen se manda; uno generado por el sistema no, y se elige el motivo.
+5. **Fotos y descripción:** la foto del catálogo va primera; se pueden sumar más.
+6. **Venta y envío:** Clásica o Premium (cuotas sin interés, Mercado Libre cobra más), garantía, retiro en el local y las medidas del paquete embalado.
+7. Abajo se ve **lo que cobra Mercado Libre** y lo que queda, con el envío gratis si por el precio corresponde.
+8. **Revisar con Mercado Libre** valida sin publicar; **Publicar** la crea. Un producto sin stock se publica pausado y se activa solo cuando entra mercadería.
+
+La publicación queda vinculada al producto: el precio y el stock se mantienen solos. El título, las fotos, la descripción y lo demás se cambian desde **Editar publicación** en la ficha del producto. Las publicaciones vinculadas desde Mercado Libre se siguen editando allá.
+
+Los valores por defecto (tipo de publicación, garantía y retiro en el local) están en **Configuración > Mercado Libre**.
+
+**Retiro en el local:** la compra llega a Órdenes sin etiqueta ni fecha límite. Cuando la entregues, marcala entregada en Mercado Libre: el sistema la pasa a Entregada solo.

@@ -122,6 +122,13 @@ model Setting {
   /// Desde cuándo se registran las compras de Mercado Libre (specs/022,
   /// RF-9b). Sin fecha no se registra ninguna: se define el día del arranque.
   mlOrdersStartDate      DateTime?
+  /// Valores por defecto de las publicaciones nuevas (specs/025, RF-5): los que eligió el cliente.
+  /// `gold_special` es Clásica; `gold_pro`, Premium.
+  mlDefaultListingType   String    @default("gold_special")
+  /// `SELLER` (garantía del vendedor), `FACTORY` (de fábrica) o vacío (sin garantía).
+  mlDefaultWarrantyType  String?   @default("SELLER")
+  mlDefaultWarrantyDays  Int?      @default(30)
+  mlDefaultLocalPickUp   Boolean   @default(true)
   updatedAt              DateTime  @updatedAt
 
   @@map("settings")
@@ -252,14 +259,16 @@ model Product {
   /// propósito (specs/005, sección 5) — sin `@default` que lo impida.
   currentStock Int @default(0)
 
-  priceHistory    ProductPriceHistory[]
-  stockMovements  StockMovement[]
-  stockEntryItems StockEntryItem[]
-  saleItems       SaleItem[]
-  orderItems      OrderItem[]
-  mlListings      MercadoLibreListing[]   @relation("MlListingProduct")
-  mlLinkedListing MercadoLibreListing?    @relation("MlListingLinkedProduct")
-  mlOrderItems    MercadoLibreOrderItem[]
+  priceHistory      ProductPriceHistory[]
+  stockMovements    StockMovement[]
+  stockEntryItems   StockEntryItem[]
+  saleItems         SaleItem[]
+  orderItems        OrderItem[]
+  mlListings        MercadoLibreListing[]        @relation("MlListingProduct")
+  mlLinkedListing   MercadoLibreListing?         @relation("MlListingLinkedProduct")
+  /// Datos para publicarlo en Mercado Libre desde el sistema (specs/025).
+  mlPublicationData MercadoLibrePublicationData?
+  mlOrderItems      MercadoLibreOrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -972,10 +981,12 @@ model MercadoLibreListing {
   lastSyncError        String?
   lastReadAt           DateTime?
 
-  linkedAt       DateTime  @default(now())
-  linkedByUserId String
-  linkedByUser   User      @relation(fields: [linkedByUserId], references: [id])
-  closedAt       DateTime?
+  linkedAt            DateTime  @default(now())
+  linkedByUserId      String
+  linkedByUser        User      @relation(fields: [linkedByUserId], references: [id])
+  closedAt            DateTime?
+  /// La creó el sistema (specs/025): su contenido se edita desde el sistema.
+  publishedFromSystem Boolean   @default(false)
 
   updatedAt DateTime @updatedAt
 
@@ -983,6 +994,60 @@ model MercadoLibreListing {
   @@index([pricePendingSince])
   @@index([quantityPendingSince])
   @@map("ml_listings")
+}
+
+/// Datos de publicación de un producto (specs/025, RF-1): se cargan y se
+/// guardan sin publicar, y se reutilizan si la publicación se finaliza y se
+/// vuelve a publicar (RF-10). Son propios de la publicación: cambiar el nombre
+/// o la foto del producto no los cambia (sección 5). Marca, SKU, precio,
+/// cantidad y código universal no se guardan acá: salen del producto al publicar.
+model MercadoLibrePublicationData {
+  id        String  @id @default(uuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  title               String
+  categoryId          String?
+  categoryName        String?
+  /// La que sugirió Mercado Libre: si se elige otra, se advierte (RF-2).
+  suggestedCategoryId String?
+  /// Características de la categoría: `[{ id, valueId?, valueName? }]`.
+  attributes          Json    @default("[]")
+  description         String  @default("") @db.Text
+
+  /// La foto del catálogo va primera.
+  useProductPhoto Boolean  @default(true)
+  /// Fotos propias de la publicación, en el mismo almacenamiento que las del catálogo.
+  extraPhotoUrls  String[] @default([])
+
+  /// `gold_special` (Clásica) o `gold_pro` (Premium).
+  listingType  String
+  /// `SELLER`, `FACTORY` o vacío (sin garantía).
+  warrantyType String?
+  warrantyDays Int?
+  localPickUp  Boolean
+
+  /// Paquete ya embalado.
+  packageHeightCm Int?
+  packageWidthCm  Int?
+  packageLengthCm Int?
+  packageWeightG  Int?
+
+  /// Motivo por el que no se manda código universal, cuando no se manda (RF-2).
+  emptyGtinReason String?
+
+  /// Reclamo de una publicación en curso: dos clics no publican dos veces (plan, sección 3.4).
+  publishingAt DateTime?
+  /// Último rechazo de Mercado Libre, en español (RF-8).
+  lastError    String?
+
+  /// Sin relación a propósito, como `Notification.targetId`: el reinicio del
+  /// sistema (spec 017) puede borrar usuarios.
+  updatedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("ml_publication_data")
 }
 
 /// Canal de una venta (specs/022, RF-22).
@@ -1058,6 +1123,8 @@ model MercadoLibreOrder {
   preparedAt         DateTime?
   preparedByUserId   String?
   labelPrintedByUser User?     @relation(fields: [labelPrintedByUserId], references: [id])
+  /// Retiro en el local: sin envío de Mercado Libre (specs/022, RF-20b).
+  localPickUp        Boolean   @default(false)
 
   /// Fecha de la compra en Mercado Libre.
   mlCreatedAt DateTime

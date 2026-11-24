@@ -117,7 +117,12 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
           )}
         </Info>
         <Info label="Envío">
-          {order.mlShipmentId ? `Mercado Envíos #${order.mlShipmentId}` : "Sin envío de Mercado Libre"}
+          {order.mlShipmentId ? `Mercado Envíos #${order.mlShipmentId}` : order.localPickUp ? "Retiro en el local" : "Sin envío de Mercado Libre"}
+          {order.localPickUp && !order.deliveredAt && order.status !== "CANCELLED" && (
+            <p className="text-xs text-muted-foreground">
+              Cuando la entregues, marcala entregada en Mercado Libre: el sistema la pasa a Entregada solo.
+            </p>
+          )}
           {order.receiverName && <p className="text-xs text-muted-foreground">Recibe: {order.receiverName}</p>}
           {order.destinationCity && <p className="text-xs text-muted-foreground">{order.destinationCity}</p>}
         </Info>
