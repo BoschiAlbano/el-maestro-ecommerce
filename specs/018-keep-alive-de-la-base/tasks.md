@@ -13,7 +13,7 @@
 
 ## Verificación final
 
-- [ ] Se probaron todos los criterios de aceptación de `spec.md`. — El último (ejecución en Vercel) se prueba tras definir `CRON_SECRET` y desplegar.
+- [x] Se probaron todos los criterios de aceptación de `spec.md`. — 2026-11-24: 401 contra producción sin secreto y con uno equivocado; en local, 401 sin `CRON_SECRET`, 200 con el secreto y 500 con la base caída; en Vercel, «Run» manual con 200. Vercel marca los Cron Jobs como «Legacy» (sugiere pasar a «Schedules»): siguen funcionando.
 - [x] Linter, tipos y pruebas unitarias pasan. — `eslint`, `tsc --noEmit` y `vitest` sobre lo nuevo; la ruta se probó en local: 401 sin secreto y con secreto malo, 200 con el correcto.
 - [ ] Pruebas E2E. — Pendiente (diferido a la pasada de endurecimiento previa al cierre del MVP, ver `AGENTS.md`).
-- [x] `docs/PROJECT.md` actualizado (spec 018 "En desarrollo"; pasa a "Verificada" cuando el cron corra bien en Vercel).
+- [x] `docs/PROJECT.md` actualizado (spec 018 "En desarrollo"; pasa a "Verificada" cuando el cron corra bien en Vercel). — «Verificada (2026-11-24)».
