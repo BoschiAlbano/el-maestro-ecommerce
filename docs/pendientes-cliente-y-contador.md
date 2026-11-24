@@ -2,6 +2,8 @@
 
 **Fecha:** 11 de noviembre de 2026
 
+> *(2026-11-24)* Reemplazado por `docs/puesta-en-marcha-arca-y-mercado-libre.md`, que resume lo ya respondido y deja solo lo que falta para el arranque. Este documento queda como registro.
+
 Vamos a sumar dos cosas al sistema:
 
 1. **Vender por Mercado Libre desde el sistema.** Se eligen los productos, se publican, el stock se actualiza solo y cada compra llega al sistema lista para preparar.
