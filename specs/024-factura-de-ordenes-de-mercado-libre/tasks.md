@@ -52,6 +52,17 @@
   - Hecho cuando: cada documento tiene su nota con fecha.
   - Hecha el 2026-11-20: specs 022 (RF-16 y RF-19) y 023 (RF-20 y RF-24), `docs/guia-mercado-libre.md` (sección «Factura de las órdenes») y `docs/guia-facturacion.md`.
 
+## Cambio 2026-11-24: facturar una orden que ya salió (spec, sección 10; plan, sección 8)
+
+- [x] **T-014** Disponibilidad de «Facturar» en órdenes despachadas o entregadas, con el plazo para facturar.
+  - Hecho cuando: Vitest cubre cada estado, el modo y el plazo vencido.
+  - Hecha el 2026-11-24. El plazo vencido lo decide `invoiceBlocker` de la spec 023, que ya tiene sus pruebas; `loadInvoiceDraft` lo revisa antes de consultar a Mercado Libre.
+- [x] **T-015** Botón «Facturar» en la orden, con la misma ventana de «Preparar envío».
+  - Hecho cuando: tipos, linter y build pasan.
+  - Hecha el 2026-11-24 (764 pruebas).
+- [x] **T-016** **(D)** La compra con retiro entregada sin factura se factura desde la orden y el aviso desaparece.
+  - Hecha el 2026-11-24: factura C nº 94 (homologación), subida a Mercado Libre; la orden no guardó fecha de preparado y el aviso desapareció.
+
 ## Verificación final
 
 - [x] **T-013** **(D)** Verificación manual con las cuentas de prueba y ARCA en homologación, siguiendo el plan, sección 5.
