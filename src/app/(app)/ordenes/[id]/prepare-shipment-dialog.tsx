@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { PackageCheck, TriangleAlert } from "lucide-react";
+import { FileText, PackageCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type { BuyerFiscalData } from "@/lib/mercadolibre/orders/billing-read";
 import type { InvoiceDraft, PrepareResult } from "@/lib/mercadolibre/orders/order-invoice";
@@ -44,7 +44,17 @@ function money(value: number) {
  * que informó Mercado Libre para confirmarlos o corregirlos, emite la factura,
  * la sube a la compra y deja las dos impresiones.
  */
-export function PrepareShipmentDialog({ orderId, hasLabel }: { orderId: string; hasLabel: boolean }) {
+export function PrepareShipmentDialog({
+  orderId,
+  hasLabel,
+  mode = "prepare",
+}: {
+  orderId: string;
+  hasLabel: boolean;
+  /** `invoice`: «Facturar» una orden que ya salió sin factura (cambio 2026-11-24, RF-1b). */
+  mode?: "prepare" | "invoice";
+}) {
+  const invoiceOnly = mode === "invoice";
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
@@ -106,17 +116,19 @@ export function PrepareShipmentDialog({ orderId, hasLabel }: { orderId: string; 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <Button onClick={() => handleOpenChange(true)}>
-        <PackageCheck data-icon="inline-start" />
-        Preparar envío
+        {invoiceOnly ? <FileText data-icon="inline-start" /> : <PackageCheck data-icon="inline-start" />}
+        {invoiceOnly ? "Facturar" : "Preparar envío"}
       </Button>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Preparar envío</DialogTitle>
+          <DialogTitle>{invoiceOnly ? "Facturar la compra" : "Preparar envío"}</DialogTitle>
           <DialogDescription>
             {phase.kind === "form"
               ? "Revisá los datos de facturación que informó Mercado Libre. Al confirmar se emite la factura y se sube a la compra."
               : phase.kind === "done"
-                ? "Imprimí la factura y la etiqueta, y pegá las dos en el paquete."
+                ? invoiceOnly
+                  ? "La compra ya salió: imprimí la factura si la necesitás."
+                  : "Imprimí la factura y la etiqueta, y pegá las dos en el paquete."
                 : "Factura e impresiones de la compra."}
           </DialogDescription>
         </DialogHeader>

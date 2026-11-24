@@ -41,6 +41,9 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
   // «Preparar envío» (specs/024, RF-1 y RF-2): el servidor vuelve a validar todo al abrir la ventana.
   const canPrepare =
     canEdit && !order.fraudRisk && order.sale !== null && NOT_YET_SHIPPED.includes(order.status) && order.invoiceState !== "external";
+  // «Facturar» una orden que ya salió sin factura (specs/024, cambio 2026-11-24, RF-1b). El plazo lo revisa el servidor.
+  const canInvoiceLate =
+    canEdit && !order.fraudRisk && order.sale !== null && (order.status === "SHIPPED" || order.status === "DELIVERED") && order.invoiceState === "none";
   const invoice = order.invoice;
   const creditNote = invoice?.creditNotes[0] ?? null;
   const invoicePrintable = invoice?.status === "AUTHORIZED";
@@ -88,6 +91,8 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
             <PrepareShipmentDialog orderId={order.id} hasLabel={order.mlShipmentId !== null} />
             {canPrint && <LabelButtons orderId={order.id} primary={false} />}
           </div>
+        ) : canInvoiceLate ? (
+          <PrepareShipmentDialog orderId={order.id} hasLabel={false} mode="invoice" />
         ) : (
           canPrint && <LabelButtons orderId={order.id} />
         )}

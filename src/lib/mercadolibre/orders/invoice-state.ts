@@ -30,12 +30,22 @@ export function orderInvoiceState(input: OrderInvoiceInput): OrderInvoiceState {
   return input.uploadedAt ? "uploaded" : "not_uploaded";
 }
 
-export type PrepareAvailability = { available: true } | { available: false; reason: string };
+/**
+ * `prepare`: «Preparar envío», la orden todavía no salió (RF-1).
+ * `invoice`: «Facturar», la orden ya salió o se entregó sin factura (RF-1b).
+ */
+export type InvoiceMode = "prepare" | "invoice";
+
+export type PrepareAvailability = { available: true; mode: InvoiceMode } | { available: false; reason: string };
+
+/** Ya salió del local y llegó o está en camino: todavía se puede facturar (RF-1b). */
+const SHIPPED_OUT: MlOrderStatus[] = ["SHIPPED", "DELIVERED"];
 
 /**
- * Si se puede usar «Preparar envío» (RF-2). Con una factura ya emitida, el
- * botón sigue disponible: muestra esa factura y las impresiones, no emite otra
- * (spec, sección 7).
+ * Si se puede usar «Preparar envío» (RF-2) o, en una orden que ya salió,
+ * «Facturar» (RF-1b y RF-2b). Con una factura ya emitida sigue disponible:
+ * muestra esa factura y las impresiones, no emite otra (spec, sección 7).
+ * El plazo para facturar lo revisa quien llama (spec 023).
  */
 export function prepareAvailability(input: {
   status: MlOrderStatus;
@@ -46,14 +56,16 @@ export function prepareAvailability(input: {
 }): PrepareAvailability {
   if (input.fraudRisk) return { available: false, reason: "Mercado Libre marcó la compra con riesgo de fraude: no la despaches." };
   if (input.status === "CANCELLED") return { available: false, reason: "La compra está cancelada." };
-  if (!NOT_YET_SHIPPED.includes(input.status)) return { available: false, reason: "La compra ya salió del local." };
+  if (input.status === "NOT_DELIVERED") return { available: false, reason: "La compra no se entregó." };
+  const mode: InvoiceMode | null = NOT_YET_SHIPPED.includes(input.status) ? "prepare" : SHIPPED_OUT.includes(input.status) ? "invoice" : null;
+  if (!mode) return { available: false, reason: "La compra no se puede facturar en este estado." };
   if (input.invoiceState === "external") {
     return { available: false, reason: "La compra ya tiene una factura cargada en Mercado Libre: el sistema no la factura otra vez." };
   }
   if (input.invoiceState === "none" && input.emitterMissing) {
     return { available: false, reason: `Para facturar falta: ${input.emitterMissing}` };
   }
-  return { available: true };
+  return { available: true, mode };
 }
 
 /** Mensaje de «la compra ya tenía factura», guardado en la orden para revisarla. */

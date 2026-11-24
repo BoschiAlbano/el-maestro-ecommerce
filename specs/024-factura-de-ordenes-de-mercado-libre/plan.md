@@ -148,3 +148,12 @@ En `cancelPurchase` (spec 022), dentro de la misma transacción que anula la ven
 ## 7. Preguntas abiertas
 
 Ninguna para construir. Las preguntas 8 (plazo de Mercado Libre para subir la factura) y 9 (desactivar el Facturador) se resuelven antes del arranque del cliente, y las del contador tienen propuesta.
+
+## 8. Cambio 2026-11-24: facturar una orden que ya salió (spec, sección 10)
+
+*(Aprobado el 2026-11-24.)*
+
+- **`invoice-state.ts`:** `prepareAvailability` suma el caso de la orden **despachada o entregada** (`SHIPPED`, `DELIVERED`) sin factura: disponible en modo «facturar» (RF-1b). `NOT_DELIVERED` y `CANCELLED` siguen sin disponibilidad, igual que el riesgo de fraude y la factura de otro medio (RF-2b). Devuelve el modo (`prepare` o `invoice`) para que la pantalla elija el botón.
+- **`order-invoice.ts`:** `loadInvoiceDraft` revisa el plazo para facturar con `invoiceBlocker` (spec 023) antes de consultar a Mercado Libre, así la orden explica el motivo sin emitir nada (RF-2b). `prepareShipment` emite y sube igual en los dos modos; `preparedAt` se guarda solo al preparar un envío.
+- **Pantalla `/ordenes/[id]`:** en una orden despachada o entregada sin factura, el botón **«Facturar»** abre la misma ventana con el título «Facturar la compra» y, al terminar, solo la impresión de la factura.
+- **Pruebas unitarias:** la disponibilidad en cada estado y modo. **Manual:** la compra con retiro en el local de la prueba técnica de la spec 025, entregada sin factura, se factura desde la orden en el modo de pruebas de ARCA y el aviso desaparece.

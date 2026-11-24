@@ -4,6 +4,7 @@ import { invoicePdfFileName } from "@/lib/facturacion/invoice-document";
 import { renderInvoicePdf } from "@/lib/facturacion/invoice-pdf";
 import { loadInvoiceView } from "@/lib/facturacion/invoice-view-data";
 import { authorizeInvoiceById, issueInvoiceForExistingSale, loadInvoicingAvailability, type ReceiverInput } from "@/lib/facturacion/invoices";
+import { invoiceBlocker } from "@/lib/facturacion/invoice-policy";
 import { mlErrorMessage } from "../listings";
 import { readBillingInfo, type BuyerFiscalData } from "./billing-read";
 import { decideReceiver, receiverWasEdited, type ReceiverDecision } from "./invoice-receiver";
@@ -35,6 +36,8 @@ const orderSelect = {
   mlFiscalDocumentId: true,
   sale: {
     select: {
+      createdAt: true,
+      voidedAt: true,
       invoices: {
         where: { kind: "FACTURA_C", status: { not: "DISCARDED" } },
         select: { id: true, status: true, lastError: true, _count: { select: { creditNotes: true } } },
@@ -118,6 +121,14 @@ export async function loadInvoiceDraft(orderId: string): Promise<InvoiceDraft> {
     return { kind: "existing", invoiceId: invoice.id, state, uploadError: order.invoiceUploadError, invoiceError: invoice.lastError };
   }
 
+  // El plazo para facturar (spec 023): una orden que salió sin factura puede estar fuera (RF-2b).
+  const blocker = invoiceBlocker(
+    { createdAt: order.sale.createdAt, voidedAt: order.sale.voidedAt, hasActiveInvoice: false },
+    new Date(),
+    availability.config.diasParaFacturar,
+  );
+  if (blocker) return { kind: "blocked", reason: blocker };
+
   const external = await externalInvoiceCheck(order);
   if (external) return { kind: "blocked", reason: external };
 
@@ -199,7 +210,7 @@ export async function prepareShipment(input: {
   const existing = order.sale.invoices[0];
   if (existing) {
     if (existing.status === "AUTHORIZED" && !order.invoiceUploadedAt) await uploadOrderInvoice(order.id);
-    await markPrepared(order.id, input.userId);
+    if (allowed.mode === "prepare") await markPrepared(order.id, input.userId);
     return describeOrderInvoice(order.id);
   }
 
@@ -232,7 +243,7 @@ export async function prepareShipment(input: {
   if ("error" in issued) return { error: issued.error };
 
   // Autorizada: `authorizeInvoiceById` ya intentó subirla (`uploadInvoiceOfSale`).
-  await markPrepared(order.id, input.userId);
+  if (allowed.mode === "prepare") await markPrepared(order.id, input.userId);
   return describeOrderInvoice(order.id);
 }
 

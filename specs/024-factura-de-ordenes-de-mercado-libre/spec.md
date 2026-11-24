@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Verificada (2026-11-20) |
+| **Estado** | Verificada (2026-11-20); cambio de la sección 10 verificado (2026-11-24) |
 | **Depende de** | 022, 023 |
 | **Referencia** | `docs/PROJECT.md`, secciones 4 y 5 ("Ampliación de alcance"); decisión 0005; `docs/investigacion/2026-11-10-mercado-libre-y-arca.md`, secciones 1.7 y 2 |
 
@@ -162,3 +162,18 @@ Es el cierre del pedido original del cliente: llega la orden, se factura, se imp
 7. **Datos que realmente devuelve Mercado Libre.** Con DNI, respondida en la prueba técnica: nombre, apellido, documento, tipo de contribuyente (`05` Consumidor Final) y domicilio. Con CUIT no se pudo probar: la cuenta de prueba no deja cambiar sus datos fiscales. Se cubre con pruebas unitarias y se confirma con la primera venta real a un comprador con CUIT.
 8. **Plazo.** Si Mercado Libre exige subir la factura dentro de algún plazo en Argentina.
 9. **Facturador de Mercado Libre.** Confirmar que su emisión automática se puede desactivar una vez activada, para el cambio al sistema.
+
+## 10. Cambio 2026-11-24: facturar una orden que ya salió
+
+*(Pedido del cliente, aprobado el 2026-11-24, al ver en la campanita una compra con retiro en el local entregada sin factura.)*
+
+**Por qué.** «Preparar envío» (RF-1) solo está mientras la orden no salió. Si una orden se despacha o se entrega sin usarlo (por ejemplo, una compra con retiro en el local que se entrega en mano, spec 022 RF-20b), no hay forma de facturarla desde el sistema, y el aviso de la campanita (RF-23) queda para siempre.
+
+- **RF-1b.** Una orden **despachada o entregada** que no tiene factura tiene la acción **«Facturar»**: la misma ventana de «Preparar envío» (datos del comprador para confirmar o corregir, emisión en ARCA y subida a la compra en Mercado Libre), sin la etiqueta, que ya no hace falta. Deja a mano la impresión de la factura.
+- **RF-2b.** «Facturar» no está disponible en una orden cancelada, no entregada (spec 022), con riesgo de fraude, que ya tenía una factura cargada en Mercado Libre, o sin los datos fiscales del emisor. Pasado el plazo para facturar (spec 023, `diasParaFacturar`, máximo 5 días desde la compra), la orden explica que ya no se puede facturar desde el sistema.
+
+**Criterios de aceptación:**
+
+- [x] Una orden entregada sin factura muestra «Facturar»; al confirmar, la factura se emite, se sube a Mercado Libre y el aviso de la campanita desaparece. *(Revisión manual del cliente, 2026-11-24: la compra con retiro en el local quedó con la factura C nº 94 subida y sin aviso.)*
+- [x] Una orden cancelada, no entregada o que ya tenía factura en Mercado Libre no muestra «Facturar». *(Prueba unitaria de `prepareAvailability`.)*
+- [x] Fuera del plazo para facturar, la orden lo explica y no emite nada. *(`invoiceBlocker` de la spec 023, con sus pruebas, revisado al abrir la ventana.)*
