@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,13 +10,19 @@ import { cn } from "@/lib/utils";
  * Formulario de filtros de una lista (GET, por URL). En pantallas chicas deja visible
  * solo el buscador y esconde el resto detrás de un botón "Filtros"; en pantallas
  * grandes todo va en una sola fila.
+ *
+ * Los campos toman su valor inicial de la dirección (`defaultValue`). Si la
+ * dirección cambia sin salir de la pantalla (por ejemplo, un enlace de la
+ * campanita a la misma lista con otros filtros), el formulario se vuelve a
+ * crear para que muestren los filtros nuevos: un `Select` de Base UI no acepta
+ * que le cambien el valor inicial después de creado.
  */
-export function FilterForm({
-  search,
-  activeCount,
-  toggleBelow = false,
-  children = null,
-}: {
+export function FilterForm(props: FilterFormProps) {
+  const searchParams = useSearchParams();
+  return <FilterFormInner key={searchParams.toString()} {...props} />;
+}
+
+type FilterFormProps = {
   /** Campo de búsqueda: siempre visible. */
   search: ReactNode;
   /** Cuántos filtros de `children` están aplicados (se muestra en el botón y abre el panel). */
@@ -24,7 +31,14 @@ export function FilterForm({
   toggleBelow?: boolean;
   /** Resto de los filtros (selects). Sin esto, no hay botón "Filtros": el buscador queda solo. */
   children?: ReactNode;
-}) {
+};
+
+function FilterFormInner({
+  search,
+  activeCount,
+  toggleBelow = false,
+  children = null,
+}: FilterFormProps) {
   const [open, setOpen] = useState(activeCount > 0);
 
   return (
