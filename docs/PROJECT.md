@@ -195,7 +195,7 @@ Orden sugerido según dependencias. El estado se actualiza a medida que avanza c
 | 011 | Analíticas y exportación | 008, 009 | Verificada |
 | 012 | Inicio del dueño y lista de viaje | 005, 009, 011 | Verificada |
 | 013 | Notificaciones | 005, 007, 009 | Verificada; pestañas y diseño de la campanita verificados (2026-11-20) |
-| 014 | Caja del día | 007, 008, 009 | En desarrollo |
+| 014 | Caja del día | 007, 008, 009 | Verificada (2026-11-24) |
 | 015 | Tienda online: ruta raíz y landing en blanco | 001, 002, 012 | Verificada |
 | 016 | Ingreso por usuario y contraseña | 001, 002, 003 | Verificada |
 | 017 | Reinicio del sistema | 002, 003 | En desarrollo |
